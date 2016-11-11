@@ -1,4 +1,4 @@
-webera.sh
+webera
 
 A shellscript for static website generation
 

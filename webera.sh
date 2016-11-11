@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-# webera.sh
+# webera
 #
 # Description: A shellscript for static website generation
 #
 # Version: 0.1.0
 # Author: José Luis Cruz
-# Repository: https://github.com/andamira/webera.sh
+# Repository: https://github.com/andamira/webera
 # License: MIT
 # Originally Inspired by: https://gist.github.com/plugnburn/c2f7cc3807e8934b179e
 #
