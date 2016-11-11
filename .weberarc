@@ -1,0 +1,88 @@
+## TODO: Global configuration
+#
+# config:DIR_TEMPLATES:templates
+# config:DIR_RESOURCES:res
+
+
+
+## Custom commands for processing resources
+#
+# Format:
+#   rcommand:<name>:<command(until EOL)>
+#
+# Special markup:
+#   {ORIGIN}
+#   {TARGET}
+#
+# Built-in commands:
+#   copy              Copy a file or a directory (recursively)
+#
+
+# Example: recreating the built-in copy command
+#rcommand:copy2:mkdir -p $(dirname {ORIGIN}); cp -r {ORIGIN} {TARGET_OUTPUT}
+
+# Sass compilation
+rcommand:sass:sass -t compact {ORIGIN} {TARGET}
+
+
+
+## Resources are processed serially, from top to bottom
+#
+# Format:
+#   resouce:<processor>:<origin>:<destination>
+#
+# Special Tags for <origin> and <destination>:
+#   {ORIGIN}          Path relative to the RESOURCES directory (default)
+#   {ORIGIN_RES}      Path relative to the RESOURCES directory
+#   {ORIGIN_BUILD}    Path relative to the BUILD directory
+#
+#   {TARGET_RES}      Path relative to the RESOURCES directory
+#   {TARGET_BUILD}    Path relative to the BUILD (temporary) directory
+#   {TARGET_OUTPUT}   Path relative to the OUTPUT directory
+#
+
+# TODO: Decide best way.
+#resource:sass:scss/main.scss:css/main.css
+resource:sass:{DIR_RESOURCES}/scss/main.scss:{DIR_OUTPUT}/css/main.css
+
+#resource:copy:css/main.css:css/main.css
+resource:copy:img/:img/
+resource:copy:font/:font/
+
+
+# Pages configuration
+# 
+# Format:
+#   page:<template>:<slug> 
+#
+
+page:index.html:/
+#page:contact.html:/contact
+#page:webs.html:/webs
+
+
+## TODO: Posts Configuration
+#
+# Format:
+#   post:<name>:<dir>
+#   post-single:<name><dir><template>:<slug-format>
+#   post-archive:<name><template>:<slug>:<sort-by>
+#
+#
+#   slug-format
+#     {Y}  year
+#     {M}  month
+#     {D}  day
+#     {h}  hour
+#     {m}  minute
+#
+#   sort-by
+#     DATE (-ASC|-DESC)
+#     FILENAME (-ASC|-DESC)
+
+#post:define:blog:posts/blog/
+#post:single:blog:blog-post.html:blog/{Y}/{M}/{FILENAME}
+#post:archive:blog:blog-archive.html:blog/:DATE-DESC
+
+#post:portfolio:posts/portfolio:
+
