@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # webera
 #
 # Description: A shellscript for static website generation
 #
-# Version: 0.1.2
+# Version: 0.1.3
 # Author: José Luis Cruz
 # Repository: https://github.com/andamira/webera
 # License: MIT
@@ -271,7 +271,7 @@ fi
 if [ -f "$FILE_CONFIG" ]; then
 	CONFIG="$(cat $FILE_CONFIG | grep -ve '^$' | grep -v '^#')"
 else
-	printf "ERROR: Routes config file '%s' doesn't exist.\n" "$FILE_CONFIG"
+	printf "ERROR: Configuration file '%s' doesn't exist.\n" "$FILE_CONFIG"
 	exit 3
 fi
 
@@ -279,7 +279,32 @@ fi
 # START LOG
 
 if [ $OPTION_CLEAR_LOG == true ]; then rm $FILE_LOG 2>/dev/null; fi
-log "\n$(date '+%Y-%m-%d %H:%M:%S')\n------------" 1
+log "\n===============[$(date '+%Y-%m-%d %H:%M:%S')]==============${OPTION_LOG_LEVEL}" 1
+
+
+# CONFIGURE SETTINGS
+# ##################
+
+# Parse the commands for processing resources
+SETTINGS="$(echo "$CONFIG" | grep '^[[:space:]]*config:')"
+
+if [ "$SETTINGS" ]; then
+	log "Configuring settings...\n====================" 1
+
+	OLDIFS="$IFS"; IFS=$'\n'
+	for S in $SETTINGS; do
+
+		setting_name=$(echo "$S" | cut -d':' -f2 )
+		setting_value=$(echo "$S" | cut -d':' -f3 )
+
+		setting_previous_value=${!setting_name}
+
+		log "\tsetting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
+
+		# NOTE: There're currently no checks. Any global variable can be (re)assigned.
+		printf -v $setting_name "$setting_value"
+	done
+fi
 
 
 # PROCESS RESOURCES
@@ -292,7 +317,7 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 	if [ -d "$DIR_RESOURCES" ]; then
 
 		# Parse the commands for processing resources
-		RCOMMANDS="$(echo "$CONFIG" | grep '^rcommand:')"
+		RCOMMANDS="$(echo "$CONFIG" | grep '^[[:space:]]*rcommand:')"
 
 		if [ "$RCOMMANDS" ]; then
 			log "Parsing rcommands..." 1
@@ -311,7 +336,7 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 		IFS="$OLDIFS"
 
 
-		RESOURCES="$(echo "$CONFIG" | grep '^resource:')"
+		RESOURCES="$(echo "$CONFIG" | grep '^[[:space:]]*resource:')"
 
 		if [ "$RESOURCES" ]; then
 			log "Processing resources..." 1
@@ -390,7 +415,7 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 
 	log "\nProcessing templates...\n====================" 1
 
-	PAGES="$(echo "$CONFIG" | grep '^page:')"
+	PAGES="$(echo "$CONFIG" | grep '^[[:space:]]*page:')"
 
 	if [ "$PAGES" ]; then
 		log "Processing pages..." 1
@@ -411,7 +436,7 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 	done
 	IFS="$OLDIFS"
 
-	POSTS="$(echo "$CONFIG" | grep '^post:')"
+	POSTS="$(echo "$CONFIG" | grep '^[[:space:]]*post:')"
 
 	# TODO
 	if [ "$POSTS" ]; then
