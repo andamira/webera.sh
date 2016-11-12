@@ -31,7 +31,8 @@ rcommand:sass:sass -t compact {ORIGIN} {TARGET}
 # Format:
 #   resouce:<processor>:<origin>:<destination>
 #
-# Special Tags for <origin> and <destination>:
+#
+# TODO: Special Tags for <origin> and <destination>:
 #   {ORIGIN}          Path relative to the RESOURCES directory (default)
 #   {ORIGIN_RES}      Path relative to the RESOURCES directory
 #   {ORIGIN_BUILD}    Path relative to the BUILD directory
@@ -41,9 +42,10 @@ rcommand:sass:sass -t compact {ORIGIN} {TARGET}
 #   {TARGET_OUTPUT}   Path relative to the OUTPUT directory
 #
 
-# TODO: Decide best way.
-#resource:sass:scss/main.scss:css/main.css
-resource:sass:{DIR_RESOURCES}/scss/main.scss:{DIR_OUTPUT}/css/main.css
+resource:sass:scss/main.scss:css/main.css
+
+# TODO:
+#resource:sass:{DIR_RESOURCES}/scss/main.scss:{DIR_OUTPUT}/css/main.css
 
 #resource:copy:css/main.css:css/main.css
 resource:copy:img/:img/

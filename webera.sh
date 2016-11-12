@@ -278,7 +278,7 @@ fi
 
 # START LOG
 
-if [ $OPTION_CLEAR_LOG == true ]; then rm $FILE_LOG; fi
+if [ $OPTION_CLEAR_LOG == true ]; then rm $FILE_LOG 2>/dev/null; fi
 log "\n$(date '+%Y-%m-%d %H:%M:%S')\n------------" 1
 
 
