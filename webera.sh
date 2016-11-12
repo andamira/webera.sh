@@ -4,7 +4,7 @@
 #
 # Description: A shellscript for static website generation
 #
-# Version: 0.1.0
+# Version: 0.1.1
 # Author: José Luis Cruz
 # Repository: https://github.com/andamira/webera
 # License: MIT
@@ -13,7 +13,7 @@
 # Dependencies: bash 4, grep -P, sed
 # Optional Dependencies:
 #   - python | php (for their built-in web server)
-#   - chromium-browser | firefox | google-chrome | ... (or any browser)
+#   - firefox | chromium-browser | google-chrome | opera | ... (any browser)
 #
 
 
@@ -36,7 +36,7 @@ FILE_LOG=log.txt
 
 OPTION_LOG_LEVEL=0 # 0 = no logging | 1 | 2 | 3
 
-BROWSER_BIN="chromium-browser" # google-chrome | firefox | ...
+WEB_BROWSER_BIN="firefox" # | chromium-browser | google-chrome | opera | elinks | ...
 SERVER_PORT="8192"
 
 # Server with Python
@@ -57,7 +57,7 @@ NESTING_MAX=8
 OPERATIONAL=false
 OPTION_PROCESS_TEMPLATES=false
 OPTION_PROCESS_RESOURCES=false
-OPTION_LOAD_IN_BROWSER=false
+OPTION_LOAD_IN_WEB_BROWSER=false
 OPTION_CLEAR_LOG=false
 #OPTION_DELETE_OUTPUT=false # TODO
 
@@ -76,7 +76,7 @@ function usage {
 	printf "MAIN FLAGS\n"
 	printf "\t-t\t\tdo process all templates\n"
 	printf "\t-r\t\tdo process all resources\n"
-	printf "\t-b\t\topen website in browser\n"
+	printf "\t-w\t\topen website in browser\n"
 	printf "\nOPTIONAL\n"
 	printf "\t-C <FILE>\tconfiguration file (%s)\n" $FILE_CONFIG
 	printf "\t-T <DIR>\ttemplates directory (%s)\n" "$DIR_TEMPLATES"
@@ -85,7 +85,7 @@ function usage {
 	echo
 	#printf "\t-d <DIR>\tdelete output directory (%s)\n" "$OPTION_DELETE_OUTPUT/" # TODO
 
-	printf "\t-B <BIN>\tbrowser binary (%s)\n" "$BROWSER_BIN"
+	printf "\t-W <BIN>\tweb browser binary (%s)\n" "$WEB_BROWSER_BIN"
 	printf "\t-L <NUMBER>\tlog level [0=don't|1|2|3] (%s)\n" "$OPTION_LOG_LEVEL"
 	printf "\t-G <FILE>\tlogfile (%s)\n" "$FILE_LOG"
 	printf "\t-l\t\tclear log (%s)\n" "$OPTION_CLEAR_LOG"
@@ -241,22 +241,22 @@ function templateRender {
 # GET OPTIONS
 # ###########
 
-while getopts ':trblL:U:E:O:B:N:' OPTION; do
+while getopts ':trwlL:C:E:O:W:h:' OPTION; do
 	case "$OPTION" in
 		t) OPERATIONAL=true; OPTION_PROCESS_TEMPLATES=true ;;
 		r) OPERATIONAL=true; OPTION_PROCESS_RESOURCES=true ;;
-		b) OPERATIONAL=true; OPTION_LOAD_IN_BROWSER=true ;;
+		w) OPERATIONAL=true; OPTION_LOAD_IN_WEB_BROWSER=true ;;
 
 		l) OPTION_CLEAR_LOG=true ;;
 		L) OPTION_LOG_LEVEL="$OPTARG" ;;
 
-		C) DIR_ROUTES="$OPTARG" ;;
+		C) FILE_CONFIG="$OPTARG" ;;
 		E) DIR_RESOURCES="$OPTARG" ;;
 		O) DIR_OUTPUT="$OPTARG" ;;
 
-		B) BROWSER_BIN="$OPTARG" ;;
+		W) WEB_BROWSER_BIN="$OPTARG" ;;
 
-		*) usage ;;
+		h|*) usage ;;
 	esac
 done
 shift $((OPTIND-1))
@@ -431,10 +431,10 @@ log "Done." 1
 # LOAD WEBSITE (RUN SERVER & BROWSER)
 # ############
 
-if [ $OPTION_LOAD_IN_BROWSER == true ]; then
-	echo -e "Loading website in '$BROWSER_BIN'... (Use CTRL+C to stop the web server)"
+if [ $OPTION_LOAD_IN_WEB_BROWSER == true ]; then
+	echo -e "Loading website in '$WEB_BROWSER_BIN'... (Use CTRL+C to stop the web server)"
 
-	RUN_BROWSER="$BROWSER_BIN http://localhost:$SERVER_PORT &"
+	RUN_BROWSER="$WEB_BROWSER_BIN http://localhost:$SERVER_PORT &"
 
 	case $OPTION_LOG_LEVEL in
 		0)
