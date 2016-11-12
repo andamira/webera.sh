@@ -1,61 +1,62 @@
-## TODO: Global configuration
+## TODO: Override the Defaults
+################################################################
 #
 # config:DIR_TEMPLATES:templates
 # config:DIR_RESOURCES:res
+# config:DIR_OUTPUT:html
 
 
-
-## Custom commands for processing resources
+## CUSTOM COMMANDS
+################################################################
+#
+# Info:
+#   For processing resources
 #
 # Format:
 #   rcommand:<name>:<command(until EOL)>
 #
-# Special markup:
-#   {ORIGIN}
-#   {TARGET}
+# Special Tags:
+#
+#    Tag             Default Dir     Explanation
+#    ---             -----------     -----------
+#   {ORIGIN}         res/            (the RESOURCES directory)
+#   {BUILD}          build/          (the BUILD directory)
+#   {TARGET}         html/res/       (the OUTPUT/RESOURCES directory)
 #
 # Built-in commands:
 #   copy              Copy a file or a directory (recursively)
 #
 
-# Example: recreating the built-in copy command
-#rcommand:copy2:mkdir -p $(dirname {ORIGIN}); cp -r {ORIGIN} {TARGET_OUTPUT}
+# Copy commands to/from the build directory
+rcommand:copy_res2build:mkdir -p $(dirname {ORIGIN}); cp -r {ORIGIN} {BUILD}
+rcommand:copy_build2target:mkdir -p $(dirname {BUILD}); cp -r {BUILD} {TARGET}
 
 # Sass compilation
 rcommand:sass:sass -t compact {ORIGIN} {TARGET}
 
 
 
-## Resources are processed serially, from top to bottom
+## RESOURCES
+################################################################
+#
+# Info:
+#   Remember resources are processed serially from top to bottom.
 #
 # Format:
 #   resouce:<processor>:<origin>:<destination>
 #
-#
-# TODO: Special Tags for <origin> and <destination>:
-#   {ORIGIN}          Path relative to the RESOURCES directory (default)
-#   {ORIGIN_RES}      Path relative to the RESOURCES directory
-#   {ORIGIN_BUILD}    Path relative to the BUILD directory
-#
-#   {TARGET_RES}      Path relative to the RESOURCES directory
-#   {TARGET_BUILD}    Path relative to the BUILD (temporary) directory
-#   {TARGET_OUTPUT}   Path relative to the OUTPUT directory
-#
-
 resource:sass:scss/main.scss:css/main.css
-
-# TODO:
-#resource:sass:{DIR_RESOURCES}/scss/main.scss:{DIR_OUTPUT}/css/main.css
 
 #resource:copy:css/main.css:css/main.css
 resource:copy:img/:img/
 resource:copy:font/:font/
 
 
-# Pages configuration
-# 
+## PAGES
+################################################################
+#
 # Format:
-#   page:<template>:<slug> 
+#   page:<template>:<slug>
 #
 
 page:index.html:/
@@ -63,7 +64,9 @@ page:index.html:/
 #page:webs.html:/webs
 
 
-## TODO: Posts Configuration
+
+## TODO: POSTS
+################################################################
 #
 # Format:
 #   post:<name>:<dir>

@@ -4,7 +4,7 @@
 #
 # Description: A shellscript for static website generation
 #
-# Version: 0.1.1
+# Version: 0.1.2
 # Author: José Luis Cruz
 # Repository: https://github.com/andamira/webera
 # License: MIT
@@ -350,23 +350,18 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 					# custom command?
 					if [ "${RCOMMANDSMAP[$operation]}" ]; then
 
-						# TODO: DECIDE WHERE TO PUT THIS, COMMAND OR RESOURCE (OPERATION)
-
-						# TODO TEST CHECK all cases
+						# TODO: move up to add support for these tags in built-in commands
 						CMD=$(echo ${RCOMMANDSMAP[$operation]} \
 							| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
-							| sed "s|{ORIGIN_RES}|$DIR_RESOURCES/$fileOrigin|g" \
-							| sed "s|{ORIGIN_BUILD}|$DIR_BUILD/$fileOrigin|g" \
-							| sed "s|{TARGET_RES}|$DIR_RESOURCES/$fileTarget|g" \
-							| sed "s|{TARGET_BUILD}|$DIR_BUILD/$fileTarget|g" \
-							| sed "s|{TARGET_OUTPUT}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
+							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
+							| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
 						)
 
 						# Create target paths
-						if [[ "${RCOMMANDSMAP[$operation]}" =~ "{TARGET}" ]]; then
-							mkdir -p $(dirname "$DIR_RESOURCES/$fileTarget")
+						if [[ "${RCOMMANDSMAP[$operation]}" =~ "{BUILD}" ]]; then
+							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
 						fi
-						if [[ "${RCOMMANDSMAP[$operation]}" =~ "{TARGET_OUTPUT}" ]]; then
+						if [[ "${RCOMMANDSMAP[$operation]}" =~ "{TARGET}" ]]; then
 							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
 						fi
 

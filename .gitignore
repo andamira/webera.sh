@@ -1,2 +1,9 @@
-
 log.txt
+
+templates/
+res/
+html/
+build/
+
+.sass-cache/
+
