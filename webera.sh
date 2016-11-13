@@ -4,7 +4,7 @@
 #
 # Description: A shellscript for static website generation
 #
-# Version: 0.1.3
+# Version: 0.1.4
 # Author: José Luis Cruz
 # Repository: https://github.com/andamira/webera
 # License: MIT
@@ -62,8 +62,8 @@ OPTION_CLEAR_LOG=false
 #OPTION_DELETE_OUTPUT=false # TODO
 
 ## (PRE)PROCESSING
-
-declare -A RCOMMANDSMAP
+declare -A ARG_OPTIONS
+declare -A RCOMMANDS_MAP
 
 
 
@@ -76,7 +76,7 @@ function usage {
 	printf "MAIN FLAGS\n"
 	printf "\t-t\t\tdo process all templates\n"
 	printf "\t-r\t\tdo process all resources\n"
-	printf "\t-w\t\topen website in browser\n"
+	printf "\t-w\t\topen website in web browser\n"
 	printf "\nOPTIONAL\n"
 	printf "\t-C <FILE>\tconfiguration file (%s)\n" $FILE_CONFIG
 	printf "\t-T <DIR>\ttemplates directory (%s)\n" "$DIR_TEMPLATES"
@@ -238,8 +238,8 @@ function templateRender {
 }
 
 
-# GET OPTIONS
-# ###########
+# READ ARGUMENTS
+# ##############
 
 while getopts ':trwlL:C:E:O:W:h:' OPTION; do
 	case "$OPTION" in
@@ -247,14 +247,18 @@ while getopts ':trwlL:C:E:O:W:h:' OPTION; do
 		r) OPERATIONAL=true; OPTION_PROCESS_RESOURCES=true ;;
 		w) OPERATIONAL=true; OPTION_LOAD_IN_WEB_BROWSER=true ;;
 
-		l) OPTION_CLEAR_LOG=true ;;
-		L) OPTION_LOG_LEVEL="$OPTARG" ;;
-
 		C) FILE_CONFIG="$OPTARG" ;;
-		E) DIR_RESOURCES="$OPTARG" ;;
-		O) DIR_OUTPUT="$OPTARG" ;;
 
-		W) WEB_BROWSER_BIN="$OPTARG" ;;
+		# The following options can also be defined in $FILE_CONFIG, but
+		# passing them as arguments to the script has a higher priority.
+
+		l) ARG_OPTIONS[OPTION_CLEAR_LOG]=true ;;
+		L) ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
+
+		E) ARG_OPTIONS[DIR_RESOURCES]="$OPTARG" ;;
+		O) ARG_OPTIONS[DIR_OUTPUT]="$OPTARG" ;;
+
+		W) ARG_OPTIONS[WEB_BROWSER_BIN]="$OPTARG" ;;
 
 		h|*) usage ;;
 	esac
@@ -262,11 +266,7 @@ done
 shift $((OPTIND-1))
 
 
-if [ $OPERATIONAL == false ]; then
-	printf "You must use at least one main flag\n\n"
-	usage
-	exit
-fi
+# READ CONFIGURATION FROM FILE
 
 if [ -f "$FILE_CONFIG" ]; then
 	CONFIG="$(cat $FILE_CONFIG | grep -ve '^$' | grep -v '^#')"
@@ -276,12 +276,6 @@ else
 fi
 
 
-# START LOG
-
-if [ $OPTION_CLEAR_LOG == true ]; then rm $FILE_LOG 2>/dev/null; fi
-log "\n===============[$(date '+%Y-%m-%d %H:%M:%S')]==============${OPTION_LOG_LEVEL}" 1
-
-
 # CONFIGURE SETTINGS
 # ##################
 
@@ -289,7 +283,8 @@ log "\n===============[$(date '+%Y-%m-%d %H:%M:%S')]==============${OPTION_LOG_L
 SETTINGS="$(echo "$CONFIG" | grep '^[[:space:]]*config:')"
 
 if [ "$SETTINGS" ]; then
-	log "Configuring settings...\n====================" 1
+	# TODO.FIXME.X1: write to a log cache before knowing the log settings
+#	log "Configuring settings...\n====================" 1
 
 	OLDIFS="$IFS"; IFS=$'\n'
 	for S in $SETTINGS; do
@@ -299,12 +294,32 @@ if [ "$SETTINGS" ]; then
 
 		setting_previous_value=${!setting_name}
 
-		log "\tsetting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
+#		log "\tsetting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
 
 		# NOTE: There're currently no checks. Any global variable can be (re)assigned.
 		printf -v $setting_name "$setting_value"
 	done
 fi
+
+# Override any file settings with the script arguments
+for OPT in "${!ARG_OPTIONS[@]}"; do
+	printf -v ${OPT} "${ARG_OPTIONS[$OPT]}"
+done
+
+
+# CHECK
+if [ $OPERATIONAL == false ]; then
+	printf "You must use at least one of the MAIN FLAGS in order to run the script\n\n"
+	usage
+	exit
+fi
+
+# START LOG
+
+if [ $OPTION_CLEAR_LOG == true ]; then rm $FILE_LOG 2>/dev/null; fi
+log "\n===============[$(date '+%Y-%m-%d %H:%M:%S')]==============${OPTION_LOG_LEVEL}" 1
+
+# TODO.FIXME.X1: write the log cache; get the date before
 
 
 # PROCESS RESOURCES
@@ -329,7 +344,7 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 			rcmdname=$(echo "$C" | cut -d':' -f2 )
 			rcommand=$(echo "$C" | cut -d':' -f3- )
 
-			RCOMMANDSMAP[$rcmdname]=$rcommand
+			RCOMMANDS_MAP[$rcmdname]=$rcommand
 
 			log "\t$rcmdname='$rcommand'" 2
 		done
@@ -373,20 +388,20 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 					;;
 				*)
 					# custom command?
-					if [ "${RCOMMANDSMAP[$operation]}" ]; then
+					if [ "${RCOMMANDS_MAP[$operation]}" ]; then
 
 						# TODO: move up to add support for these tags in built-in commands
-						CMD=$(echo ${RCOMMANDSMAP[$operation]} \
+						CMD=$(echo ${RCOMMANDS_MAP[$operation]} \
 							| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
 							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
 							| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
 						)
 
 						# Create target paths
-						if [[ "${RCOMMANDSMAP[$operation]}" =~ "{BUILD}" ]]; then
+						if [[ "${RCOMMANDS_MAP[$operation]}" =~ "{BUILD}" ]]; then
 							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
 						fi
-						if [[ "${RCOMMANDSMAP[$operation]}" =~ "{TARGET}" ]]; then
+						if [[ "${RCOMMANDS_MAP[$operation]}" =~ "{TARGET}" ]]; then
 							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
 						fi
 

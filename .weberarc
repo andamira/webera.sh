@@ -1,9 +1,15 @@
-## TODO: Override the Defaults
+## Override the Default Settings
 ################################################################
 #
 # config:DIR_TEMPLATES:templates
 # config:DIR_RESOURCES:res
+# config:DIR_BUILD:build
 # config:DIR_OUTPUT:html
+# config:WEB_BROWSER_BIN:google-chrome
+# config:SERVER_PORT:8192
+# config:FILE_LOG:log.txt
+# config:OPTION_CLEAR_LOG:false
+
 
 
 ## CUSTOM COMMANDS
