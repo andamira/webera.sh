@@ -5,10 +5,34 @@
 # config:DIR_RESOURCES:res
 # config:DIR_BUILD:build
 # config:DIR_OUTPUT:html
-# config:WEB_BROWSER_BIN:google-chrome
+#
+#
+## Delete the output & build folders before starting to write on them
+##
+# config:OPTION_DELETE_DIR_BUILD:true
+# config:OPTION_DELETE_DIR_OUTPUT:true
+#
+#
+## Web Browser Command & Server Port
+##
+## e.g.: google-chrome, chromium-browser, opera
+##
+# config:WEB_BROWSER_BIN:firefox
 # config:SERVER_PORT:8192
+#
+#
+## Custom HTTP Server start/stop commands
+##
+# config:SERVER_START:
+# config:SERVER_STOP:
+#
+#
+## Logging
+##
 # config:FILE_LOG:log.txt
+# config:OPTION_LOG_LEVEL:0
 # config:OPTION_CLEAR_LOG:false
+#
 
 
 
@@ -71,29 +95,14 @@ page:index.html:/
 
 
 
-## TODO: POSTS
+## PAGES
 ################################################################
 #
 # Format:
-#   post:<name>:<dir>
-#   post-single:<name><dir><template>:<slug-format>
-#   post-archive:<name><template>:<slug>:<sort-by>
+#   page:<template>:<slug>
 #
-#
-#   slug-format
-#     {Y}  year
-#     {M}  month
-#     {D}  day
-#     {h}  hour
-#     {m}  minute
-#
-#   sort-by
-#     DATE (-ASC|-DESC)
-#     FILENAME (-ASC|-DESC)
 
-#post:define:blog:posts/blog/
-#post:single:blog:blog-post.html:blog/{Y}/{M}/{FILENAME}
-#post:archive:blog:blog-archive.html:blog/:DATE-DESC
+page:index.html:/
+#page:contact.html:/contact
 
-#post:portfolio:posts/portfolio:
 

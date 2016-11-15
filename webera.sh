@@ -4,7 +4,7 @@
 #
 # Description: A shellscript for static website generation
 #
-# Version: 0.1.4
+# Version: 0.1.5
 # Author: José Luis Cruz
 # Repository: https://github.com/andamira/webera
 # License: MIT
@@ -17,60 +17,68 @@
 #
 
 
-# GLOBALS
-# =======
+# GLOBAL
+# =============================================================================
 #
 
-## PATHS
-# (Paths are by default relative to the current working folder)
+## SETTINGS
+# ----------
 
+# PATHS
 DIR_TEMPLATES=templates
 DIR_RESOURCES=res
 DIR_BUILD=build
 DIR_OUTPUT=html
 
 FILE_CONFIG=.weberarc
-FILE_LOG=log.txt
 
-## TESTING
-
-OPTION_LOG_LEVEL=0 # 0 = no logging | 1 | 2 | 3
-
+# Web Browser
 WEB_BROWSER_BIN="firefox" # | chromium-browser | google-chrome | opera | elinks | ...
 SERVER_PORT="8192"
 
 # Server with Python
-#
 START_SERVER="pushd $DIR_OUTPUT; python -m SimpleHTTPServer $SERVER_PORT"
 STOP_SERVER="kill \$(pgrep -f \"python -m SimpleHTTPServer\")"
 #
 # Server with PHP
-#
 #START_SERVER="php -S localhost:$SERVER_PORT -t $DIR_OUTPUT"
 #STOP_SERVER="kill \$(pgrep -f \"php -S localhost\")"
+
+# Log
+FILE_LOG=log.txt
+OPTION_LOG_LEVEL=0 # 0 = no logging | 1 | 2 | 3
+OPTION_CLEAR_LOG=false
+
+# Delete output & build directories
+OPTION_DELETE_DIR_OUTPUT=true
+OPTION_DELETE_DIR_BUILD=true
+
+
+## INTERNALS
+# -----------
+
+OPERATIONAL=false
+
+OPTION_PROCESS_TEMPLATES=false
+OPTION_PROCESS_RESOURCES=false
+OPTION_LOAD_IN_WEB_BROWSER=false
+
+# (PRE)PROCESSING
+declare -A ARG_OPTIONS
+declare -A RCOMMANDS_MAP
+
+TMP_CONFIG=""
 
 NESTING_LEVEL=0
 NESTING_MAX=8
 
-## OPTIONS
-
-OPERATIONAL=false
-OPTION_PROCESS_TEMPLATES=false
-OPTION_PROCESS_RESOURCES=false
-OPTION_LOAD_IN_WEB_BROWSER=false
-OPTION_CLEAR_LOG=false
-#OPTION_DELETE_OUTPUT=false # TODO
-
-## (PRE)PROCESSING
-declare -A ARG_OPTIONS
-declare -A RCOMMANDS_MAP
-
-
 
 # FUNCTIONS
-# =========
+# =============================================================================
 #
 
+# usage
+#
 function usage {
 	printf "Usage:\t./webera.sh -trb [ARGS]\n\n"
 	printf "MAIN FLAGS\n"
@@ -83,8 +91,6 @@ function usage {
 	printf "\t-E <DIR>\tresources directory (%s)\n" "$DIR_RESOURCES"
 	printf "\t-O <DIR>\toutput directory (%s)\n" "$DIR_OUTPUT"
 	echo
-	#printf "\t-d <DIR>\tdelete output directory (%s)\n" "$OPTION_DELETE_OUTPUT/" # TODO
-
 	printf "\t-W <BIN>\tweb browser binary (%s)\n" "$WEB_BROWSER_BIN"
 	printf "\t-L <NUMBER>\tlog level [0=don't|1|2|3] (%s)\n" "$OPTION_LOG_LEVEL"
 	printf "\t-G <FILE>\tlogfile (%s)\n" "$FILE_LOG"
@@ -97,14 +103,49 @@ function usage {
 # $1 = message
 # $2 = minimum log level needed to show the message
 function log {
+	local LOG_LEVEL_MIN=1
+	local LOG_LEVEL_MAX=3
+
 	if [[ -z $2 || ( "$2" -lt "1"  ) ]]; then
-		LOG_LEVEL=1 # default minimum threshold
+		LOG_LEVEL=$LOG_LEVEL_MIN
 	else
-		LOG_LEVEL=$2
+		if [[ "$LOG_LEVEL" -gt "$LOG_LEVEL_MAX" ]]; then
+			LOG_LEVEL=$LOG_LEVEL_MAX
+		else
+			LOG_LEVEL=$2
+		fi
 	fi
 
 	if [ $LOG_LEVEL -le $OPTION_LOG_LEVEL ]; then
     	echo -e "$1" >> $FILE_LOG
+	fi
+}
+
+# readConfig
+#
+# $1 = config file
+# $2 = output variable
+#
+function readConfig {
+	local FILE=$1
+
+	if [ -f "$1" ]; then
+		# Clean input
+		#   1. remove empty lines
+		#   2. remove comments
+		#   3. join lines ending with backslash `\`
+		printf -v "$2" "$(cat $FILE | \
+			grep -ve '^$' | \
+			grep -v '::space::*^#' | \
+			sed ':x; /\\$/ { N; s/\\\n//; tx }' \
+		)\n"
+	else
+		if [ "$FILE" == "$FILE_CONFIG" ]; then
+			printf "ERROR: Configuration file '%s' doesn't exist.\n" "$FILE_CONFIG"
+			exit 3
+		else
+			log "file '$1' doesn't exist" 3 warn
+		fi
 	fi
 }
 
@@ -238,6 +279,10 @@ function templateRender {
 }
 
 
+# PROCESS
+# =============================================================================
+#
+
 # READ ARGUMENTS
 # ##############
 
@@ -267,13 +312,18 @@ shift $((OPTIND-1))
 
 
 # READ CONFIGURATION FROM FILE
+# ############################
 
-if [ -f "$FILE_CONFIG" ]; then
-	CONFIG="$(cat $FILE_CONFIG | grep -ve '^$' | grep -v '^#')"
-else
-	printf "ERROR: Configuration file '%s' doesn't exist.\n" "$FILE_CONFIG"
-	exit 3
-fi
+# Firstly load config from /etc/
+readConfig "/etc/weberarc" "CONFIG"
+
+# Secondly load config from $HOME
+readConfig "$HOME/.weberarc" "TMP_CONFIG"
+CONFIG="${CONFIG}${TMP_CONFIG}"
+
+# Thirdly load config from the current project
+readConfig "$FILE_CONFIG" "TMP_CONFIG"
+CONFIG="${CONFIG}${TMP_CONFIG}"
 
 
 # CONFIGURE SETTINGS
@@ -283,7 +333,6 @@ fi
 SETTINGS="$(echo "$CONFIG" | grep '^[[:space:]]*config:')"
 
 if [ "$SETTINGS" ]; then
-	# TODO.FIXME.X1: write to a log cache before knowing the log settings
 #	log "Configuring settings...\n====================" 1
 
 	OLDIFS="$IFS"; IFS=$'\n'
@@ -307,7 +356,6 @@ for OPT in "${!ARG_OPTIONS[@]}"; do
 done
 
 
-# CHECK
 if [ $OPERATIONAL == false ]; then
 	printf "You must use at least one of the MAIN FLAGS in order to run the script\n\n"
 	usage
@@ -315,11 +363,24 @@ if [ $OPERATIONAL == false ]; then
 fi
 
 # START LOG
-
 if [ $OPTION_CLEAR_LOG == true ]; then rm $FILE_LOG 2>/dev/null; fi
 log "\n===============[$(date '+%Y-%m-%d %H:%M:%S')]==============${OPTION_LOG_LEVEL}" 1
 
-# TODO.FIXME.X1: write the log cache; get the date before
+
+# DELETE DIRECTORIES
+# ##################
+
+if [[ $OPTION_DELETE_DIR_BUILD ]]; then
+	rm -r "$DIR_BUILD"
+fi
+
+if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
+		$OPTION_PROCESS_RESOURCES == true || \
+		$OPTION_PROCESS_TEMPLATES == true \
+	) ]]; then
+
+	rm -r "$DIR_OUTPUT"
+fi
 
 
 # PROCESS RESOURCES
