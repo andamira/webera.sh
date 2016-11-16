@@ -1,10 +1,20 @@
+## WEBERA CONFIG FILE
+##
+
 ## Override the Default Settings
 ################################################################
+##
+## You can also save your config options in /etc/weberarc and
+## $HOME/.weberarc but know that they will get overriden by the
+## config options set up in the config file of the project.
+##
 #
+## Paths
+##
 # config:DIR_TEMPLATES:templates
 # config:DIR_RESOURCES:res
 # config:DIR_BUILD:build
-# config:DIR_OUTPUT:html
+# config:DIR_OUTPUT:out
 #
 #
 ## Delete the output & build folders before starting to write on them
@@ -51,7 +61,7 @@
 #    ---             -----------     -----------
 #   {ORIGIN}         res/            (the RESOURCES directory)
 #   {BUILD}          build/          (the BUILD directory)
-#   {TARGET}         html/res/       (the OUTPUT/RESOURCES directory)
+#   {TARGET}         out/res/        (the OUTPUT/RESOURCES directory)
 #
 # Built-in commands:
 #   copy              Copy a file or a directory (recursively)

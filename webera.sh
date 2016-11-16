@@ -4,7 +4,7 @@
 #
 # Description: A shellscript for static website generation
 #
-# Version: 0.1.5
+# Version: 0.1.6
 # Author: José Luis Cruz
 # Repository: https://github.com/andamira/webera
 # License: MIT
@@ -28,7 +28,7 @@
 DIR_TEMPLATES=templates
 DIR_RESOURCES=res
 DIR_BUILD=build
-DIR_OUTPUT=html
+DIR_OUTPUT=out
 
 FILE_CONFIG=.weberarc
 
@@ -80,21 +80,27 @@ NESTING_MAX=8
 # usage
 #
 function usage {
-	printf "Usage:\t./webera.sh -trb [ARGS]\n\n"
+	printf "Usage:\t./webera.sh -trw [ARGS]\n\n"
 	printf "MAIN FLAGS\n"
 	printf "\t-t\t\tdo process all templates\n"
 	printf "\t-r\t\tdo process all resources\n"
-	printf "\t-w\t\topen website in web browser\n"
+	printf "\t-w\t\tpreview in web browser\n"
+
 	printf "\nOPTIONAL\n"
 	printf "\t-C <FILE>\tconfiguration file (%s)\n" $FILE_CONFIG
+	echo
 	printf "\t-T <DIR>\ttemplates directory (%s)\n" "$DIR_TEMPLATES"
 	printf "\t-E <DIR>\tresources directory (%s)\n" "$DIR_RESOURCES"
+	printf "\t-B <DIR>\tbuild directory (%s)\n" "$DIR_BUILD"
 	printf "\t-O <DIR>\toutput directory (%s)\n" "$DIR_OUTPUT"
 	echo
-	printf "\t-W <BIN>\tweb browser binary (%s)\n" "$WEB_BROWSER_BIN"
-	printf "\t-L <NUMBER>\tlog level [0=don't|1|2|3] (%s)\n" "$OPTION_LOG_LEVEL"
+	printf "\t-L <NUMBER>\tlog level [0=none|1|2|3] (%s)\n" "$OPTION_LOG_LEVEL"
 	printf "\t-G <FILE>\tlogfile (%s)\n" "$FILE_LOG"
-	printf "\t-l\t\tclear log (%s)\n" "$OPTION_CLEAR_LOG"
+	printf "\t-W <BIN>\tweb browser binary (%s)\n" "$WEB_BROWSER_BIN"
+
+	printf "\nFILE CONFIG\n"
+	printf "\tYou can set these and more options in $FILE_CONFIG.\n"
+
 	exit 1
 }
 
@@ -297,7 +303,6 @@ while getopts ':trwlL:C:E:O:W:h:' OPTION; do
 		# The following options can also be defined in $FILE_CONFIG, but
 		# passing them as arguments to the script has a higher priority.
 
-		l) ARG_OPTIONS[OPTION_CLEAR_LOG]=true ;;
 		L) ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
 
 		E) ARG_OPTIONS[DIR_RESOURCES]="$OPTARG" ;;
@@ -357,7 +362,7 @@ done
 
 
 if [ $OPERATIONAL == false ]; then
-	printf "You must use at least one of the MAIN FLAGS in order to run the script\n\n"
+	printf "In order to run the script, you must use at least one MAIN FLAG.\n\n"
 	usage
 	exit
 fi
@@ -371,7 +376,7 @@ log "\n===============[$(date '+%Y-%m-%d %H:%M:%S')]==============${OPTION_LOG_L
 # ##################
 
 if [[ $OPTION_DELETE_DIR_BUILD ]]; then
-	rm -r "$DIR_BUILD"
+	rm -r "$DIR_BUILD" 2>/dev/null
 fi
 
 if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
@@ -379,7 +384,7 @@ if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
 		$OPTION_PROCESS_TEMPLATES == true \
 	) ]]; then
 
-	rm -r "$DIR_OUTPUT"
+	rm -r "$DIR_OUTPUT" 2/dev/null
 fi
 
 
