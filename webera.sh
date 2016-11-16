@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
 #
-# webera
+## webera
 #
-# Description: A shellscript for static website generation
-#
-# Version: 0.1.6
-# Author: José Luis Cruz
+# Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
+# Description: A versatile static website generator made in Bash
+# Version: 0.1.7
 # License: MIT
-# Originally Inspired by: https://gist.github.com/plugnburn/c2f7cc3807e8934b179e
 #
-# Dependencies: bash 4, grep -P, sed
-# Optional Dependencies:
-#   - python | php (for their built-in web server)
-#   - firefox | chromium-browser | google-chrome | opera | ... (any browser)
+## Dependencies:
 #
+#   bash (>4), grep (with PCRE support), sed
+#
+## Optional Dependencies:
+#
+#   python | php (to use their built-in web server)
+#
+#
+# Originally Inspired by Statix
+#   https://gist.github.com/plugnburn/c2f7cc3807e8934b179e
+##
 
 
 # GLOBAL
@@ -35,14 +40,7 @@ FILE_CONFIG=.weberarc
 # Web Browser
 WEB_BROWSER_BIN="firefox" # | chromium-browser | google-chrome | opera | elinks | ...
 SERVER_PORT="8192"
-
-# Server with Python
-START_SERVER="pushd $DIR_OUTPUT; python -m SimpleHTTPServer $SERVER_PORT"
-STOP_SERVER="kill \$(pgrep -f \"python -m SimpleHTTPServer\")"
-#
-# Server with PHP
-#START_SERVER="php -S localhost:$SERVER_PORT -t $DIR_OUTPUT"
-#STOP_SERVER="kill \$(pgrep -f \"php -S localhost\")"
+SERVER_TYPE="python"
 
 # Log
 FILE_LOG=log.txt
@@ -125,6 +123,35 @@ function log {
 	if [ $LOG_LEVEL -le $OPTION_LOG_LEVEL ]; then
     	echo -e "$1" >> $FILE_LOG
 	fi
+}
+
+# server
+#
+# $1 = type of server
+#
+function serverSetup {
+
+	type=$2
+
+	case $SERVER_TYPE in
+		python)
+			START_SERVER="pushd $DIR_OUTPUT; python -m SimpleHTTPServer $SERVER_PORT"
+			STOP_SERVER="kill \$(pgrep -f \"python -m SimpleHTTPServer\")"
+			;;
+		php)
+			START_SERVER="php -S localhost:$SERVER_PORT -t $DIR_OUTPUT"
+			STOP_SERVER="kill \$(pgrep -f \"php -S localhost\")"
+			;;
+		none)
+			START_SERVER=""
+			STOP_SERVER=""
+			;;
+		*)
+			log "Not recognized SERVER_TYPE='$SERVER_TYPE'" 2 warn
+			START_SERVER=""
+			STOP_SERVER=""
+			;;
+	esac
 }
 
 # readConfig
@@ -372,6 +399,10 @@ if [ $OPTION_CLEAR_LOG == true ]; then rm $FILE_LOG 2>/dev/null; fi
 log "\n===============[$(date '+%Y-%m-%d %H:%M:%S')]==============${OPTION_LOG_LEVEL}" 1
 
 
+# SETUP SERVER
+serverSetup
+
+
 # DELETE DIRECTORIES
 # ##################
 
@@ -384,7 +415,7 @@ if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
 		$OPTION_PROCESS_TEMPLATES == true \
 	) ]]; then
 
-	rm -r "$DIR_OUTPUT" 2/dev/null
+	rm -r "$DIR_OUTPUT" 2>/dev/null
 fi
 
 
@@ -533,7 +564,14 @@ log "Done." 1
 # ############
 
 if [ $OPTION_LOAD_IN_WEB_BROWSER == true ]; then
-	echo -e "Loading website in '$WEB_BROWSER_BIN'... (Use CTRL+C to stop the web server)"
+
+	printf "Loading website in '$WEB_BROWSER_BIN'..."
+
+	if [ ! -z "$START_SERVER" ]; then
+		printf " (Use CTRL+C to stop the web server)\n"
+	else
+		echo
+	fi
 
 	RUN_BROWSER="$WEB_BROWSER_BIN http://localhost:$SERVER_PORT &"
 
@@ -544,7 +582,7 @@ if [ $OPTION_LOAD_IN_WEB_BROWSER == true ]; then
 			;;
 		1)
 			# hide errors
-			REDIR_CLI_OUTPUT="2> /dev/null"
+			REDIR_CLI_OUTPUT="2>/dev/null"
 			;;
 		*)
 			# output everything
@@ -553,6 +591,8 @@ if [ $OPTION_LOAD_IN_WEB_BROWSER == true ]; then
 	esac
 
 	sleep 1s && eval $RUN_BROWSER > /dev/null 2>&1
-	eval "$STOP_SERVER $REDIR_CLI_OUTPUT"; eval "$START_SERVER $REDIR_CLI_OUTPUT"
-fi
 
+	if [ ! -z "$START_SERVER" ]; then
+		eval "$STOP_SERVER $REDIR_CLI_OUTPUT"; eval "$START_SERVER $REDIR_CLI_OUTPUT"
+	fi
+fi

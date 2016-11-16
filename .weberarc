@@ -1,48 +1,53 @@
 ## WEBERA CONFIG FILE
 ##
 
-## Override the Default Settings
+## CONFIGURABLE OPTIONS
 ################################################################
-##
-## You can also save your config options in /etc/weberarc and
-## $HOME/.weberarc but know that they will get overriden by the
-## config options set up in the config file of the project.
-##
 #
+# You can also save your config options in /etc/weberarc and
+# $HOME/.weberarc but know that they will get overriden by the
+# config options set up in the config file of the project.
+#
+
 ## Paths
-##
+#
 # config:DIR_TEMPLATES:templates
 # config:DIR_RESOURCES:res
 # config:DIR_BUILD:build
 # config:DIR_OUTPUT:out
-#
-#
+
+
 ## Delete the output & build folders before starting to write on them
-##
+#
 # config:OPTION_DELETE_DIR_BUILD:true
 # config:OPTION_DELETE_DIR_OUTPUT:true
+
+
+## Web Browser & Server
 #
+# You can use any browser in your system:
+#   firefox | google-chrome | opera | ...
 #
-## Web Browser Command & Server Port
-##
-## e.g.: google-chrome, chromium-browser, opera
-##
+# You can use any supported server type:
+#   python | php | none | custom
+#
 # config:WEB_BROWSER_BIN:firefox
 # config:SERVER_PORT:8192
-#
-#
+# config:SERVER_TYPE:python
+
+
 ## Custom HTTP Server start/stop commands
-##
+#
+# config:SERVER_TYPE:custom
 # config:SERVER_START:
 # config:SERVER_STOP:
-#
-#
+
+
 ## Logging
-##
+#
 # config:FILE_LOG:log.txt
 # config:OPTION_LOG_LEVEL:0
 # config:OPTION_CLEAR_LOG:false
-#
 
 
 
