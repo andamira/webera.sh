@@ -5,7 +5,7 @@
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
 # Description: A versatile static website generator made in Bash
-# Version: 0.1.7
+# Version: 0.1.8
 # License: MIT
 #
 ## Dependencies:
@@ -92,12 +92,15 @@ function usage {
 	printf "\t-B <DIR>\tbuild directory (%s)\n" "$DIR_BUILD"
 	printf "\t-O <DIR>\toutput directory (%s)\n" "$DIR_OUTPUT"
 	echo
+	printf "\t-d\t\t(don't) delete the output directory (%s)\n" "delete=$OPTION_DELETE_DIR_OUTPUT"
+
+	echo
 	printf "\t-L <NUMBER>\tlog level [0=none|1|2|3] (%s)\n" "$OPTION_LOG_LEVEL"
-	printf "\t-G <FILE>\tlogfile (%s)\n" "$FILE_LOG"
+	printf "\t-G <FILE>\tlog file (%s)\n" "$FILE_LOG"
 	printf "\t-W <BIN>\tweb browser binary (%s)\n" "$WEB_BROWSER_BIN"
 
 	printf "\nFILE CONFIG\n"
-	printf "\tYou can set these and more options in $FILE_CONFIG.\n"
+	printf "\tYou can set all these options, and more, in $FILE_CONFIG.\n"
 
 	exit 1
 }
@@ -319,7 +322,7 @@ function templateRender {
 # READ ARGUMENTS
 # ##############
 
-while getopts ':trwlL:C:E:O:W:h:' OPTION; do
+while getopts ':trwC:T:E:B:O:dL:G:W:h:' OPTION; do
 	case "$OPTION" in
 		t) OPERATIONAL=true; OPTION_PROCESS_TEMPLATES=true ;;
 		r) OPERATIONAL=true; OPTION_PROCESS_RESOURCES=true ;;
@@ -330,10 +333,15 @@ while getopts ':trwlL:C:E:O:W:h:' OPTION; do
 		# The following options can also be defined in $FILE_CONFIG, but
 		# passing them as arguments to the script has a higher priority.
 
-		L) ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
-
+		T) ARG_OPTIONS[DIR_TEMPLATES]="$OPTARG" ;;
 		E) ARG_OPTIONS[DIR_RESOURCES]="$OPTARG" ;;
+		B) ARG_OPTIONS[DIR_BUILD]="$OPTARG" ;;
 		O) ARG_OPTIONS[DIR_OUTPUT]="$OPTARG" ;;
+
+		d) ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]="$OPTARG" ;;
+
+		L) ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
+		G) ARG_OPTIONS[FILE_LOG]="$OPTARG" ;;
 
 		W) ARG_OPTIONS[WEB_BROWSER_BIN]="$OPTARG" ;;
 

@@ -46,7 +46,7 @@ All the important default settings, files and directories can be overriden eithe
 </tr>
 
 <tr>
-<td><code>./webera.sh -trw -W chromium-browser</code></td>
+<td><code>./webera.sh -trw -W vivaldi</code></td>
 <td>Process templates and resources, and preview using custom bro<b>W</b>ser</td>
 </tr>
 
