@@ -1,9 +1,9 @@
 log.txt
 
-templates/
-res/
-html/
-build/
+/out
+/res
+/build
+/templates
 
 .sass-cache/
 
