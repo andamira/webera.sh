@@ -5,7 +5,7 @@
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
 # Description: A versatile static website generator made in Bash
-# Version: 0.1.9
+# Version: 0.1.10
 # License: MIT
 #
 ## Dependencies:
@@ -69,6 +69,12 @@ TMP_CONFIG=""
 
 NESTING_LEVEL=0
 NESTING_MAX=8
+
+# reusable regexp patterns
+WS="[[:space:]]" # whitespace
+SED_DEL_SPACE_LEADTRAIL="s/^$WS*//;s/$WS*$//" # delete leading/trailing whitespace
+SED_DEL_COMMENT_EMPTYLINE="s/^$WS*#.*//;s/^$WS*$//" # remove comments & empty lines
+SED_JOIN_SPLITLINE=':x; /\\$/ { N; s/\\\n//; tx }' # join lines ending in backslash
 
 
 # FUNCTIONS
@@ -166,14 +172,10 @@ function readConfig {
 	local FILE=$1
 
 	if [ -f "$1" ]; then
-		# Clean input
-		#   1. remove empty lines
-		#   2. remove comments
-		#   3. join lines ending with backslash `\`
 		printf -v "$2" "$(cat $FILE | \
-			grep -ve '^$' | \
-			grep -v '::space::*^#' | \
-			sed ':x; /\\$/ { N; s/\\\n//; tx }' \
+			sed -e "$SED_DEL_SPACE_LEADTRAIL" | \
+			sed -e "$SED_DEL_COMMENT_EMPTYLINE" | \
+			sed -e "$SED_JOIN_SPLITLINE" \
 		)\n"
 	else
 		if [ "$FILE" == "$FILE_CONFIG" ]; then
@@ -370,7 +372,7 @@ CONFIG="${CONFIG}${TMP_CONFIG}"
 # ##################
 
 # Parse the commands for processing resources
-SETTINGS="$(echo "$CONFIG" | grep '^[[:space:]]*config:')"
+SETTINGS="$(echo "$CONFIG" | grep ^$WS*config$WS*: )"
 
 if [ "$SETTINGS" ]; then
 #	log "Configuring settings...\n====================" 1
@@ -378,9 +380,8 @@ if [ "$SETTINGS" ]; then
 	OLDIFS="$IFS"; IFS=$'\n'
 	for S in $SETTINGS; do
 
-		setting_name=$(echo "$S" | cut -d':' -f2 )
-		setting_value=$(echo "$S" | cut -d':' -f3 )
-
+		setting_name=$(echo "$S" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL")
+		setting_value=$(echo "$S" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL")
 		setting_previous_value=${!setting_name}
 
 #		log "\tsetting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
@@ -437,7 +438,7 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 	if [ -d "$DIR_RESOURCES" ]; then
 
 		# Parse the commands for processing resources
-		RCOMMANDS="$(echo "$CONFIG" | grep '^[[:space:]]*rcommand:')"
+		RCOMMANDS="$(echo "$CONFIG" | grep ^$WS*rcommand$WS*: )"
 
 		if [ "$RCOMMANDS" ]; then
 			log "Parsing rcommands..." 1
@@ -446,8 +447,8 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 		OLDIFS="$IFS"; IFS=$'\n'
 		for C in $RCOMMANDS; do
 
-			rcmdname=$(echo "$C" | cut -d':' -f2 )
-			rcommand=$(echo "$C" | cut -d':' -f3- )
+			rcmdname=$(echo "$C" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			rcommand=$(echo "$C" | cut -d':' -f3- | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
 
 			RCOMMANDS_MAP[$rcmdname]=$rcommand
 
@@ -456,7 +457,7 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 		IFS="$OLDIFS"
 
 
-		RESOURCES="$(echo "$CONFIG" | grep '^[[:space:]]*resource:')"
+		RESOURCES="$(echo "$CONFIG" | grep ^$WS*resource$WS*: )"
 
 		if [ "$RESOURCES" ]; then
 			log "Processing resources..." 1
@@ -468,9 +469,9 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 			# TODO: allow optional field for custom configuration
 			# cleaner way would be to define custom tags before using them
 
-			operation=$(echo "$R" | cut -d':' -f2 )
-			fileOrigin=$(echo "$R" | cut -d':' -f3 )
-			fileTarget=$(echo "$R" | cut -d':' -f4 )
+			operation=$(echo "$R" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			fileOrigin=$(echo "$R" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			fileTarget=$(echo "$R" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
 
 			log "\t$operation: $fileOrigin > $fileTarget" 1
 
@@ -535,7 +536,7 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 
 	log "\nProcessing templates...\n====================" 1
 
-	PAGES="$(echo "$CONFIG" | grep '^[[:space:]]*page:')"
+	PAGES="$(echo "$CONFIG" | grep ^$WS*page$WS: )"
 
 	if [ "$PAGES" ]; then
 		log "Processing pages..." 1
@@ -544,8 +545,8 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 	OLDIFS="$IFS"; IFS=$'\n'
 	for P in $PAGES; do
 
-		templateName=$(echo "$P" | cut -d':' -f2 )
-		templatePath=$(echo "$P" | cut -d':' -f3 )
+		templateName=$(echo "$P" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+		templatePath=$(echo "$P" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
 
 		log "\t$templatePath ($templateName)" 1
 
@@ -556,7 +557,7 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 	done
 	IFS="$OLDIFS"
 
-	POSTS="$(echo "$CONFIG" | grep '^[[:space:]]*post:')"
+	POSTS="$(echo "$CONFIG" | grep ^$WS*post$WS: )"
 
 	# TODO
 	if [ "$POSTS" ]; then
