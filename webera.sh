@@ -5,7 +5,7 @@
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
 # Description: A versatile static website generator made in Bash
-# Version: 0.1.10
+# Version: 0.1.11
 # License: MIT
 #
 ## Dependencies:
@@ -65,16 +65,15 @@ OPTION_LOAD_IN_WEB_BROWSER=false
 declare -A ARG_OPTIONS
 declare -A RCOMMANDS_MAP
 
-TMP_CONFIG=""
-
 NESTING_LEVEL=0
 NESTING_MAX=8
 
 # reusable regexp patterns
 WS="[[:space:]]" # whitespace
 SED_DEL_SPACE_LEADTRAIL="s/^$WS*//;s/$WS*$//" # delete leading/trailing whitespace
-SED_DEL_COMMENT_EMPTYLINE="s/^$WS*#.*//;s/^$WS*$//" # remove comments & empty lines
-SED_JOIN_SPLITLINE=':x; /\\$/ { N; s/\\\n//; tx }' # join lines ending in backslash
+SED_DEL_COMMENTS="/^$WS*#.*/d" # remove comments
+SED_DEL_EMPTYLINES="/^$WS*$/d" # delete empty lines
+SED_JOIN_SPLITLINES=':x; /\\$/ { N; s/\\\n//; tx }' # join lines ending in backslash
 
 
 # FUNCTIONS
@@ -165,24 +164,24 @@ function serverSetup {
 
 # readConfig
 #
-# $1 = config file
-# $2 = output variable
+# $1 = config file to read
 #
 function readConfig {
 	local FILE=$1
 
 	if [ -f "$1" ]; then
-		printf -v "$2" "$(cat $FILE | \
+		local TMPCONF="$(cat $FILE | \
 			sed -e "$SED_DEL_SPACE_LEADTRAIL" | \
-			sed -e "$SED_DEL_COMMENT_EMPTYLINE" | \
-			sed -e "$SED_JOIN_SPLITLINE" \
+			sed -e "$SED_DEL_COMMENTS" -e "$SED_DEL_EMPTYLINES" | \
+			sed -e "$SED_JOIN_SPLITLINES" \
 		)\n"
+		CONFIG="$CONFIG$TMPCONF" # append to previously read configuration
 	else
 		if [ "$FILE" == "$FILE_CONFIG" ]; then
 			printf "ERROR: Configuration file '%s' doesn't exist.\n" "$FILE_CONFIG"
 			exit 3
 		else
-			log "file '$1' doesn't exist" 3 warn
+			log "file '$FILE' doesn't exist" 3 warn
 		fi
 	fi
 }
@@ -353,19 +352,12 @@ done
 shift $((OPTIND-1))
 
 
-# READ CONFIGURATION FROM FILE
-# ############################
+# READ CONFIGURATION FROM FILES
+# #############################
 
-# Firstly load config from /etc/
-readConfig "/etc/weberarc" "CONFIG"
-
-# Secondly load config from $HOME
-readConfig "$HOME/.weberarc" "TMP_CONFIG"
-CONFIG="${CONFIG}${TMP_CONFIG}"
-
-# Thirdly load config from the current project
-readConfig "$FILE_CONFIG" "TMP_CONFIG"
-CONFIG="${CONFIG}${TMP_CONFIG}"
+readConfig "/etc/weberarc"
+readConfig "$HOME/.weberarc"
+readConfig "$FILE_CONFIG"
 
 
 # CONFIGURE SETTINGS
