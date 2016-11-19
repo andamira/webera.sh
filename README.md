@@ -16,7 +16,7 @@ A versatile static website generator made in Bash
 
 ## Quick Start
 
-At a minimum you need to associate the templates with the routes in the `.weberarc` configuration file, and create the corresponding HTML template files in the `templates/` directory.
+At a minimum you need to associate the templates with the routes in the `.weberarc` configuration file, and create the corresponding HTML template files under the `tem/` directory.
 
 You can also define some resources (e.g. css, javascript) to be processed and/or copied from the `res/` directory to the `out/res/` directory
 
@@ -36,17 +36,17 @@ All the important default settings, files and directories can be overriden eithe
 </thead><tbody>
 
 <tr>
-<td><code>./webera.sh -tr</code></td>
+<td><code>./webera -tr</code></td>
 <td>Process <b>t</b>emplates and <b>r</b>esources</td>
 </tr>
 
 <tr>
-<td><code>./webera.sh -r -O out2/ -L2</code></td>
+<td><code>./webera -r -O out2/ -L2</code></td>
 <td>Process resources to a custom <b>O</b>utput directory, and output a level 2 <b>L</b>ogfile</td>
 </tr>
 
 <tr>
-<td><code>./webera.sh -trw -W vivaldi</code></td>
+<td><code>./webera -trw -W vivaldi</code></td>
 <td>Process templates and resources, and preview using custom bro<b>W</b>ser</td>
 </tr>
 

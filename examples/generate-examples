@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-WEBERA=../../webera.sh
+WEBERA=../../webera
 DEBUG=0
 WORKDIR=$(pwd)
 
