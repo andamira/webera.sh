@@ -5,7 +5,7 @@
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
 # Description: A versatile static website generator made in Bash
-# Version: 0.1.14
+# Version: 0.1.15
 # License: MIT
 #
 ## Dependencies:
@@ -39,13 +39,13 @@ FILE_CONFIG=.weberarc
 
 # Web Browser
 WEB_BROWSER_BIN="firefox" # | chromium-browser | google-chrome | vivaldi | ...
-SERVER_PORT="8192"
 SERVER_TYPE="python"
+declare -i SERVER_PORT=8192
 
 # Log
 FILE_LOG=log.txt
 OPTION_CLEAR_LOG=false
-declare -i OPTION_LOG_LEVEL=0 # 0 = no logging | 1 | 2 | 3
+declare -i OPTION_LOG_LEVEL=0 # 0 = no log | 1 | 2 | 3
 
 # Delete output & build directories
 OPTION_DELETE_DIR_OUTPUT=true
@@ -110,6 +110,42 @@ function usage {
 	exit 1
 }
 
+# parseArgumets
+#
+# $@ = multiple arguments
+#
+function parseArguments {
+	local OPTIND OPTION
+
+	while getopts ':trwC:T:E:B:O:dL:G:W:h:' OPTION; do
+		case "$OPTION" in
+			t) OPERATIONAL=true; OPTION_PROCESS_TEMPLATES=true ;;
+			r) OPERATIONAL=true; OPTION_PROCESS_RESOURCES=true ;;
+			w) OPERATIONAL=true; OPTION_LOAD_IN_WEB_BROWSER=true ;;
+
+			C) FILE_CONFIG="$OPTARG" ;;
+
+			# The following options can also be defined in $FILE_CONFIG, but
+			# passing them as arguments to the script has a higher priority.
+
+			T) ARG_OPTIONS[DIR_TEMPLATES]="$OPTARG" ;;
+			E) ARG_OPTIONS[DIR_RESOURCES]="$OPTARG" ;;
+			B) ARG_OPTIONS[DIR_BUILD]="$OPTARG" ;;
+			O) ARG_OPTIONS[DIR_OUTPUT]="$OPTARG" ;;
+
+			d) ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]="$OPTARG" ;;
+
+			L) ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
+			G) ARG_OPTIONS[FILE_LOG]="$OPTARG" ;;
+
+			W) ARG_OPTIONS[WEB_BROWSER_BIN]="$OPTARG" ;;
+
+			h|*) usage ;;
+		esac
+	done
+	shift $((OPTIND-1))
+}
+
 # log
 #
 # $1 = message
@@ -162,6 +198,57 @@ function serverSetup {
 	esac
 }
 
+# previewWebsite
+#
+function previewWebsite {
+	printf "Loading website in '$WEB_BROWSER_BIN'..."
+
+	if [ ! -z "$START_SERVER" ]; then
+		printf " (Use CTRL+C to stop the web server)\n"
+	else
+		echo
+	fi
+
+	local RUN_BROWSER="$WEB_BROWSER_BIN http://localhost:$SERVER_PORT &"
+
+	case $OPTION_LOG_LEVEL in
+		0)
+			# no CLI output whatsoever
+			local REDIR_CLI_OUTPUT="> /dev/null 2>&1"
+			;;
+		1)
+			# hide errors
+			local REDIR_CLI_OUTPUT="2>/dev/null"
+			;;
+		*)
+			# output everything
+			local REDIR_CLI_OUTPUT=""
+			;;
+	esac
+
+	sleep 1s && eval $RUN_BROWSER > /dev/null 2>&1
+
+	if [ ! -z "$START_SERVER" ]; then
+		eval "$STOP_SERVER $REDIR_CLI_OUTPUT"; eval "$START_SERVER $REDIR_CLI_OUTPUT"
+	fi
+}
+
+# deleteDirectories
+#
+function deleteDirectories {
+	if [[ $OPTION_DELETE_DIR_BUILD ]]; then
+		rm -r "$DIR_BUILD" 2>/dev/null
+	fi
+
+	if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
+			$OPTION_PROCESS_RESOURCES == true || \
+			$OPTION_PROCESS_TEMPLATES == true \
+		) ]]; then
+
+		rm -r "$DIR_OUTPUT" 2>/dev/null
+	fi
+}
+
 # readConfig
 #
 # $1 = config file to read
@@ -183,6 +270,198 @@ function readConfig {
 		else
 			log "file '$FILE' doesn't exist" 3 warn
 		fi
+	fi
+}
+
+# configureSettings
+#
+function configureSettings {
+
+	# Parse the commands for processing resources
+	local SETTINGS="$(echo "$CONFIG" | grep ^$WS*config$WS*: )"
+
+	if [ "$SETTINGS" ]; then
+	#	log "Configuring settings...\n====================" 1
+
+		local OLDIFS="$IFS"; IFS=$'\n'
+		for S in $SETTINGS; do
+
+			local setting_name=$(echo "$S" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL")
+			local setting_value=$(echo "$S" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL")
+			local setting_previous_value=${!setting_name}
+
+	#		log "\tsetting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
+
+			# NOTE: There're currently no checks. Any global variable can be (re)assigned.
+			printf -v $setting_name "$setting_value"
+		done
+	fi
+}
+
+# defineCommands
+#
+function defineCommands {
+
+	local DEFINED_CMD="$(echo "$CONFIG" | grep ^$WS*define_cmd$WS*: )"
+
+	if [ "$DEFINED_CMD" ]; then
+		local CNUM=$(echo "$DEFINED_CMD" | wc -l )
+		log "Defining $CNUM commands..." 1
+	fi
+
+	local OLDIFS="$IFS"; IFS=$'\n'
+	for C in $DEFINED_CMD; do
+
+		local cmd_name=$(echo "$C" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+		local cmd_action=$(echo "$C" | cut -d':' -f3- | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+
+		DEFINED_CMD_MAP[$cmd_name]=$cmd_action
+
+		log "\t$cmd_name='$cmd_action'" 2
+	done
+	IFS="$OLDIFS"
+}
+
+# processResource
+#
+function processResources {
+	log "\nProcessing resources...\n====================" 1
+
+	if [ -d "$DIR_RESOURCES" ]; then
+
+		local RESOURCE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*resource$WS*: )"
+
+		if [ "$RESOURCE_CMD_LIST" ]; then
+			local RNUM=$(echo "$RESOURCE_CMD_LIST" | wc -l )
+			log "Found $RNUM operations on resources..." 1
+		fi
+
+		local OLDIFS="$IFS"; IFS=$'\n'
+		for RCMD in $RESOURCE_CMD_LIST; do
+
+			local operation=$(echo "$RCMD" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			local fileOrigin=$(echo "$RCMD" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			local fileTarget=$(echo "$RCMD" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+
+			log "\t$operation: $fileOrigin > $fileTarget" 1
+
+			if [ ! -e "$DIR_RESOURCES/$fileOrigin" ]; then
+				log "\tERROR: '$fileOrigin' don't exist" 1
+				continue # XXX do break instead?
+			fi
+
+			# built-in command for resources?
+			case "$operation" in
+				"copy")
+					# NOTE: without resources dir prefix
+					#mkdir -p $DIR_OUTPUT/$(dirname $fileTarget)
+					#cp -r $DIR_RESOURCES/$fileOrigin $DIR_OUTPUT/$fileTarget
+
+					# NOTE: with resources dir prefix
+					mkdir -p $DIR_OUTPUT/$DIR_RESOURCES/$(dirname $fileTarget)
+					cp -r "$DIR_RESOURCES/$fileOrigin" \
+						"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget"
+					;;
+				*)
+					# custom command?
+					# NOTE: paths are adapted for resources
+					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
+
+						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
+							| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
+							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
+							| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
+						)
+
+						# Create target paths
+						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
+							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
+						fi
+						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
+							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
+						fi
+
+						log "\tExecuting: $CMD" 3
+						eval $CMD # HACK dangerous
+					else
+						log "ERROR: operation '$operation' not recognized" 1
+					fi
+					;;
+			esac
+		done
+		IFS="$OLDIFS"
+	else
+		echo "No resources dir '$DIR_RESOURCES' found."
+	fi
+}
+
+# processTemplates
+#
+function processTemplates {
+	log "\nProcessing templates...\n====================" 1
+
+	if [ -d "$DIR_TEMPLATES" ]; then
+
+		local TEMPLATE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*template$WS*: )"
+
+		if [ "$TEMPLATE_CMD_LIST" ]; then
+			local TNUM=$(echo "$TEMPLATE_CMD_LIST" | wc -l )
+			log "Found $TNUM operations on templates..." 1
+		fi
+
+		local OLDIFS="$IFS"; IFS=$'\n'
+		for TCMD in $TEMPLATE_CMD_LIST; do
+
+			local operation=$(echo "$TCMD" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			local fileOrigin=$(echo "$TCMD" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			local fileTarget=$(echo "$TCMD" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+
+			log "\t$operation: $fileOrigin > $fileTarget" 1
+
+			# built-in command for templates?
+			case "$operation" in
+				"route")
+					local urlPath=$fileTarget
+
+					if [[ "$fileOrigin" && "$urlPath" ]]; then
+
+						mkdir -p "${DIR_OUTPUT}${urlPath}"
+						templateRender "$fileOrigin" > "${DIR_OUTPUT}${urlPath}/index.html"
+					else
+						log "\tERROR: missing arguments for 'template:route' command" 1
+					fi
+					;;
+
+				*)
+					# custom command?
+					# NOTE: paths are adapted for templates
+					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
+
+						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
+							| sed "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
+							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
+							| sed "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
+						)
+
+						# Create target paths
+						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
+							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
+						fi
+						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
+							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
+						fi
+
+						log "\tExecuting: $CMD" 3
+						eval $CMD # HACK dangerous
+					else
+						log "ERROR: operation '$operation' not recognized" 1
+					fi
+					;;
+			esac
+		done
+		IFS="$OLDIFS"
+	else
+		echo "No resources dir '$DIR_RESOURCES' found."
 	fi
 }
 
@@ -317,78 +596,22 @@ function templateRender {
 }
 
 
-# PROCESS
+# MAIN PROCESS
 # =============================================================================
 #
 
-# READ ARGUMENTS
-# ##############
-
-while getopts ':trwC:T:E:B:O:dL:G:W:h:' OPTION; do
-	case "$OPTION" in
-		t) OPERATIONAL=true; OPTION_PROCESS_TEMPLATES=true ;;
-		r) OPERATIONAL=true; OPTION_PROCESS_RESOURCES=true ;;
-		w) OPERATIONAL=true; OPTION_LOAD_IN_WEB_BROWSER=true ;;
-
-		C) FILE_CONFIG="$OPTARG" ;;
-
-		# The following options can also be defined in $FILE_CONFIG, but
-		# passing them as arguments to the script has a higher priority.
-
-		T) ARG_OPTIONS[DIR_TEMPLATES]="$OPTARG" ;;
-		E) ARG_OPTIONS[DIR_RESOURCES]="$OPTARG" ;;
-		B) ARG_OPTIONS[DIR_BUILD]="$OPTARG" ;;
-		O) ARG_OPTIONS[DIR_OUTPUT]="$OPTARG" ;;
-
-		d) ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]="$OPTARG" ;;
-
-		L) ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
-		G) ARG_OPTIONS[FILE_LOG]="$OPTARG" ;;
-
-		W) ARG_OPTIONS[WEB_BROWSER_BIN]="$OPTARG" ;;
-
-		h|*) usage ;;
-	esac
-done
-shift $((OPTIND-1))
-
-
-# READ CONFIGURATION FROM FILES
-# #############################
+parseArguments "$@"
 
 readConfig "/etc/weberarc"
 readConfig "$HOME/.weberarc"
 readConfig "$FILE_CONFIG"
 
-
-# CONFIGURE SETTINGS
-# ##################
-
-# Parse the commands for processing resources
-SETTINGS="$(echo "$CONFIG" | grep ^$WS*config$WS*: )"
-
-if [ "$SETTINGS" ]; then
-#	log "Configuring settings...\n====================" 1
-
-	OLDIFS="$IFS"; IFS=$'\n'
-	for S in $SETTINGS; do
-
-		setting_name=$(echo "$S" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL")
-		setting_value=$(echo "$S" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL")
-		setting_previous_value=${!setting_name}
-
-#		log "\tsetting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
-
-		# NOTE: There're currently no checks. Any global variable can be (re)assigned.
-		printf -v $setting_name "$setting_value"
-	done
-fi
+configureSettings
 
 # Override any file settings with the script arguments
 for OPT in "${!ARG_OPTIONS[@]}"; do
 	printf -v ${OPT} "${ARG_OPTIONS[$OPT]}"
 done
-
 
 if [ $OPERATIONAL == false ]; then
 	printf "In order to run the script, you must use at least one MAIN FLAG.\n\n"
@@ -396,250 +619,28 @@ if [ $OPERATIONAL == false ]; then
 	exit
 fi
 
-# START LOG
+# log setup
 if [ $OPTION_CLEAR_LOG == true ]; then rm $FILE_LOG 2>/dev/null; fi
 log "\n===============[$(date '+%Y-%m-%d %H:%M:%S')]==============${OPTION_LOG_LEVEL}" 1
 
-
-# SETUP SERVER
 serverSetup
 
+deleteDirectories
 
-# DELETE DIRECTORIES
-# ##################
-
-if [[ $OPTION_DELETE_DIR_BUILD ]]; then
-	rm -r "$DIR_BUILD" 2>/dev/null
-fi
-
-if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
-		$OPTION_PROCESS_RESOURCES == true || \
-		$OPTION_PROCESS_TEMPLATES == true \
-	) ]]; then
-
-	rm -r "$DIR_OUTPUT" 2>/dev/null
-fi
-
-
-# DEFINE COMMANDS
-# ###############
-
-DEFINED_CMD="$(echo "$CONFIG" | grep ^$WS*define_cmd$WS*: )"
-
-if [ "$DEFINED_CMD" ]; then
-	log "Defining the commands..." 1
-fi
-
-OLDIFS="$IFS"; IFS=$'\n'
-for C in $DEFINED_CMD; do
-
-	cmd_name=$(echo "$C" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-	cmd_action=$(echo "$C" | cut -d':' -f3- | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-
-	DEFINED_CMD_MAP[$cmd_name]=$cmd_action
-
-	log "\t$cmd_name='$cmd_action'" 2
-done
-IFS="$OLDIFS"
-
-
-# PROCESS RESOURCES
-# #################
+defineCommands
 
 if [ $OPTION_PROCESS_RESOURCES == true ]; then
-
-	log "Processing resources...\n====================" 1
-
-	if [ -d "$DIR_RESOURCES" ]; then
-
-		RESOURCE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*resource$WS*: )"
-
-		if [ "$RESOURCE_CMD_LIST" ]; then
-			RNUM=$(echo "$RESOURCE_CMD_LIST" | wc -l )
-			log "Found $RNUM operations on resources..." 1
-		fi
-
-		OLDIFS="$IFS"; IFS=$'\n'
-		for RCMD in $RESOURCE_CMD_LIST; do
-
-			operation=$(echo "$RCMD" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-			fileOrigin=$(echo "$RCMD" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-			fileTarget=$(echo "$RCMD" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-
-			log "\t$operation: $fileOrigin > $fileTarget" 1
-
-			if [ ! -e "$DIR_RESOURCES/$fileOrigin" ]; then
-				log "\tERROR: '$fileOrigin' don't exist" 1
-				continue # XXX do break instead?
-			fi
-
-			# built-in command for resources?
-			case "$operation" in
-				"copy")
-					# NOTE: without resources dir prefix
-					#mkdir -p $DIR_OUTPUT/$(dirname $fileTarget)
-					#cp -r $DIR_RESOURCES/$fileOrigin $DIR_OUTPUT/$fileTarget
-
-					# NOTE: with resources dir prefix
-					mkdir -p $DIR_OUTPUT/$DIR_RESOURCES/$(dirname $fileTarget)
-					cp -r "$DIR_RESOURCES/$fileOrigin" \
-						"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget"
-					;;
-				*)
-					# custom command?
-					# NOTE: paths are adapted for resources
-					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
-
-						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
-							| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
-							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
-							| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
-						)
-
-						# Create target paths
-						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
-							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
-						fi
-						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
-							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
-						fi
-
-						log "\tExecuting: $CMD" 3
-						eval $CMD # HACK dangerous
-
-					else
-						log "ERROR: operation '$operation' not recognized" 1
-					fi
-					;;
-			esac
-
-		done
-		IFS="$OLDIFS"
-
-	else
-		echo "No resources dir '$DIR_RESOURCES' found."
-	fi
+	processResources
 fi
-
-
-# PROCESS TEMPLATES
-# #################
 
 if [ $OPTION_PROCESS_TEMPLATES == true ]; then
-
-	log "\nProcessing templates...\n====================" 1
-
-	if [ -d "$DIR_TEMPLATES" ]; then
-
-		TEMPLATE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*template$WS*: )"
-
-		if [ "$TEMPLATE_CMD_LIST" ]; then
-			TNUM=$(echo "$TEMPLATE_CMD_LIST" | wc -l )
-			log "Found $TNUM operations on templates..." 1
-		fi
-
-		OLDIFS="$IFS"; IFS=$'\n'
-		for TCMD in $TEMPLATE_CMD_LIST; do
-
-			operation=$(echo "$TCMD" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-			fileOrigin=$(echo "$TCMD" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-			fileTarget=$(echo "$TCMD" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-
-			log "\t$operation: $fileOrigin > $fileTarget" 1
-
-			# built-in command for templates?
-			case "$operation" in
-				"route")
-					urlPath=$fileTarget
-
-					if [[ "$fileOrigin" && "$urlPath" ]]; then
-
-						mkdir -p "${DIR_OUTPUT}${urlPath}"
-						templateRender "$fileOrigin" > "${DIR_OUTPUT}${urlPath}/index.html"
-					else
-						log "\tERROR: missing arguments for 'template:route' command" 1
-					fi
-					;;
-
-				*)
-					# custom command?
-					# NOTE: paths are adapted for templates
-					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
-
-						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
-							| sed "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
-							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
-							| sed "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
-						)
-
-						# Create target paths
-						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
-							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
-						fi
-						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
-							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
-						fi
-
-						log "\tExecuting: $CMD" 3
-						eval $CMD # HACK dangerous
-
-					else
-						log "ERROR: operation '$operation' not recognized" 1
-					fi
-					;;
-			esac
-		done
-		IFS="$OLDIFS"
-
-		POSTS="$(echo "$CONFIG" | grep ^$WS*post$WS: )"
-
-		# TODO
-		if [ "$POSTS" ]; then
-			log "Processing posts..." 1
-		fi
-	else
-		echo "No resources dir '$DIR_RESOURCES' found."
-	fi
+	processTemplates
 fi
-
 
 log "Done." 1
 printf "Done.\n"
 
-
-# LOAD WEBSITE (RUN SERVER & BROWSER)
-# ############
-
 if [ $OPTION_LOAD_IN_WEB_BROWSER == true ]; then
-
-	printf "Loading website in '$WEB_BROWSER_BIN'..."
-
-	if [ ! -z "$START_SERVER" ]; then
-		printf " (Use CTRL+C to stop the web server)\n"
-	else
-		echo
-	fi
-
-	RUN_BROWSER="$WEB_BROWSER_BIN http://localhost:$SERVER_PORT &"
-
-	case $OPTION_LOG_LEVEL in
-		0)
-			# no CLI output whatsoever
-			REDIR_CLI_OUTPUT="> /dev/null 2>&1"
-			;;
-		1)
-			# hide errors
-			REDIR_CLI_OUTPUT="2>/dev/null"
-			;;
-		*)
-			# output everything
-			REDIR_CLI_OUTPUT=""
-			;;
-	esac
-
-	sleep 1s && eval $RUN_BROWSER > /dev/null 2>&1
-
-	if [ ! -z "$START_SERVER" ]; then
-		eval "$STOP_SERVER $REDIR_CLI_OUTPUT"; eval "$START_SERVER $REDIR_CLI_OUTPUT"
-	fi
+	previewWebsite
 fi
+
