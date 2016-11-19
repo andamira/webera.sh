@@ -54,22 +54,22 @@
 ## CUSTOM COMMANDS
 ################################################################
 #
-# Info:
-#   For processing resources
+# They can be applied both to resource: and template: operations
 #
 # Format:
-#   rcommand:<name>:<command(until EOL)>
+#   define_cmd:<name>:<command(until EOL)>
 #
 # Special Tags:
-#
-#    Tag             Default Dir     Explanation
-#    ---             -----------     -----------
-#   {ORIGIN}         res/            (the RESOURCES directory)
-#   {BUILD}          build/          (the BUILD directory)
-#   {TARGET}         out/res/        (the OUTPUT/RESOURCES directory)
+#                    directory when processing:
+#    Tag             resources       templates
+#    ---             ---------       ---------
+#   {ORIGIN}         res/            tem/
+#   {BUILD}          build/res/      build/
+#   {TARGET}         out/res/        out/
 #
 # Built-in commands:
 #   copy              Copy a file or a directory (recursively)
+#                     [resource|template]:copy:<origin>:<target>
 #
 
 # Copy commands to/from the build directory
@@ -85,41 +85,31 @@ define_cmd : sass : sass -t compact {ORIGIN} {TARGET}
 ################################################################
 #
 # Info:
-#   Remember resources are processed serially from top to bottom.
+#   Resources are processed serially, from top to bottom
 #
 # Format:
 #   resouce:<processor>:<origin>:<destination>
 #
-resource : copy : css/main.css  : css/main.css
-resource : copy : img/          : img/
-resource : copy : font/         : font/
 
-#resource:copy:css/main.css:css/main.css
-resource:copy:img/:img/
-resource:copy:font/:font/
+#resource : copy : css/main.css   : css/main.css
+#resource : copy : img/           : img/
+#resource : copy : font/          : font/
 
 
-## PAGES
+
+## TEMPLATES
 ################################################################
 #
-# Format:
-#   page:<template>:<slug>
+# Info:
+#   Templates are processed serially, from top to bottom
+#
+# Built-in commands:
+#   route             Create a route from a template file
+#                     template:route:<template_file>:<url_slug>
 #
 
-page:index.html:/
-#page:contact.html:/contact
-#page:webs.html:/webs
+#template : route : index.html     : /
+#template : route : contact.html   : /contact
 
-
-
-## ROUTING
-################################################################
-#
-# Format:
-#   template:route:<template_file>:<url_slug>
-#
-
-template : route : index.html : /
-# template : route : contact.html : /contact
 
 

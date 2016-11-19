@@ -5,7 +5,7 @@
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
 # Description: A versatile static website generator made in Bash
-# Version: 0.1.13
+# Version: 0.1.14
 # License: MIT
 #
 ## Dependencies:
@@ -38,14 +38,14 @@ DIR_OUTPUT=out
 FILE_CONFIG=.weberarc
 
 # Web Browser
-WEB_BROWSER_BIN="firefox" # | chromium-browser | google-chrome | opera | elinks | ...
+WEB_BROWSER_BIN="firefox" # | chromium-browser | google-chrome | vivaldi | ...
 SERVER_PORT="8192"
 SERVER_TYPE="python"
 
 # Log
 FILE_LOG=log.txt
-OPTION_LOG_LEVEL=0 # 0 = no logging | 1 | 2 | 3
 OPTION_CLEAR_LOG=false
+declare -i OPTION_LOG_LEVEL=0 # 0 = no logging | 1 | 2 | 3
 
 # Delete output & build directories
 OPTION_DELETE_DIR_OUTPUT=true
@@ -65,8 +65,8 @@ OPTION_LOAD_IN_WEB_BROWSER=false
 declare -A ARG_OPTIONS
 declare -A DEFINED_CMD_MAP
 
-NESTING_LEVEL=0
-NESTING_MAX=8
+declare -i NESTING_LEVEL=0
+declare -i NESTING_MAX=8
 
 # reusable regexp patterns
 WS="[[:space:]]" # whitespace
@@ -455,7 +455,7 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 		RESOURCE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*resource$WS*: )"
 
 		if [ "$RESOURCE_CMD_LIST" ]; then
-			RNUM=$(echo $"RESOURCE_CMD_LIST" | wc -l )
+			RNUM=$(echo "$RESOURCE_CMD_LIST" | wc -l )
 			log "Found $RNUM operations on resources..." 1
 		fi
 
@@ -534,10 +534,9 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 		TEMPLATE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*template$WS*: )"
 
 		if [ "$TEMPLATE_CMD_LIST" ]; then
-			TNUM=$(echo $"TEMPLATE_CMD_LIST" | wc -l )
+			TNUM=$(echo "$TEMPLATE_CMD_LIST" | wc -l )
 			log "Found $TNUM operations on templates..." 1
 		fi
-
 
 		OLDIFS="$IFS"; IFS=$'\n'
 		for TCMD in $TEMPLATE_CMD_LIST; do
@@ -552,8 +551,6 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 			case "$operation" in
 				"route")
 					urlPath=$fileTarget
-
-					log "\t$urlPath ($fileOrigin)" 1
 
 					if [[ "$fileOrigin" && "$urlPath" ]]; then
 
@@ -591,8 +588,6 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 					fi
 					;;
 			esac
-
-
 		done
 		IFS="$OLDIFS"
 
@@ -605,7 +600,6 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 	else
 		echo "No resources dir '$DIR_RESOURCES' found."
 	fi
-
 fi
 
 

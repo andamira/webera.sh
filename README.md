@@ -53,6 +53,23 @@ All the important default settings, files and directories can be overriden eithe
 </tbody></table>
 
 
+### Configuration
+
+```bash
+# In `.weberarc` you can configure the settings
+config:WEB_BROWSER_BIN:google-chrome
+config:DIR_OUTPUT:public_html
+
+# Define your custom commands
+define_cmd:sass:sass -t compact {ORIGIN} {TARGET}
+
+# ...
+```
+
+
 ## Here Be Dragons
 
-This project is not considered stable, and anything can change at any moment.
+This project is not considered stable yet, and anything can change at any moment.
+
+Also, taking advantage of it being a small new project, I'm using it to experiment some new directions, and trying out different ways of doing things.
+
