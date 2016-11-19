@@ -6,5 +6,5 @@ config:LOG_FILE:../all-examples.log
 resource:copy:css:css
 resource:copy:img:img
 
-page:index.html:/
+template:route:index.html:/
 

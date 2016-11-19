@@ -73,11 +73,11 @@
 #
 
 # Copy commands to/from the build directory
-rcommand:copy_res2build:mkdir -p $(dirname {ORIGIN}); cp -r {ORIGIN} {BUILD}
-rcommand:copy_build2target:mkdir -p $(dirname {BUILD}); cp -r {BUILD} {TARGET}
+define_cmd : copy_res2build    : mkdir -p $(dirname {ORIGIN}); cp -r {ORIGIN} {BUILD}
+define_cmd : copy_build2target : mkdir -p $(dirname {BUILD});  cp -r {BUILD} {TARGET}
 
 # Sass compilation
-rcommand:sass:sass -t compact {ORIGIN} {TARGET}
+define_cmd : sass : sass -t compact {ORIGIN} {TARGET}
 
 
 
@@ -90,7 +90,9 @@ rcommand:sass:sass -t compact {ORIGIN} {TARGET}
 # Format:
 #   resouce:<processor>:<origin>:<destination>
 #
-resource:sass:scss/main.scss:css/main.css
+resource : copy : css/main.css  : css/main.css
+resource : copy : img/          : img/
+resource : copy : font/         : font/
 
 #resource:copy:css/main.css:css/main.css
 resource:copy:img/:img/
@@ -110,14 +112,14 @@ page:index.html:/
 
 
 
-## PAGES
+## ROUTING
 ################################################################
 #
 # Format:
-#   page:<template>:<slug>
+#   template:route:<template_file>:<url_slug>
 #
 
-page:index.html:/
-#page:contact.html:/contact
+template : route : index.html : /
+# template : route : contact.html : /contact
 
 

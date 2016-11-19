@@ -5,7 +5,7 @@
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
 # Description: A versatile static website generator made in Bash
-# Version: 0.1.11
+# Version: 0.1.12
 # License: MIT
 #
 ## Dependencies:
@@ -63,7 +63,7 @@ OPTION_LOAD_IN_WEB_BROWSER=false
 
 # (PRE)PROCESSING
 declare -A ARG_OPTIONS
-declare -A RCOMMANDS_MAP
+declare -A DEFINED_CMD_MAP
 
 NESTING_LEVEL=0
 NESTING_MAX=8
@@ -174,7 +174,7 @@ function readConfig {
 			sed -e "$SED_DEL_SPACE_LEADTRAIL" | \
 			sed -e "$SED_DEL_COMMENTS" -e "$SED_DEL_EMPTYLINES" | \
 			sed -e "$SED_JOIN_SPLITLINES" \
-		)\n"
+		)"$'\n'
 		CONFIG="$CONFIG$TMPCONF" # append to previously read configuration
 	else
 		if [ "$FILE" == "$FILE_CONFIG" ]; then
@@ -199,6 +199,7 @@ function templateParseIncludes {
 	fi
 
 	# Parse template
+	# TODO: search first in DIR_BUILD, if not found, don't ouput anything
 	local templateFile="${DIR_TEMPLATES}/$1"
 	if [ -f "$templateFile" ]; then
 		local templateContent="$(<$templateFile)"
@@ -252,7 +253,7 @@ function templateRender {
 	# <!--// Comment -->
 	#
 	templateText=$(echo "$templateText" | sed -e :a -re 's/<!--\/\/.*?-->//g;/<!--\/\//N;//ba')
-	
+
 	OLDIFS="$IFS"; IFS=$'\n'
 
 	# set variables
@@ -420,6 +421,28 @@ if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
 fi
 
 
+# DEFINE COMMANDS
+# ###############
+
+DEFINED_CMD="$(echo "$CONFIG" | grep ^$WS*define_cmd$WS*: )"
+
+if [ "$DEFINED_CMD" ]; then
+	log "Defining the commands..." 1
+fi
+
+OLDIFS="$IFS"; IFS=$'\n'
+for C in $DEFINED_CMD; do
+
+	cmd_name=$(echo "$C" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+	cmd_action=$(echo "$C" | cut -d':' -f3- | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+
+	DEFINED_CMD_MAP[$cmd_name]=$cmd_action
+
+	log "\t$cmd_name='$cmd_action'" 2
+done
+IFS="$OLDIFS"
+
+
 # PROCESS RESOURCES
 # #################
 
@@ -429,41 +452,19 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 
 	if [ -d "$DIR_RESOURCES" ]; then
 
-		# Parse the commands for processing resources
-		RCOMMANDS="$(echo "$CONFIG" | grep ^$WS*rcommand$WS*: )"
+		RESOURCE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*resource$WS*: )"
 
-		if [ "$RCOMMANDS" ]; then
-			log "Parsing rcommands..." 1
+		if [ "$RESOURCE_CMD_LIST" ]; then
+			RNUM=$(echo $"RESOURCE_CMD_LIST" | wc -l )
+			log "Found $RNUM operations on resources..." 1
 		fi
 
 		OLDIFS="$IFS"; IFS=$'\n'
-		for C in $RCOMMANDS; do
+		for RCMD in $RESOURCE_CMD_LIST; do
 
-			rcmdname=$(echo "$C" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-			rcommand=$(echo "$C" | cut -d':' -f3- | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-
-			RCOMMANDS_MAP[$rcmdname]=$rcommand
-
-			log "\t$rcmdname='$rcommand'" 2
-		done
-		IFS="$OLDIFS"
-
-
-		RESOURCES="$(echo "$CONFIG" | grep ^$WS*resource$WS*: )"
-
-		if [ "$RESOURCES" ]; then
-			log "Processing resources..." 1
-		fi
-
-		OLDIFS="$IFS"; IFS=$'\n'
-		for R in $RESOURCES; do
-			
-			# TODO: allow optional field for custom configuration
-			# cleaner way would be to define custom tags before using them
-
-			operation=$(echo "$R" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-			fileOrigin=$(echo "$R" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-			fileTarget=$(echo "$R" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			operation=$(echo "$RCMD" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			fileOrigin=$(echo "$RCMD" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			fileTarget=$(echo "$RCMD" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
 
 			log "\t$operation: $fileOrigin > $fileTarget" 1
 
@@ -472,7 +473,7 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 				continue # XXX do break instead?
 			fi
 
-			# built-in command? 
+			# built-in command for resources?
 			case "$operation" in
 				"copy")
 					# NOTE: without resources dir prefix
@@ -486,20 +487,20 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 					;;
 				*)
 					# custom command?
-					if [ "${RCOMMANDS_MAP[$operation]}" ]; then
+					# NOTE: paths are adapted for resources
+					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
 
-						# TODO: move up to add support for these tags in built-in commands
-						CMD=$(echo ${RCOMMANDS_MAP[$operation]} \
+						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
 							| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
 							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
 							| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
 						)
 
 						# Create target paths
-						if [[ "${RCOMMANDS_MAP[$operation]}" =~ "{BUILD}" ]]; then
+						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
 							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
 						fi
-						if [[ "${RCOMMANDS_MAP[$operation]}" =~ "{TARGET}" ]]; then
+						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
 							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
 						fi
 
@@ -514,51 +515,102 @@ if [ $OPTION_PROCESS_RESOURCES == true ]; then
 
 		done
 		IFS="$OLDIFS"
-		
+
 	else
 		echo "No resources dir '$DIR_RESOURCES' found."
 	fi
 fi
 
 
-# PROCESS PAGES
-# #############
+# PROCESS TEMPLATES
+# #################
 
 if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 
 	log "\nProcessing templates...\n====================" 1
 
-	PAGES="$(echo "$CONFIG" | grep ^$WS*page$WS: )"
+	if [ -d "$DIR_TEMPLATES" ]; then
 
-	if [ "$PAGES" ]; then
-		log "Processing pages..." 1
-	fi
+		TEMPLATE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*template$WS*: )"
 
-	OLDIFS="$IFS"; IFS=$'\n'
-	for P in $PAGES; do
-
-		templateName=$(echo "$P" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-		templatePath=$(echo "$P" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
-
-		log "\t$templatePath ($templateName)" 1
-
-		if [[ "$templateName" && "$templatePath" ]]; then
-			mkdir -p "${DIR_OUTPUT}${templatePath}"
-			templateRender "$templateName" > "${DIR_OUTPUT}${templatePath}/index.html"
+		if [ "$TEMPLATE_CMD_LIST" ]; then
+			TNUM=$(echo $"TEMPLATE_CMD_LIST" | wc -l )
+			log "Found $TNUM operations on templates..." 1
 		fi
-	done
-	IFS="$OLDIFS"
 
-	POSTS="$(echo "$CONFIG" | grep ^$WS*post$WS: )"
 
-	# TODO
-	if [ "$POSTS" ]; then
-		log "Processing posts..." 1
+		OLDIFS="$IFS"; IFS=$'\n'
+		for TCMD in $TEMPLATE_CMD_LIST; do
+
+			operation=$(echo "$TCMD" | cut -d':' -f2 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			fileOrigin=$(echo "$TCMD" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+			fileTarget=$(echo "$TCMD" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
+
+			log "\t$operation: $fileOrigin > $fileTarget" 1
+
+			# built-in command for templates?
+			case "$operation" in
+				"route")
+					urlPath=$fileTarget
+
+					log "\t$urlPath ($fileOrigin)" 1
+
+					if [[ "$fileOrigin" && "$urlPath" ]]; then
+
+						mkdir -p "${DIR_OUTPUT}${urlPath}"
+						templateRender "$fileOrigin" > "${DIR_OUTPUT}${urlPath}/index.html"
+					else
+						log "\tERROR: missing arguments for 'template:route' command" 1
+					fi
+					;;
+
+				*)
+					# custom command?
+					# NOTE: paths are adapted for templates
+					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
+
+						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
+							| sed "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
+							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
+							| sed "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
+						)
+
+						# Create target paths
+						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
+							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
+						fi
+						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
+							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
+						fi
+
+						log "\tExecuting: $CMD" 3
+						eval $CMD # HACK dangerous
+
+					else
+						log "ERROR: operation '$operation' not recognized" 1
+					fi
+					;;
+			esac
+
+
+		done
+		IFS="$OLDIFS"
+
+		POSTS="$(echo "$CONFIG" | grep ^$WS*post$WS: )"
+
+		# TODO
+		if [ "$POSTS" ]; then
+			log "Processing posts..." 1
+		fi
+	else
+		echo "No resources dir '$DIR_RESOURCES' found."
 	fi
+
 fi
 
-printf "Done.\n"
+
 log "Done." 1
+printf "Done.\n"
 
 
 # LOAD WEBSITE (RUN SERVER & BROWSER)
