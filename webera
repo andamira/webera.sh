@@ -4,7 +4,7 @@
 # Description: A versatile static website generator made in Bash
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
-# Version: 0.1.19
+# Version: 0.1.20
 # License: MIT
 #
 ## Dependencies:
@@ -18,7 +18,7 @@
 ##
 
 main() {
-	## CONFIGURABLE SETTINGS
+	# CONFIGURABLE SETTINGS
 	# ----------------------
 
 	# PATHS
@@ -42,8 +42,8 @@ main() {
 	local OPTION_DELETE_DIR_OUTPUT=true
 	local OPTION_DELETE_DIR_BUILD=true
 
-	## INTERNALS
-	# -----------
+	# INTERNALS
+	# ----------
 
 	local OPERATIONAL=false
 
@@ -142,7 +142,7 @@ OPTIONAL FLAGS                      (default value)
   -W <BIN>        web browser binary ($WEB_BROWSER_BIN)
 
 FILE CONFIG
-  You can set all these options, and more, in $FILE_CONFIG).
+  You can set all these options, and more, in $FILE_CONFIG)
 ENDHERE
 	exit 1
 }
@@ -580,6 +580,7 @@ templateRender() {
 	local directives_set=$(echo -n "$templateText" | grep -Po "<!--$WS*%set$WS*:.*?-->")
 	local directives_cmd=$(echo -n "$templateText" | grep -Po "<!--$WS*%cmd$WS*:.*?-->")
 	local directives_setcmd=$(echo -n "$templateText" | grep -Po "<!--$WS*%setcmd$WS*:.*?-->")
+	local directives_embed=$(echo -n "$templateText" | grep -Po "<!--$WS*%embed$WS*:.*?-->")
 	local D=''
 
 	# text comments
@@ -639,6 +640,19 @@ templateRender() {
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?//g")
 		templateText=$(echo "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$WS*@$SETCMDVAR$WS*-->\n\?/$SETCMDOUT/g")
+	done
+
+	# embed markdown
+	#
+	# <!--%embed: markdown-file.md -->
+	#
+	for D in $directives_embed ; do
+		local EMBED_FILE=$(echo -n "$D" | sed -n -e "s/<\!--$WS*%embed$WS*:$WS*\(.*\)$WS*-->/\1/p" | sed -e "s/$WS*$//")
+		log "      embed: $EMBED_FILE" 3
+
+		local PARSED_FILE=$(markdown "$EMBED_FILE")
+
+		templateText=${templateText/$D/$PARSED_FILE}
 	done
 
 	IFS="$OLDIFS"
