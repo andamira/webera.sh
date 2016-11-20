@@ -4,7 +4,7 @@
 # Description: A versatile static website generator made in Bash
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
-# Version: 0.1.18
+# Version: 0.1.19
 # License: MIT
 #
 ## Dependencies:
@@ -59,8 +59,9 @@ main() {
 	local -ri NESTING_MAX=8
 
 	local -r DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
 	local PRELOG="" # saves the log before file is ready
+	local -i LOG_LEVEL_MIN=1
+	local -i LOG_LEVEL_MAX=3
 
 	# reusable regexp patterns
 	local -r WS="[[:space:]]" # whitespace
@@ -88,7 +89,7 @@ main() {
 	done
 
 	if [[ "$OPERATIONAL" == false ]]; then
-		printf "In order to run the script, you must use at least one MAIN FLAG.\n\n"
+		printf "You must use at least one MAIN FLAG!\n\n"
 		usage
 	fi
 
@@ -115,31 +116,34 @@ main() {
 }
 
 usage() {
-	printf "Usage:\t./webera -trw [ARGS]\n\n"
-	printf "MAIN FLAGS\n"
-	printf "%s\n" "----------"
-	printf "\t-t\t\tdo process all templates\n"
-	printf "\t-r\t\tdo process all resources\n"
-	printf "\t-w\t\tpreview in web browser\n"
+	cat <<ENDHERE
+Usage: ./webera -trw [optional flags]
 
-	printf "\nOPTIONAL FLAGS\t\texplanation (default value)\n"
-	printf "%s\t\t%s\n" "--------------" "---------------------------"
-	printf "\t-C <FILE>\tconfiguration file (%s)\n" $FILE_CONFIG
-	echo
-	printf "\t-T <DIR>\ttemplates directory (%s)\n" "$DIR_TEMPLATES"
-	printf "\t-E <DIR>\tresources directory (%s)\n" "$DIR_RESOURCES"
-	printf "\t-B <DIR>\tbuild directory (%s)\n" "$DIR_BUILD"
-	printf "\t-O <DIR>\toutput directory (%s)\n" "$DIR_OUTPUT"
-	echo
-	printf "\t-d\t\tswitch deleting the output directory (delete=%s)\n" "$OPTION_DELETE_DIR_OUTPUT"
-	printf "\t-c\t\tswitch clearing the previous log file (clear=%s)\n" "$OPTION_CLEAR_LOG"
-	echo
-	printf "\t-L <NUMBER>\tlog level [0=none|1|2|3] (%s)\n" "$OPTION_LOG_LEVEL"
-	printf "\t-G <FILE>\tlog file (%s)\n" "$FILE_LOG"
-	printf "\t-W <BIN>\tweb browser binary (%s)\n" "$WEB_BROWSER_BIN"
+MAIN FLAGS
 
-	printf "\nFILE CONFIG\n"
-	printf "\tYou can set all these options, and more, in $FILE_CONFIG.\n"
+  -t              process all templates
+  -r              process all resources
+  -w              preview in web browser
+
+OPTIONAL FLAGS                      (default value)
+
+  -C <FILE>       configuration file ($FILE_CONFIG)
+
+  -T <DIR>        templates directory ($DIR_TEMPLATES)
+  -E <DIR>        resources directory ($DIR_RESOURCES)
+  -B <DIR>        build directory ($DIR_BUILD)
+  -O <DIR>        output directory ($DIR_OUTPUT)
+
+  -d              switch deleting the output dir (delete=$OPTION_DELETE_DIR_OUTPUT)
+  -c              switch clearing the log file (clear=$OPTION_CLEAR_LOG)
+
+  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
+  -G <FILE>       log file ($FILE_LOG)
+  -W <BIN>        web browser binary ($WEB_BROWSER_BIN)
+
+FILE CONFIG
+  You can set all these options, and more, in $FILE_CONFIG).
+ENDHERE
 	exit 1
 }
 
@@ -191,9 +195,9 @@ parseArguments() {
 }
 
 setupLog() {
-# $1 = [start|noprelog]
+	declare mode="$1" # [start|noprelog]
 
-	if [ "$1" == "start" ]; then
+	if [ "$mode" == "start" ]; then
 		log "\n===============[$DATE]==============@\n" 1
 
 	else
@@ -208,58 +212,50 @@ setupLog() {
 		# 2. leave only the log message, discard the rest. (TODO: filter out error|warn)
 		# 3. bring back the newlines
 		# 4. put the log level in the date header
-		local L=$(printf "$PRELOG" | \
-			awk -v ll=$OPTION_LOG_LEVEL -F '|' '$1<=ll' | \
-			cut -d'|' -f3- | \
-			tr '\a' '\n' | \
-			sed "s/====@$/====$OPTION_LOG_LEVEL/" )
+		local PARSED_PRELOG=$(printf "$PRELOG" \
+			| awk -v ll=$OPTION_LOG_LEVEL -F '|' '$1<=ll' \
+			| cut -d'|' -f3- \
+			| tr '\a' '\n' \
+			| sed "s/====@$/====$OPTION_LOG_LEVEL/" )
 
 		PRELOG="noprelog"
 
-		if [ "$L" != "" ]; then
-			log "$L";
+		if [ "$PARSED_PRELOG" != "" ]; then
+			log "$PARSED_PRELOG";
 		fi
 	fi
 }
 
 log() {
-# $1 = message
-# $2 = minimum log level needed to show the message
-# $3 = type [|warn|error]
-
-	local LOG_LEVEL_MIN=1
-	local LOG_LEVEL_MAX=3
+	declare logMsg=$1 logLevelNeeded=$2 logType=$3
 
 	if [ "$PRELOG" == "noprelog" ]; then
 
-		if [[ -z $2 || ( "$2" -lt "1"  ) ]]; then
+		if [[ -z "$logLevelNeeded" || ( "$logLevelNeeded" -lt "1"  ) ]]; then
 			LOG_LEVEL=$LOG_LEVEL_MIN
 		else
 			if [[ "$LOG_LEVEL" -gt "$LOG_LEVEL_MAX" ]]; then
 				LOG_LEVEL=$LOG_LEVEL_MAX
 			else
-				LOG_LEVEL=$2
+				LOG_LEVEL=$logLevelNeeded
 			fi
 		fi
 
 		if [ $LOG_LEVEL -le $OPTION_LOG_LEVEL ]; then
-			echo -e "$1" >> $FILE_LOG
+			echo -e "$logMsg" >> $FILE_LOG
 		fi
 
 	else
-		# Pre-save this log as a single line
+		# Pre-save this log message as a single line
 		#
 		# 1. replace the newlines with a BEL
 		# 2. put the log level and type at the beginning
-		local msg_1line=$(printf "$1" | tr '\n' '\a')
-		PRELOG="$PRELOG\n$2|$3|$msg_1line"
+		local msg_1line=$(printf "$logMsg" | tr '\n' '\a')
+		PRELOG="$PRELOG\n$logLevelNeeded|$logType|$msg_1line"
 	fi
 }
 
 serverSetup() {
-# $1 = type of server
-	type=$2
-
 	case $SERVER_TYPE in
 		python)
 			START_SERVER="pushd $DIR_OUTPUT; python -m SimpleHTTPServer $SERVER_PORT"
@@ -320,8 +316,8 @@ deleteDirectories() {
 	fi
 
 	if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
-			$OPTION_PROCESS_RESOURCES == true || \
-			$OPTION_PROCESS_TEMPLATES == true \
+			$OPTION_PROCESS_RESOURCES == true \
+			|| $OPTION_PROCESS_TEMPLATES == true \
 		) ]]; then
 
 		rm -r "$DIR_OUTPUT" 2>/dev/null
@@ -329,15 +325,13 @@ deleteDirectories() {
 }
 
 readConfig() {
-# $1 = config file to read
+	declare FILE=$1
 
-	local FILE=$1
-
-	if [ -f "$1" ]; then
-		local TMPCONF="$(cat $FILE | \
-			sed -e "$SED_DEL_SPACE_LEADTRAIL" | \
-			sed -e "$SED_DEL_COMMENTS" -e "$SED_DEL_EMPTYLINES" | \
-			sed -e "$SED_JOIN_SPLITLINES" \
+	if [ -f "$FILE" ]; then
+		local TMPCONF="$(cat $FILE \
+			| sed -e "$SED_DEL_SPACE_LEADTRAIL" \
+			| sed -e "$SED_DEL_COMMENTS" -e "$SED_DEL_EMPTYLINES" \
+			| sed -e "$SED_JOIN_SPLITLINES" \
 		)"$'\n'
 		CONFIG="$CONFIG$TMPCONF" # append to previously read configuration
 	else
@@ -351,7 +345,6 @@ readConfig() {
 }
 
 configureSettings() {
-
 	# Parse the commands for processing resources
 	local SETTINGS="$(echo "$CONFIG" | grep ^$WS*config$WS*: )"
 
@@ -374,7 +367,6 @@ configureSettings() {
 }
 
 defineCommands() {
-
 	local DEFINED_CMD="$(echo "$CONFIG" | grep ^$WS*define_cmd$WS*: )"
 
 	if [ "$DEFINED_CMD" ]; then
@@ -535,17 +527,17 @@ processTemplates() {
 }
 
 templateParseIncludes() {
-# $1 = template file name
+	declare templateFileName=$1
 
 	((NESTING_LEVEL++))
 	if [ $NESTING_LEVEL -gt $NESTING_MAX ]; then
-		log "  ERROR: max nesting level ($NESTING_MAX) reached for template $1" 1 error
+		log "  ERROR: max nesting level ($NESTING_MAX) reached for template $templateFileName" 1 error
 		exit 3
 	fi
 
 	# Parse template
 	# TODO: search first in DIR_BUILD, if not found, don't ouput anything
-	local templateFile="${DIR_TEMPLATES}/$1"
+	local templateFile="${DIR_TEMPLATES}/$templateFileName"
 	if [ -f "$templateFile" ]; then
 		local templateContent="$(<$templateFile)"
 	else
@@ -580,9 +572,9 @@ templateParseIncludes() {
 }
 
 templateRender() {
-# $1 = template file name
+	declare templateFileName=$1
 
-	local templateText="$(templateParseIncludes $1)"
+	local templateText="$(templateParseIncludes $templateFileName)"
 
 	# Template tags must be one-liners
 	local directives_set=$(echo -n "$templateText" | grep -Po "<!--$WS*%set$WS*:.*?-->")
