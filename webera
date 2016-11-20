@@ -5,12 +5,12 @@
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
 # Description: A versatile static website generator made in Bash
-# Version: 0.1.15
+# Version: 0.1.16
 # License: MIT
 #
 ## Dependencies:
 #
-#   bash (>4), grep (with PCRE support), sed
+#   bash (>4), grep (with PCRE support), sed, awk
 #
 ## Optional Dependencies:
 #
@@ -68,6 +68,11 @@ declare -A DEFINED_CMD_MAP
 declare -i NESTING_LEVEL=0
 declare -i NESTING_MAX=8
 
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+# saves the log ouput before the file is ready
+PRELOG=""
+
 # reusable regexp patterns
 WS="[[:space:]]" # whitespace
 SED_DEL_SPACE_LEADTRAIL="s/^$WS*//;s/$WS*$//" # delete leading/trailing whitespace
@@ -85,11 +90,13 @@ SED_JOIN_SPLITLINES=':x; /\\$/ { N; s/\\\n//; tx }' # join lines ending in backs
 function usage {
 	printf "Usage:\t./webera.sh -trw [ARGS]\n\n"
 	printf "MAIN FLAGS\n"
+	printf "%s\n" "----------"
 	printf "\t-t\t\tdo process all templates\n"
 	printf "\t-r\t\tdo process all resources\n"
 	printf "\t-w\t\tpreview in web browser\n"
 
-	printf "\nOPTIONAL\n"
+	printf "\nOPTIONAL FLAGS\t\texplanation (default value)\n"
+	printf "%s\t\t%s\n" "--------------" "---------------------------"
 	printf "\t-C <FILE>\tconfiguration file (%s)\n" $FILE_CONFIG
 	echo
 	printf "\t-T <DIR>\ttemplates directory (%s)\n" "$DIR_TEMPLATES"
@@ -97,7 +104,8 @@ function usage {
 	printf "\t-B <DIR>\tbuild directory (%s)\n" "$DIR_BUILD"
 	printf "\t-O <DIR>\toutput directory (%s)\n" "$DIR_OUTPUT"
 	echo
-	printf "\t-d\t\t(don't) delete the output directory (%s)\n" "delete=$OPTION_DELETE_DIR_OUTPUT"
+	printf "\t-d\t\tswitch deleting the output directory (delete=%s)\n" "$OPTION_DELETE_DIR_OUTPUT"
+	printf "\t-c\t\tswitch clearing the previous log file (clear=%s)\n" "$OPTION_CLEAR_LOG"
 
 	echo
 	printf "\t-L <NUMBER>\tlog level [0=none|1|2|3] (%s)\n" "$OPTION_LOG_LEVEL"
@@ -117,7 +125,7 @@ function usage {
 function parseArguments {
 	local OPTIND OPTION
 
-	while getopts ':trwC:T:E:B:O:dL:G:W:h:' OPTION; do
+	while getopts ':trwC:T:E:B:O:dcL:G:W:h:' OPTION; do
 		case "$OPTION" in
 			t) OPERATIONAL=true; OPTION_PROCESS_TEMPLATES=true ;;
 			r) OPERATIONAL=true; OPTION_PROCESS_RESOURCES=true ;;
@@ -133,7 +141,20 @@ function parseArguments {
 			B) ARG_OPTIONS[DIR_BUILD]="$OPTARG" ;;
 			O) ARG_OPTIONS[DIR_OUTPUT]="$OPTARG" ;;
 
-			d) ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]="$OPTARG" ;;
+			# These flags switches the default boolean value,
+			# without checking first the values in file config.
+			d)  if [ "$OPTION_DELETE_DIR_OUTPUT" == true ]; then
+					ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]=false
+				else
+					ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]=true
+				fi
+				;;
+			c)  if [ "$OPTION_CLEAR_LOG" == true ]; then
+					ARG_OPTIONS[OPTION_CLEAR_LOG]=false
+				else
+					ARG_OPTIONS[OPTION_CLEAR_LOG]=true
+				fi
+				;;
 
 			L) ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
 			G) ARG_OPTIONS[FILE_LOG]="$OPTARG" ;;
@@ -146,26 +167,72 @@ function parseArguments {
 	shift $((OPTIND-1))
 }
 
+# setupLog
+#
+# $1 = [start|noprelog] 
+# 
+function setupLog {
+	if [ "$1" == "start" ]; then
+		log "\n===============[$DATE]==============@\n" 1
+
+	else
+		if [ $OPTION_CLEAR_LOG == true ]; then
+			log	"\nWarning: deleting previous log file '$FILE_LOG'" 3 warn
+			rm $FILE_LOG 2>/dev/null;
+		fi
+
+		# Write the pre-saved log to the file
+		#
+		# 1. filter out the lines with log level greater than current
+		# 2. leave only the log message, discard the rest. (TODO: filter out error|warn)
+		# 3. bring back the newlines
+		# 4. put the log level in the date header
+		local L=$(printf "$PRELOG" | \
+			awk -v ll=$OPTION_LOG_LEVEL -F '|' '$1<=ll' | \
+			cut -d'|' -f3- | \
+			tr '\a' '\n' | \
+			sed "s/====@$/====$OPTION_LOG_LEVEL/" )
+
+		PRELOG="noprelog"
+
+		if [ "$L" != "" ]; then
+			log "$L";
+		fi
+	fi
+}
+
 # log
 #
 # $1 = message
 # $2 = minimum log level needed to show the message
+# $3 = type [|warn|error]
 function log {
 	local LOG_LEVEL_MIN=1
 	local LOG_LEVEL_MAX=3
 
-	if [[ -z $2 || ( "$2" -lt "1"  ) ]]; then
-		LOG_LEVEL=$LOG_LEVEL_MIN
-	else
-		if [[ "$LOG_LEVEL" -gt "$LOG_LEVEL_MAX" ]]; then
-			LOG_LEVEL=$LOG_LEVEL_MAX
-		else
-			LOG_LEVEL=$2
-		fi
-	fi
+	if [ "$PRELOG" == "noprelog" ]; then
 
-	if [ $LOG_LEVEL -le $OPTION_LOG_LEVEL ]; then
-    	echo -e "$1" >> $FILE_LOG
+		if [[ -z $2 || ( "$2" -lt "1"  ) ]]; then
+			LOG_LEVEL=$LOG_LEVEL_MIN
+		else
+			if [[ "$LOG_LEVEL" -gt "$LOG_LEVEL_MAX" ]]; then
+				LOG_LEVEL=$LOG_LEVEL_MAX
+			else
+				LOG_LEVEL=$2
+			fi
+		fi
+
+		if [ $LOG_LEVEL -le $OPTION_LOG_LEVEL ]; then
+			echo -e "$1" >> $FILE_LOG
+		fi
+
+	else
+		# Pre-save this log as a single line
+		#
+		# 1. replace the newlines with a BEL
+		# 2. put the log level and type at the beginning
+		local msg_1line=$(printf "$1" | tr '\n' '\a')
+		PRELOG="$PRELOG\n$2|$3|$msg_1line"
 	fi
 }
 
@@ -266,9 +333,9 @@ function readConfig {
 	else
 		if [ "$FILE" == "$FILE_CONFIG" ]; then
 			printf "ERROR: Configuration file '%s' doesn't exist.\n" "$FILE_CONFIG"
-			exit 3
+			exit 2
 		else
-			log "file '$FILE' doesn't exist" 3 warn
+			log "\nWarning: file '$FILE' doesn't exist" 3 warn
 		fi
 	fi
 }
@@ -281,7 +348,7 @@ function configureSettings {
 	local SETTINGS="$(echo "$CONFIG" | grep ^$WS*config$WS*: )"
 
 	if [ "$SETTINGS" ]; then
-	#	log "Configuring settings...\n====================" 1
+		log "\nConfiguring settings...\n------------------------------------------------------" 1
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for S in $SETTINGS; do
@@ -290,7 +357,7 @@ function configureSettings {
 			local setting_value=$(echo "$S" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL")
 			local setting_previous_value=${!setting_name}
 
-	#		log "\tsetting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
+			log "  setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
 
 			# NOTE: There're currently no checks. Any global variable can be (re)assigned.
 			printf -v $setting_name "$setting_value"
@@ -306,7 +373,7 @@ function defineCommands {
 
 	if [ "$DEFINED_CMD" ]; then
 		local CNUM=$(echo "$DEFINED_CMD" | wc -l )
-		log "Defining $CNUM commands..." 1
+		log "\nDefining $CNUM commands...\n------------------------------------------------------" 1
 	fi
 
 	local OLDIFS="$IFS"; IFS=$'\n'
@@ -317,7 +384,7 @@ function defineCommands {
 
 		DEFINED_CMD_MAP[$cmd_name]=$cmd_action
 
-		log "\t$cmd_name='$cmd_action'" 2
+		log "  $cmd_name='$cmd_action'" 2
 	done
 	IFS="$OLDIFS"
 }
@@ -325,7 +392,7 @@ function defineCommands {
 # processResource
 #
 function processResources {
-	log "\nProcessing resources...\n====================" 1
+	log "\nProcessing resources...\n------------------------------------------------------" 1
 
 	if [ -d "$DIR_RESOURCES" ]; then
 
@@ -333,7 +400,7 @@ function processResources {
 
 		if [ "$RESOURCE_CMD_LIST" ]; then
 			local RNUM=$(echo "$RESOURCE_CMD_LIST" | wc -l )
-			log "Found $RNUM operations on resources..." 1
+			log "Found $RNUM operations on resources:" 1
 		fi
 
 		local OLDIFS="$IFS"; IFS=$'\n'
@@ -343,10 +410,10 @@ function processResources {
 			local fileOrigin=$(echo "$RCMD" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
 			local fileTarget=$(echo "$RCMD" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
 
-			log "\t$operation: $fileOrigin > $fileTarget" 1
+			log "  $operation: $fileOrigin > $fileTarget" 1
 
 			if [ ! -e "$DIR_RESOURCES/$fileOrigin" ]; then
-				log "\tERROR: '$fileOrigin' don't exist" 1
+				log "  ERROR: '$fileOrigin' don't exist" 1 error
 				continue # XXX do break instead?
 			fi
 
@@ -381,10 +448,10 @@ function processResources {
 							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
 						fi
 
-						log "\tExecuting: $CMD" 3
+						log "  Executing: $CMD" 3
 						eval $CMD # HACK dangerous
 					else
-						log "ERROR: operation '$operation' not recognized" 1
+						log "  ERROR: operation '$operation' not recognized" 1 error
 					fi
 					;;
 			esac
@@ -398,7 +465,7 @@ function processResources {
 # processTemplates
 #
 function processTemplates {
-	log "\nProcessing templates...\n====================" 1
+	log "\nProcessing templates...\n------------------------------------------------------" 1
 
 	if [ -d "$DIR_TEMPLATES" ]; then
 
@@ -406,7 +473,7 @@ function processTemplates {
 
 		if [ "$TEMPLATE_CMD_LIST" ]; then
 			local TNUM=$(echo "$TEMPLATE_CMD_LIST" | wc -l )
-			log "Found $TNUM operations on templates..." 1
+			log "Found $TNUM operations on templates:" 1
 		fi
 
 		local OLDIFS="$IFS"; IFS=$'\n'
@@ -416,7 +483,7 @@ function processTemplates {
 			local fileOrigin=$(echo "$TCMD" | cut -d':' -f3 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
 			local fileTarget=$(echo "$TCMD" | cut -d':' -f4 | sed -e "$SED_DEL_SPACE_LEADTRAIL" )
 
-			log "\t$operation: $fileOrigin > $fileTarget" 1
+			log "  $operation: $fileOrigin > $fileTarget" 1
 
 			# built-in command for templates?
 			case "$operation" in
@@ -428,7 +495,7 @@ function processTemplates {
 						mkdir -p "${DIR_OUTPUT}${urlPath}"
 						templateRender "$fileOrigin" > "${DIR_OUTPUT}${urlPath}/index.html"
 					else
-						log "\tERROR: missing arguments for 'template:route' command" 1
+						log "  ERROR: missing arguments for 'template:route' command" 1 error
 					fi
 					;;
 
@@ -451,10 +518,10 @@ function processTemplates {
 							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
 						fi
 
-						log "\tExecuting: $CMD" 3
+						log "  Executing: $CMD" 3
 						eval $CMD # HACK dangerous
 					else
-						log "ERROR: operation '$operation' not recognized" 1
+						log "  ERROR: operation '$operation' not recognized" 1 error
 					fi
 					;;
 			esac
@@ -470,11 +537,10 @@ function processTemplates {
 # $1 = template file name
 function templateParseIncludes {
 
-	# Check nesting
 	((NESTING_LEVEL++))
 	if [ $NESTING_LEVEL -gt $NESTING_MAX ]; then
-		log "\tError: max nesting level ($NESTING_MAX) reached for template $1" 1
-		exit
+		log "  ERROR: max nesting level ($NESTING_MAX) reached for template $1" 1 error
+		exit 3
 	fi
 
 	# Parse template
@@ -483,7 +549,7 @@ function templateParseIncludes {
 	if [ -f "$templateFile" ]; then
 		local templateContent="$(<$templateFile)"
 	else
-		log "\tERROR: No template found '$templateFile'" 1
+		log "  ERROR: No template found '$templateFile'" 1 error
 		return
 	fi
 	local directives_include=$(grep -Po '<!--\s*%include:.*?-->' "$templateFile")
@@ -599,6 +665,7 @@ function templateRender {
 # MAIN PROCESS
 # =============================================================================
 #
+setupLog start
 
 parseArguments "$@"
 
@@ -608,7 +675,7 @@ readConfig "$FILE_CONFIG"
 
 configureSettings
 
-# Override any file settings with the script arguments
+# Override the settings with the parsed arguments
 for OPT in "${!ARG_OPTIONS[@]}"; do
 	printf -v ${OPT} "${ARG_OPTIONS[$OPT]}"
 done
@@ -616,14 +683,9 @@ done
 if [ $OPERATIONAL == false ]; then
 	printf "In order to run the script, you must use at least one MAIN FLAG.\n\n"
 	usage
-	exit
 fi
 
-# log setup
-if [ $OPTION_CLEAR_LOG == true ]; then rm $FILE_LOG 2>/dev/null; fi
-log "\n===============[$(date '+%Y-%m-%d %H:%M:%S')]==============${OPTION_LOG_LEVEL}" 1
-
-serverSetup
+setupLog noprelog
 
 deleteDirectories
 
@@ -637,10 +699,10 @@ if [ $OPTION_PROCESS_TEMPLATES == true ]; then
 	processTemplates
 fi
 
-log "Done." 1
 printf "Done.\n"
 
 if [ $OPTION_LOAD_IN_WEB_BROWSER == true ]; then
+	serverSetup
 	previewWebsite
 fi
 
