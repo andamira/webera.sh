@@ -5,7 +5,7 @@
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
 # Description: A versatile static website generator made in Bash
-# Version: 0.1.16
+# Version: 0.1.17
 # License: MIT
 #
 ## Dependencies:
@@ -169,8 +169,8 @@ function parseArguments {
 
 # setupLog
 #
-# $1 = [start|noprelog] 
-# 
+# $1 = [start|noprelog]
+#
 function setupLog {
 	if [ "$1" == "start" ]; then
 		log "\n===============[$DATE]==============@\n" 1
@@ -552,10 +552,10 @@ function templateParseIncludes {
 		log "  ERROR: No template found '$templateFile'" 1 error
 		return
 	fi
-	local directives_include=$(grep -Po '<!--\s*%include:.*?-->' "$templateFile")
+	local directives_include=$(grep -Po "<!--$WS*%include$WS*:.*?-->" "$templateFile")
 	local D=''
 
-	OLDIFS="$IFS"; IFS=$'\n'
+	local OLDIFS="$IFS"; IFS=$'\n'
 
 	# Remove duplicates
 	if [ "$directives_include" ]; then
@@ -563,9 +563,8 @@ function templateParseIncludes {
 	fi
 
 	for D in $directives_include; do
-		local includedFileName=$(echo -n "$D" | grep -Po '(?<=%include:).*?(?=-->)')
-
-		log "\t\t$includedFileName" 2
+		local includedFileName=$(echo -n "$D" | sed -n -e "s/<\!--$WS*%include$WS*:$WS*\(.*\)$WS*-->/\1/p" | sed -e "s/$WS*$//" )
+		log "    include: '$includedFileName'" 2
 
 		# Parse included template for further includes
 		local includedFileContent="$(templateParseIncludes ${includedFileName})"
@@ -587,11 +586,11 @@ function templateRender {
 
 	local templateText="$(templateParseIncludes $1)"
 
-	local directives_set=$(echo -n "$templateText" | grep -Po '<!--%set:.*?-->')
-	local directives_cmd=$(echo -n "$templateText" | grep -Po '<!--%cmd:.*?-->')
-	local directives_setcmd=$(echo -n "$templateText" | grep -Po '<!--%setcmd:.*?-->')
+	# Template tags must be one-liners
+	local directives_set=$(echo -n "$templateText" | grep -Po "<!--$WS*%set$WS*:.*?-->")
+	local directives_cmd=$(echo -n "$templateText" | grep -Po "<!--$WS*%cmd$WS*:.*?-->")
+	local directives_setcmd=$(echo -n "$templateText" | grep -Po "<!--$WS*%setcmd$WS*:.*?-->")
 	local D=''
-
 
 	# text comments
 	#
@@ -599,7 +598,7 @@ function templateRender {
 	#
 	templateText=$(echo "$templateText" | sed -e :a -re 's/<!--\/\/.*?-->//g;/<!--\/\//N;//ba')
 
-	OLDIFS="$IFS"; IFS=$'\n'
+	local OLDIFS="$IFS"; IFS=$'\n'
 
 	# set variables
 	#
@@ -607,18 +606,17 @@ function templateRender {
 	# <!--@VARIABLE-->
 	#
 	for D in $directives_set; do
-		local SET=$(echo -n "$D" | grep -Po '(?<=%set:).*?(?=-->)')
+		local SET=$(echo -n "$D" | sed -n -e "s/<\!--$WS*%set$WS*:$WS*\(.*\)$WS*-->/\1/p" | sed -e "s/$WS*$//")
 		local SETVAR="${SET%%=*}"
 		local SETVAL="${SET#*=}"
-
-		log "\t\t$SETVAR = $SETVAL" 3
+		log "      set: $SETVAR = $SETVAL" 3
 
 		# Cross-platform syntax to replace including newlines
 		# http://stackoverflow.com/a/1252191
 		templateText=$(echo "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?//g")
 		templateText=$(echo "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--@$SETVAR-->\n\?/$SETVAL/g")
+			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$WS*@$SETVAR$WS*-->\n\?/$SETVAL/g")
 	done
 
 	# execute commands, render output
@@ -626,10 +624,10 @@ function templateRender {
 	# <!--%cmd: ls -l -->
 	#
 	for D in $directives_cmd ; do
-		local CMD=$(echo -n "$D" | grep -Po '(?<=%cmd:).*?(?=-->)')
+		local CMD=$(echo -n "$D" | sed -n -e "s/^.*<\!--$WS*%cmd$WS*:$WS*\(.*\)$WS*-->.*$/\1/p" | sed -e "s/$WS*$//")
 		local CMDOUT=$(eval $CMD)
-
-		log "\t\tCMD:$CMD" 3
+		log "    cmd: $CMD" 3
+		log "      =: $CMDOUT" 3
 
 		templateText=$(echo "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?/$CMDOUT/g")
@@ -641,24 +639,23 @@ function templateRender {
 	# <!--@VARIABLE-->
 	#
 	for D in $directives_setcmd; do
-		local SETCMD=$(echo -n "$D" | grep -Po '(?<=%setcmd:).*?(?=-->)')
+		local SETCMD=$(echo -n "$D" | sed -n -e "s/^.*<\!--$WS*%setcmd$WS*:$WS*\(.*\)$WS*-->.*$/\1/p" | sed -e "s/$WS*$//")
 		local SETCMDVAR="${SETCMD%%=*}"
 		local SETCMDVAL="${SETCMD#*=}"
 		local SETCMDOUT=$(eval $SETCMDVAL)
-
-		log "\t\t$SETCMDVAR = $SETCMDVAL" 3
+		log "    setcmd: $SETCMDVAR = $SETCMDVAL" 3
 
 		templateText=$(echo "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?//g")
 		templateText=$(echo "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--@$SETCMDVAR-->\n\?/$SETCMDOUT/g")
+			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$WS*@$SETCMDVAR$WS*-->\n\?/$SETCMDOUT/g")
 	done
 
 	IFS="$OLDIFS"
 
 	log "" 2
 
-	printf "$templateText"
+	printf "%s" "$templateText"
 }
 
 
@@ -705,4 +702,3 @@ if [ $OPTION_LOAD_IN_WEB_BROWSER == true ]; then
 	serverSetup
 	previewWebsite
 fi
-
