@@ -4,7 +4,7 @@
 # Description: A versatile static website generator made in Bash
 # Author: José Luis Cruz (andamira)
 # Repository: https://github.com/andamira/webera
-# Version: 0.1.20
+# Version: 0.1.21
 # License: MIT
 #
 ## Dependencies:
@@ -337,7 +337,7 @@ readConfig() {
 	else
 		if [ "$FILE" == "$FILE_CONFIG" ]; then
 			printf "ERROR: Configuration file '%s' doesn't exist.\n" "$FILE_CONFIG"
-			exit 2
+			exit 2  # TODO issue #9
 		else
 			log "\nWarning: file '$FILE' doesn't exist" 3 warn
 		fi
@@ -416,18 +416,12 @@ processResources() {
 			# built-in command for resources?
 			case "$operation" in
 				"copy")
-					# NOTE: without resources dir prefix
-					#mkdir -p $DIR_OUTPUT/$(dirname $fileTarget)
-					#cp -r $DIR_RESOURCES/$fileOrigin $DIR_OUTPUT/$fileTarget
-
-					# NOTE: with resources dir prefix
 					mkdir -p $DIR_OUTPUT/$DIR_RESOURCES/$(dirname $fileTarget)
 					cp -r "$DIR_RESOURCES/$fileOrigin" \
 						"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget"
 					;;
 				*)
-					# custom command?
-					# NOTE: paths are adapted for resources
+					# custom command? Paths are adapted for resources
 					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
 
 						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
@@ -494,8 +488,7 @@ processTemplates() {
 					;;
 
 				*)
-					# custom command?
-					# NOTE: paths are adapted for templates
+					# custom command? Paths are adapted for templates
 					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
 
 						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
@@ -580,14 +573,13 @@ templateRender() {
 	local directives_set=$(echo -n "$templateText" | grep -Po "<!--$WS*%set$WS*:.*?-->")
 	local directives_cmd=$(echo -n "$templateText" | grep -Po "<!--$WS*%cmd$WS*:.*?-->")
 	local directives_setcmd=$(echo -n "$templateText" | grep -Po "<!--$WS*%setcmd$WS*:.*?-->")
-	local directives_embed=$(echo -n "$templateText" | grep -Po "<!--$WS*%embed$WS*:.*?-->")
 	local D=''
 
 	# text comments
 	#
 	# <!--// Comment -->
 	#
-	templateText=$(echo "$templateText" | sed -e :a -re 's/<!--\/\/.*?-->//g;/<!--\/\//N;//ba')
+	templateText=$(echo "$templateText" | sed -e :a -re "s/<!--$WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 
@@ -615,13 +607,32 @@ templateRender() {
 	# <!--%cmd: ls -l -->
 	#
 	for D in $directives_cmd ; do
-		local CMD=$(echo -n "$D" | sed -n -e "s/^.*<\!--$WS*%cmd$WS*:$WS*\(.*\)$WS*-->.*$/\1/p" | sed -e "s/$WS*$//")
-		local CMDOUT=$(eval $CMD)
+		local CMD=$(printf "%s" "$D" | sed -n -e "s/^.*<\!--$WS*%cmd$WS*:$WS*\(.*\)$WS*-->.*$/\1/p" | sed -e "s/$WS*$//")
+		local CMDOUT=$(eval "$CMD")
 		log "    cmd: $CMD" 3
-		log "      =: $CMDOUT" 3
 
-		templateText=$(echo "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?/$CMDOUT/g")
+		local -i CMDOUT_MAX=50
+		local -i CMDOUT_LEN=$(printf "%s" "$CMDOUT" | wc -c)
+
+		if [ "$CMDOUT_LEN" -le $CMDOUT_MAX ]; then
+			log "      =: $CMDOUT" 3
+		else
+			log "      =: $(echo $CMDOUT | tr '\n' ' ' \
+				| head -c$CMDOUT_MAX) (...) + $(($CMDOUT_LEN-$CMDOUT_MAX)) chars" 3
+		fi
+
+		# HACK: Temporary? solution for non-regex pattern substitution, since
+		# it can contain any special character, it doesn't work well with sed.
+		# FIXME: newlines are replaced because awk is only acting in one line.
+		templateText=$(echo "$templateText" | tr '\n' '\001' )
+		templateText=$(awk -v repl="$CMDOUT" 'FNR==NR {
+				a = a $0; next
+			}
+			n = index($0, a) {
+				print substr($0, 1, n-1) repl substr($0, n+length(a))
+			}' <(printf "%s" "$D") <(printf "%s" "$templateText")
+		)
+		templateText=$(echo "$templateText" | tr '\001' '\n' )
 	done
 
 	# set variables to commands output
@@ -640,19 +651,6 @@ templateRender() {
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?//g")
 		templateText=$(echo "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$WS*@$SETCMDVAR$WS*-->\n\?/$SETCMDOUT/g")
-	done
-
-	# embed markdown
-	#
-	# <!--%embed: markdown-file.md -->
-	#
-	for D in $directives_embed ; do
-		local EMBED_FILE=$(echo -n "$D" | sed -n -e "s/<\!--$WS*%embed$WS*:$WS*\(.*\)$WS*-->/\1/p" | sed -e "s/$WS*$//")
-		log "      embed: $EMBED_FILE" 3
-
-		local PARSED_FILE=$(markdown "$EMBED_FILE")
-
-		templateText=${templateText/$D/$PARSED_FILE}
 	done
 
 	IFS="$OLDIFS"

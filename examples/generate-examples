@@ -1,40 +1,50 @@
 #!/usr/bin/env bash
 
-WEBERA=../../webera
 DEBUG=0
-WORKDIR=$(pwd)
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+WEBERA="$DIR/../webera"
+LOGFILE="$DIR/examples-generated.log"
+OUTPUT="$DIR/../docs"
 
-if [ -z "$@" ]; then
-	printf "Usage:\t./generate-examples.sh [--every|DIR]\n\n"
-	printf "Especify the directory of the example to generate,\n"
-	printf "or the flag --every to generate every one of them.\n"
-	exit
+usage() {
+	cat << ENDHERE
+
+Usage: ./generate-examples.sh [--preview]
+
+Pass `--preview` to open in default browser
+ENDHERE
+	exit 1
+}
+
+if [ "$1" == "-h" ] || [ "$1" == "--help" ] ; then
+	usage
 fi
 
-if [ "$1" == "--every" ]; then
-	EXAMPLES=$(find . -maxdepth 1 -type d | cut -d'/' -f2 | grep -v '^\.\+$' | sort | tac | tr '\n' ' ')
-else
-	if [ -d "$1" ]; then
-		EXAMPLES="$1"
-	else
-		printf "ERROR: can't find directory '$1' \n"
-		exit 1
-	fi
-fi
+cd $DIR
 
+case "$1" in
+	"--preview")
+		PREVIEW=true;;
+	"")
+		;;
+	*)
+		usage;;
+esac
+
+EXAMPLES=$(find . -maxdepth 1 -type d | cut -d'/' -f2 | grep -v '^\.\+$' | sort | tac | tr '\n' ' ')
 
 for E in $EXAMPLES; do
 	cd $E;
 
 	printf "generating '$E'. . . \n"
 
-	if [ $DEBUG -gt 0 ]; then
-		$WEBERA -l -L ${DEBUG} -G ../generate-examples.log
-	else
-		$WEBERA
-	fi
+	$WEBERA -rt -L${DEBUG} -G $LOGFILE
 
-	cd $WORKDIR
+	cd $DIR
 done
 
 printf "\nDone.\n"
+
+if [ $PREVIEW ]; then
+	$WEBERA -wO "$OUTPUT"
+fi

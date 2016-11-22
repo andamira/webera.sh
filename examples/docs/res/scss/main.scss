@@ -1,0 +1,136 @@
+@import "sanitize";
+
+// Web Colors
+// http://clrs.cc/
+
+// Cool
+$aqua:  #7FDBFF;
+$blue:  #0074D9;
+$navy:  #001F3F;
+$teal:  #39CCCC;
+$green: #2ECC40;
+$olive: #3D9970;
+$lime:  #01FF70;
+
+// Warm
+$yellow:  #FFDC00;
+$orange:  #FF851B;
+$red:     #FF4136;
+$fuchsia: #F012BE;
+$purple:  #B10DC9;
+$maroon:  #85144B;
+
+// Gray Scale
+$white:  #fff;
+$silver: #ddd;
+$gray:   #aaa;
+$black:  #111;
+
+
+body {
+	background-color: #f8f8f8;
+	color: $black;
+
+	a {
+		color: $blue;
+
+		&:visited {
+			color: $maroon;
+		}
+	}
+}
+
+#page {
+	padding: 10px;
+}
+
+.page-wrapper {
+	max-width: 960px;
+	margin: 0 auto;
+}
+
+// embedded readme
+.markdown {
+	border: 1px solid $gray;
+	padding: 15px;
+	line-height: 20px;
+
+	strong {
+		color: #242424;
+	}
+
+	h1 {
+		font-size: 22px;
+	}
+	h2 {
+		font-size: 20px;
+	}
+	h3 {
+		font-size: 18px;
+	}
+
+	ul {
+		li {
+			margin-top: 5px;
+			list-style-type: circle;
+		}
+		p {
+			margin: 0;
+		}
+	}
+
+	table {
+
+		thead {
+			border-bottom: 1px solid $gray;
+		}
+		tr {
+			background-color: $white;
+			border-top: 1px solid #ccc;
+
+			&:nth-child(2n) {
+				background-color: #f8f8f8;
+			}
+		}
+		th, td {
+			padding: 6px 13px;
+			border: 1px solid #ddd;
+		}
+	}
+
+	code {
+		margin: 0;
+		padding: 2px;
+		font-size: 13px;
+		background-color: rgba($gray,0.1);
+		border-radius: 3px;
+	}
+
+	pre {
+		padding: 16px;
+		overflow: auto;
+		font-size: 85%;
+		line-height: 1.45;
+		background-color: #f7f7f7;
+		border-radius: 3px;
+
+		margin: 0;
+		word-break: normal;
+		word-wrap: normal;
+		tab-size: 4;
+		-moz-tab-size: 4;
+
+		code {
+			display: inline;
+			max-width: auto;
+			margin: 0;
+			padding: 0;
+			overflow: visible;
+			line-height: inherit;
+			word-wrap: normal;
+			background-color: transparent;
+			border: 0;
+		}
+	}
+}
+

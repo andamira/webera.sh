@@ -1,75 +1,62 @@
 # webera
 
-A versatile static website generator made in Bash
+is a versatile static website generator made in Bash
 
 ## Features
 
-- process static resources  <i id="css" title="CSS"></i><i id="js" title="Javascript"></i><i id="woff2" title="Fonts"></i>
-- define custom commands <i id="sass" title ="Sass"></i><i id="markdown" title="Markdown"></i>
-- define custom workflows
-- define custom tags
-- local web browser preview
-- template tags for:
-  - template nesting
-  - setting variables
-  - commands outputting
+- process templates and static resources
+- website preview in local web browser
+- define custom commands and workflows
+- template directives allowing you to
+    - declare variables
+    - nest templates
+    - run commands
 
 ## Quick Start
 
-At a minimum you need to associate the templates with the routes in the `.weberarc` configuration file, and create the corresponding HTML template files under the `tem/` directory.
+In `.weberarc` you can route the HTML templates present under `tem/` and the final URL endpoints will be created in `out/`.
 
-You can also define some resources (e.g. css, javascript) to be processed and/or copied from the `res/` directory to the `out/res/` directory
+There you can also process and/or copy resources (e.g. css, javascript) from `res/` to the output `out/res/` directory
 
-All the important default settings, files and directories can be overriden either by passing arguments to the script, or by modifying the config file.
+All the settings can be overriden either from the config file or by passing arguments to the script.
 
 ## Examples
 
-### CLI Usage
+You can find several complete examples in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory, and their generated output in [andamira.github.io/examples/](https://andamira.github.io/examples/)
 
-<table><thead>
+### Usage Examples
 
-<tr>
-<th>example</th>
-<th>what it does</th>
-</tr>
+| example                           | what it does |
+| --------------------------------- | ------------ |
+| `./webera.sh -tr`                 | Process **t**emplates and **r**esources |
+| `./webera.sh -r -R tmp-res/ -cL2` | Process resources from a custom **R**esources dir; while writing a level 2 **L**ogfile, after clearing the previous first |
+| `./webera.sh -trw -W vivaldi`     | Process templates and resources; and preview using a custom bro**W**ser |
 
-</thead><tbody>
+### Configuration Example
 
-<tr>
-<td><code>./webera -tr</code></td>
-<td>Process <b>t</b>emplates and <b>r</b>esources</td>
-</tr>
-
-<tr>
-<td><code>./webera -r -O out2/ -L2</code></td>
-<td>Process resources to a custom <b>O</b>utput directory, and output a level 2 <b>L</b>ogfile</td>
-</tr>
-
-<tr>
-<td><code>./webera -trw -W vivaldi</code></td>
-<td>Process templates and resources, and preview using custom bro<b>W</b>ser</td>
-</tr>
-
-</tbody></table>
-
-
-### Configuration
-
+`.weberarc`:
 ```bash
-# In `.weberarc` you can configure the settings
-config:WEB_BROWSER_BIN:google-chrome
-config:DIR_OUTPUT:public_html
+# Customize Settings
+config : WEB_BROWSER_BIN : google-chrome
+config : DIR_OUTPUT      : /home/website/public_html
 
-# Define your custom commands
-define_cmd:sass:sass -t compact {ORIGIN} {TARGET}
+# Define Custom commands
+define_cmd : sass:sass -t compact {ORIGIN} {TARGET}
 
-# ...
+# Process resources
+resource : sass : scss/styles.scss : css/main.css
+
+# Process templates to URL endpoints
+template : route : index.html   : /
+template : route : about.html   : /about-me/
 ```
 
+## Planned Features
+
+- define custom directives
+- manage blog | custom post types
+- generate navigation menus
 
 ## Here Be Dragons
 
-This project is not considered stable yet, and anything can change at any moment.
-
-Also, taking advantage of it being a small new project, I'm using it to experiment some new directions, and trying out different ways of doing things.
-
+This project is not considered stable yet, and anything can change at any moment, including but not limited to: features, syntax and filepaths.
