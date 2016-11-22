@@ -22,7 +22,7 @@ All the settings can be overriden either from the config file or by passing argu
 
 ## Examples
 
-You can find several complete examples in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory, and their generated output in [andamira.github.io/examples/](https://andamira.github.io/examples/)
+You can find several complete examples in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory, and their generated output in [andamira.github.io/webera/examples/](https://andamira.github.io/webera/examples/)
 
 ### Usage Examples
 
