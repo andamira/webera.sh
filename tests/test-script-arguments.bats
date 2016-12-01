@@ -10,7 +10,3 @@ load header
 	[ "$usage" == "Usage: ./webera" ]
 }
 
-@test "run without arguments shows usage" {
-	run webera
-	[ "$status" -eq 1 ]
-}

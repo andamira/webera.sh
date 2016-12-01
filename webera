@@ -5,7 +5,7 @@
 # is a simple, handy & versatile shellscript for static website generation
 #
 # Repository: https://github.com/andamira/webera
-# Version: 0.1.25
+# Version: 0.1.26
 #
 # Author: José Luis Cruz (andamira)
 # License: MIT
@@ -70,7 +70,7 @@ main() {
 
 	# reusable regexp patterns
 	local -r WS="[[:space:]]" # whitespace
-	local -r SED_TRIM_WHITESPACE="s/^$WS*//;s/$WS*$//"
+	local -r SED_TRIM_WS="s/^$WS*//;s/$WS*$//"
 	local -r SED_DEL_COMMENTS="/^$WS*#.*/d"
 	local -r SED_DEL_EMPTYLINES="/^$WS*$/d"
 	local -r SED_JOIN_SPLITLINES=':x; /\\$/ { N; s/\\\n//; tx }' # ending in \
@@ -78,7 +78,7 @@ main() {
 
 	## MAIN PROCESS
 
-	setupLog start
+	log "\n===============[$DATE]==============@\n" 1
 
 	parseArguments "$@"
 
@@ -98,7 +98,7 @@ main() {
 		usage
 	fi
 
-	setupLog noprelog
+	setupLog
 
 	deleteDirectories
 
@@ -149,7 +149,7 @@ OPTIONAL FLAGS                      (default value)
   -W <BIN>        web browser binary ($WEB_BROWSER_BIN)
 
 FILE CONFIG
-  You can set all these options, and more, in $FILE_CONFIG)
+  You can set all these options, and more, in $FILE_CONFIG
 ENDHERE
 	exit 1
 }
@@ -206,34 +206,28 @@ parseArguments() {
 }
 
 setupLog() {
-	declare mode="$1" # [start|noprelog]
 
-	if [ "$mode" == "start" ]; then
-		log "\n===============[$DATE]==============@\n" 1
+	if [[ $OPTION_CLEAR_LOG == true ]]; then
+		log "\nWarning: deleting previous log file '$FILE_LOG'" 3 warn
+		rm $FILE_LOG 2>/dev/null;
+	fi
 
-	else
-		if [[ $OPTION_CLEAR_LOG == true ]]; then
-			log "\nWarning: deleting previous log file '$FILE_LOG'" 3 warn
-			rm $FILE_LOG 2>/dev/null;
-		fi
+	# Write the pre-saved log to the file
+	#
+	# 1. filter out the lines with log level greater than current
+	# 2. leave only the log message, discard the rest. (TODO: filter out error|warn)
+	# 3. bring back the newlines
+	# 4. put the log level in the date header
+	local PARSED_PRELOG=$(printf "$PRELOG" \
+		| awk -v ll=$OPTION_LOG_LEVEL -F '|' '$1<=ll' \
+		| cut -d'|' -f3- \
+		| tr '\a' '\n' \
+		| sed "s/====@$/====$OPTION_LOG_LEVEL/" )
 
-		# Write the pre-saved log to the file
-		#
-		# 1. filter out the lines with log level greater than current
-		# 2. leave only the log message, discard the rest. (TODO: filter out error|warn)
-		# 3. bring back the newlines
-		# 4. put the log level in the date header
-		local PARSED_PRELOG=$(printf "$PRELOG" \
-			| awk -v ll=$OPTION_LOG_LEVEL -F '|' '$1<=ll' \
-			| cut -d'|' -f3- \
-			| tr '\a' '\n' \
-			| sed "s/====@$/====$OPTION_LOG_LEVEL/" )
+	PRELOG="noprelog"
 
-		PRELOG="noprelog"
-
-		if [ "$PARSED_PRELOG" != "" ]; then
-			log "$PARSED_PRELOG";
-		fi
+	if [ "$PARSED_PRELOG" != "" ]; then
+		log "$PARSED_PRELOG";
 	fi
 }
 
@@ -262,6 +256,11 @@ log() {
 		# 2. put the log level and type at the beginning
 		local msg_1line=$(printf "$logMsg" | tr '\n' '\a')
 		PRELOG="$PRELOG\n$logLevelNeeded|$logType|$msg_1line"
+	fi
+
+	# Print errors to stderr
+	if [[ "$logType" == "error" ]]; then
+		printf "$logMsg\n" 1>&2
 	fi
 }
 
@@ -293,7 +292,7 @@ previewWebsite() {
 	if [ ! -z "$START_SERVER" ]; then
 		printf " (Use CTRL+C to stop the web server)\n"
 	else
-		echo
+		printf '\n'
 	fi
 
 	local RUN_BROWSER="$WEB_BROWSER_BIN http://localhost:$SERVER_PORT &"
@@ -345,7 +344,7 @@ readConfig() {
 		fi
 
 		local TMPCONF="$(cat "$FILE" \
-			| sed -e "$SED_TRIM_WHITESPACE" \
+			| sed -e "$SED_TRIM_WS" \
 			| sed -e "$SED_DEL_COMMENTS" -e "$SED_DEL_EMPTYLINES" \
 			| sed -e "$SED_JOIN_SPLITLINES" \
 		)"$'\n'
@@ -374,7 +373,7 @@ readConfig() {
 
 configureSettings() {
 	# Parse the commands for processing resources
-	local SETTINGS="$(echo "$CONFIG" | grep ^$WS*config$WS*: )"
+	local SETTINGS="$(printf '%s' "$CONFIG" | grep ^$WS*config$WS*: )"
 
 	if [ "$SETTINGS" ]; then
 		log "\nConfiguring settings...\n------------------------------------------------------" 1
@@ -382,8 +381,8 @@ configureSettings() {
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for S in $SETTINGS; do
 
-			local setting_name=$(echo "$S" | cut -d':' -f2 | sed -e "$SED_TRIM_WHITESPACE")
-			local setting_value=$(echo "$S" | cut -d':' -f3 | sed -e "$SED_TRIM_WHITESPACE")
+			local setting_name=$(printf '%s' "$S" | cut -d':' -f2 | sed -e "$SED_TRIM_WS")
+			local setting_value=$(printf '%s' "$S" | cut -d':' -f3 | sed -e "$SED_TRIM_WS")
 			local setting_previous_value=${!setting_name}
 
 			log "  setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
@@ -411,18 +410,18 @@ generateConfig() {
 }
 
 defineCommands() {
-	local DEFINED_CMD="$(echo "$CONFIG" | grep ^$WS*define_cmd$WS*: )"
+	local DEFINED_CMD="$(printf '%s' "$CONFIG" | grep ^$WS*define_cmd$WS*: )"
 
 	if [ "$DEFINED_CMD" ]; then
-		local CNUM=$(echo "$DEFINED_CMD" | wc -l )
+		local CNUM=$(printf '%s' "$DEFINED_CMD" | wc -l )
 		log "\nDefining $CNUM commands...\n------------------------------------------------------" 1
 	fi
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 	for C in $DEFINED_CMD; do
 
-		local cmd_name=$(echo "$C" | cut -d':' -f2 | sed -e "$SED_TRIM_WHITESPACE" )
-		local cmd_action=$(echo "$C" | cut -d':' -f3- | sed -e "$SED_TRIM_WHITESPACE" )
+		local cmd_name=$(printf '%s' "$C" | cut -d':' -f2 | sed -e "$SED_TRIM_WS" )
+		local cmd_action=$(printf '%s' "$C" | cut -d':' -f3- | sed -e "$SED_TRIM_WS" )
 
 		DEFINED_CMD_MAP[$cmd_name]=$cmd_action
 
@@ -436,17 +435,17 @@ processResources() {
 
 	if [ -d "$DIR_RESOURCES" ]; then
 
-		local RESOURCE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*resource$WS*: )"
+		local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$WS*resource$WS*: )"
 
-		local RNUM=$(echo "$RESOURCE_CMD_LIST" | sed "$SED_DEL_EMPTYLINES" | wc -l )
+		local RNUM=$(printf '%s' "$RESOURCE_CMD_LIST" | sed "$SED_DEL_EMPTYLINES" | wc -l )
 		log "  Found $RNUM operations on resources:" 1
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for RCMD in $RESOURCE_CMD_LIST; do
 
-			local operation=$(echo "$RCMD" | cut -d':' -f2 | sed -e "$SED_TRIM_WHITESPACE" )
-			local fileOrigin=$(echo "$RCMD" | cut -d':' -f3 | sed -e "$SED_TRIM_WHITESPACE" )
-			local fileTarget=$(echo "$RCMD" | cut -d':' -f4 | sed -e "$SED_TRIM_WHITESPACE" )
+			local operation=$(printf '%s' "$RCMD" | cut -d':' -f2 | sed -e "$SED_TRIM_WS" )
+			local fileOrigin=$(printf '%s' "$RCMD" | cut -d':' -f3 | sed -e "$SED_TRIM_WS" )
+			local fileTarget=$(printf '%s' "$RCMD" | cut -d':' -f4 | sed -e "$SED_TRIM_WS" )
 
 			log "  $operation: $fileOrigin > $fileTarget" 1
 
@@ -466,7 +465,7 @@ processResources() {
 					# custom command? Paths are adapted for resources
 					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
 
-						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
+						local CMD=$(printf '%s' "${DEFINED_CMD_MAP[$operation]}" \
 							| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
 							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
 							| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
@@ -499,17 +498,17 @@ processTemplates() {
 
 	if [ -d "$DIR_TEMPLATES" ]; then
 
-		local TEMPLATE_CMD_LIST="$(echo "$CONFIG" | grep ^$WS*template$WS*: )"
+		local TEMPLATE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$WS*template$WS*: )"
 
-		local TNUM=$(echo "$TEMPLATE_CMD_LIST" | sed "$SED_DEL_EMPTYLINES" | wc -l )
+		local TNUM=$(printf '%s' "$TEMPLATE_CMD_LIST" | sed "$SED_DEL_EMPTYLINES" | wc -l )
 		log "  Found $TNUM operations on templates:" 1
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for TCMD in $TEMPLATE_CMD_LIST; do
 
-			local operation=$(echo "$TCMD" | cut -d':' -f2 | sed -e "$SED_TRIM_WHITESPACE" )
-			local fileOrigin=$(echo "$TCMD" | cut -d':' -f3 | sed -e "$SED_TRIM_WHITESPACE" )
-			local fileTarget=$(echo "$TCMD" | cut -d':' -f4 | sed -e "$SED_TRIM_WHITESPACE" )
+			local operation=$(printf '%s' "$TCMD" | cut -d':' -f2 | sed -e "$SED_TRIM_WS" )
+			local fileOrigin=$(printf '%s'  "$TCMD" | cut -d':' -f3 | sed -e "$SED_TRIM_WS" )
+			local fileTarget=$(printf '%s' "$TCMD" | cut -d':' -f4 | sed -e "$SED_TRIM_WS" )
 
 			log "  $operation: $fileOrigin > $fileTarget" 1
 
@@ -538,7 +537,7 @@ processTemplates() {
 					# custom command? Paths are adapted for templates
 					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
 
-						local CMD=$(echo ${DEFINED_CMD_MAP[$operation]} \
+						local CMD=$(printf '%s' "${DEFINED_CMD_MAP[$operation]}" \
 							| sed "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
 							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
 							| sed "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
@@ -562,7 +561,7 @@ processTemplates() {
 		done
 		IFS="$OLDIFS"
 	else
-		echo "No templates dir '$DIR_TEMPLATES' found."
+		log "No templates dir '$DIR_TEMPLATES' found." 1 error
 	fi
 }
 
@@ -591,7 +590,7 @@ templateParseIncludes() {
 
 	# Remove duplicates
 	if [ "$directives_include" ]; then
-		directives_include=$(echo "$directives_include" | uniq)
+		directives_include=$(printf '%s' "$directives_include" | uniq)
 	fi
 
 	for D in $directives_include; do
@@ -626,7 +625,7 @@ templateRender() {
 	#
 	# <!-- // Comment -->
 	#
-	templateText=$(echo "$templateText" | sed -e :a -re "s/<!--$WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
+	templateText=$(printf '%s' "$templateText" | sed -e :a -re "s/<!--$WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 
@@ -643,9 +642,9 @@ templateRender() {
 
 		# Cross-platform syntax to replace including newlines
 		# http://stackoverflow.com/a/1252191
-		templateText=$(echo "$templateText" \
+		templateText=$(printf '%s' "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?//g")
-		templateText=$(echo "$templateText" \
+		templateText=$(printf '%s' "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$WS*@$SETVAR$WS*-->\n\?/$SETVAL/g")
 	done
 
@@ -664,7 +663,7 @@ templateRender() {
 		if [ "$CMDOUT_LEN" -le $CMDOUT_MAX ]; then
 			log "      =: $CMDOUT" 3
 		else
-			log "      =: $(echo $CMDOUT | tr '\n' ' ' \
+			log "      =: $(printf '%s' "$CMDOUT" | tr '\n' ' ' \
 				| head -c$CMDOUT_MAX) (...) + $(($CMDOUT_LEN-$CMDOUT_MAX)) chars" 3
 		fi
 
@@ -700,7 +699,7 @@ templateRender() {
 			} 1' <(printf '%s\n' "$D") <(printf '%s' "$templateText")
 		)
 		# Replace all the set variables with the command output
-		templateText=$(echo "$templateText" \
+		templateText=$(printf '%s' "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$WS*@$SETCMDVAR$WS*-->\n\?/$SETCMDOUT/g")
 	done
 

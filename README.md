@@ -69,7 +69,7 @@ template : route : index.html   : /
 template : route : about.html   : /about-me/
 ```
 
-See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for a template.
+See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for more options.
 
 ## Planned Features
 

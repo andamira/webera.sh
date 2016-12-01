@@ -1,50 +1,70 @@
 #!/usr/bin/env bash
 
-DEBUG=0
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-WEBERA="$DIR/../webera"
-LOGFILE="$DIR/examples-generated.log"
-OUTPUT="$DIR/../docs"
+main() {
+	local OPTION_LOG_LEVEL=0
+	local OPTION_LOAD_IN_WEB_BROWSER=false;
+
+	local DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+	local WEBERA="$DIR/../webera"
+	local LOGFILE="$DIR/examples-generated.log"
+	local OUTPUT="$DIR/../docs"
+
+	parseArguments "$@"
+
+	generateExamples
+
+	printf "\nDone.\n"
+
+	if [ "$OPTION_LOAD_IN_WEB_BROWSER" = true ]; then
+		$WEBERA -wO "$OUTPUT"
+	fi
+}
 
 usage() {
 	cat << ENDHERE
 
-Usage: ./generate-examples.sh [--preview]
+Generates every example.
 
-Pass `--preview` to open in default browser
+Usage: ./generate-examples.sh [OPTIONS]
+
+  -w              preview in web browser
+  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
+
 ENDHERE
 	exit 1
 }
 
-if [ "$1" == "-h" ] || [ "$1" == "--help" ] ; then
-	usage
-fi
+parseArguments() {
+	local OPTIND OPTION
+	while getopts 'L:wh' OPTION; do
 
-cd $DIR
+		case "$OPTION" in
+			L) OPTION_LOG_LEVEL="$OPTARG" ;;
+			w) OPTION_LOAD_IN_WEB_BROWSER=true ;;
+			h|*) usage; exit ;;
+		esac
+	done
+}
 
-case "$1" in
-	"--preview")
-		PREVIEW=true;;
-	"")
-		;;
-	*)
-		usage;;
-esac
-
-EXAMPLES=$(find . -maxdepth 1 -type d | cut -d'/' -f2 | grep -v '^\.\+$' | sort | tac | tr '\n' ' ')
-
-for E in $EXAMPLES; do
-	cd $E;
-
-	printf "generating '$E'. . . \n"
-
-	$WEBERA -rt -L${DEBUG} -G $LOGFILE
+generateExamples() {
 
 	cd $DIR
-done
 
-printf "\nDone.\n"
+	local EXAMPLES=$(find . -maxdepth 1 -type d \
+		| cut -d'/' -f2 \
+		| grep -v '^\.\+$' \
+		| sort | tac | \
+		tr '\n' ' ')
 
-if [ $PREVIEW ]; then
-	$WEBERA -wO "$OUTPUT"
-fi
+	for E in $EXAMPLES; do
+		cd $E;
+
+		printf "generating '$E'. . . \n"
+
+		$WEBERA -rt -L${OPTION_LOG_LEVEL} -G $LOGFILE
+
+		cd $DIR
+	done
+}
+
+main "$@"
