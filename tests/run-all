@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR"
+
+TESTS=$(find . -maxdepth 1 -name "test-*.bats" -type f | tr '\n' ' ')
+
+for T in $TESTS; do
+	printf "\nrunning '$T'. . .\n\n"
+	$T
+done
