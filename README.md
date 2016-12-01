@@ -48,12 +48,10 @@ and their original source in the [examples/](https://github.com/andamira/webera/
 | ------------------------------- | ------------ |
 | `./webera -t -cL2`              | Process **t**emplates and write a level 2 **L**ogfile, clearing any previous logfile first |
 | `./webera -trw -W vivaldi`      | Process templates and resources; and preview using another bro**W**ser |
-| `./webera -r -R resB/ -O outB/` | Process resources from a custom **R**esources directory, and to a custom **O**utput directory |
+| `./webera -r -R resB/ -O outB/` | Process resources from a custom **R**esources directory, and also to a custom **O**utput directory |
 | `./webera -nC conf/webera.conf` | Generate a **n**ew configuration, to a custom **C**onfig file |
 
 ### Configuration Example
-
-See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc):
 
 ```bash
 # Customize Settings
@@ -71,6 +69,8 @@ template : route : index.html   : /
 template : route : about.html   : /about-me/
 ```
 
+See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for a template.
+
 ## Planned Features
 
 - define custom directives
@@ -81,4 +81,4 @@ template : route : about.html   : /about-me/
 
 ## Here Be Dragons
 
-This project is not considered stable yet, and anything can change at any moment, including but not limited to: features, syntax and filepaths.
+This project is not considered stable yet, and anything can change at any moment, including features, paths, and syntax.

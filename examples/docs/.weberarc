@@ -12,7 +12,7 @@ config:DIR_OUTPUT:../../docs/
 # --------
 
 # compile Sass files to CSS
-define_cmd:sass:sass -t compact {ORIGIN} {TARGET}
+define_cmd:sass:sass --style compact {ORIGIN} {TARGET}
 
 
 # Resources

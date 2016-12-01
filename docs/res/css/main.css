@@ -162,25 +162,40 @@ a, area, button, input, label, select, textarea, [tabindex] { -ms-touch-action: 
 
 [hidden][aria-hidden="false"]:focus { clip: auto; }
 
-body { background-color: #f8f8f8; color: #111111; }
-body a { color: #0074d9; }
-body a:visited { color: #85144b; }
+body { background-color: #f8f8f8; color: #111; }
+
+body a { color: #0074D9; }
+
+body a:visited { color: #85144B; }
 
 #page { padding: 10px; }
 
 .page-wrapper { max-width: 960px; margin: 0 auto; }
 
-.markdown { border: 1px solid #aaaaaa; padding: 15px; line-height: 20px; }
+.markdown { border: 1px solid #aaa; padding: 15px; line-height: 20px; }
+
 .markdown strong { color: #242424; }
+
 .markdown h1 { font-size: 22px; }
+
 .markdown h2 { font-size: 20px; }
+
 .markdown h3 { font-size: 18px; }
+
 .markdown ul li { margin-top: 5px; list-style-type: circle; }
+
 .markdown ul p { margin: 0; }
-.markdown table thead { border-bottom: 1px solid #aaaaaa; }
-.markdown table tr { background-color: white; border-top: 1px solid #ccc; }
+
+.markdown table thead { border-bottom: 1px solid #aaa; }
+
+.markdown table tr { background-color: #fff; border-top: 1px solid #ccc; }
+
 .markdown table tr:nth-child(2n) { background-color: #f8f8f8; }
+
 .markdown table th, .markdown table td { padding: 6px 13px; border: 1px solid #ddd; }
+
 .markdown code { margin: 0; padding: 2px; font-size: 13px; background-color: rgba(170, 170, 170, 0.1); border-radius: 3px; }
+
 .markdown pre { padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: #f7f7f7; border-radius: 3px; margin: 0; word-break: normal; word-wrap: normal; tab-size: 4; -moz-tab-size: 4; }
+
 .markdown pre code { display: inline; max-width: auto; margin: 0; padding: 0; overflow: visible; line-height: inherit; word-wrap: normal; background-color: transparent; border: 0; }

@@ -1,0 +1,46 @@
+<!--%set:TITLE=webera dependencies-->
+<!--%include:common/head.html-->
+
+	<h2>Webera Dependencies</h2>
+
+	<p>By leveraging the Unix Philosophy, webera depends on several unix programs:</p>
+
+	<dl class="dependencies">
+		<dt>Bash</dt>
+			<ul class="metadata">
+				<li class=""></li>
+				<li class="version">&gt; 4</li>
+				<li class=""></li>
+			</ul>
+		<dd>
+
+		<dt>grep</dt>
+		<dd>
+			<p>Must have support for PCRE (Perl Regular Expressions) in order to recognize the <code>-P (--perl-regexp)</code>argument.<p>
+			<p>It may be possible to in order to improve compatibility.</p>
+		</dd>
+
+		<dt>coreutils</dt>
+		<dd>
+			<p></p>
+			<p>Binaries used:</p>
+			<ul>
+				<li>tr</li>
+				<li>cat</li>
+				<li></li>
+				<li></li>
+			</ul>
+		</dd>
+
+		<dt>awk</dt>
+		<dd>Only old awk syntax is used [verification needed]</dd>
+
+		<dt>sed</dt>
+		<dd>Verify compatibility.</dd>
+	</dl>
+
+	<ul class="examples-list">
+		<!-- %cmd: for F in $(find ../[0-9]* -maxdepth 0 -type d | sed 's/^\.\.\///'); do echo "<li><a href=\"$F\">$F</a></li>"; done -->
+	</ul>
+
+<!--%include:common/footer.html-->
