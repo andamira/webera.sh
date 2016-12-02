@@ -8,33 +8,33 @@ It follows the [Unix Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) 
 ## Features
 
 - process templates and static resources
-- preview the generated website locally
+- flexible logging system
 - define custom commands and workflows
-- use HTML template directives:
-	- declare variables
-	- nest templates
-	- run commands
+- Template directives for
+	- outputting commands
+	- nesting templates
+	- setting variables
 
 ## Quick Start
 
-To start using webera you really only *need* to download the [webera script](https://raw.githubusercontent.com/andamira/webera/master/webera) and make it executable:
+The simplest way to start is to download the [webera script](https://raw.githubusercontent.com/andamira/webera/master/webera) and make it executable.
 
 ```sh
 wget raw.githubusercontent.com/andamira/webera/master/webera && chmod +x webera
 ```
 
-You can generate (`webera -n`), [download](https://raw.githubusercontent.com/andamira/webera/master/.weberarc) or write a new configuration file for your project.
+Then you can generate (`webera -n`) or [download](https://raw.githubusercontent.com/andamira/webera/master/.weberarc) a new configuration file for your project.
 
-Then put the templates in the `tem/` directory, and add the corresponding routes in the `.weberarc` config file:
+Place the templates inside the `tem/` directory, and configure the corresponding routes in the `.weberarc` config file, like this:
 
 ```
 template : route : index.html   : /
 ```
 
-Finally generate the website in the `out` directory, and preview it in firefox:
+Finally generate the website in the `out` directory, by default.
 
 ```sh
-./webera -tw
+./webera -tr
 ```
 
 ## Examples
@@ -59,10 +59,10 @@ config : WEB_BROWSER_BIN : google-chrome
 config : DIR_OUTPUT      : /home/website/public_html
 
 # Define Custom commands
-define_cmd : sass:sass -t compact {ORIGIN} {TARGET}
+command : sass2css : sass {ORIGIN} {TARGET}
 
 # Process resources
-resource : sass : scss/styles.scss : css/main.css
+resource : sass2css : scss/styles.scss : css/main.css
 
 # Process templates to URL endpoints
 template : route : index.html   : /

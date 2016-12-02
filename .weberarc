@@ -1,26 +1,36 @@
 ## WEBERA CONFIG FILE
 ##
 
+## SUMMARY OF CONFIG OPERATIONS
+#
+# config   : <variable>    : value
+# command  : <name>        : command
+# resource : <command>     :
+# template : <command>     :
+# include  : <config_file>
+#
+
+
 ## CONFIGURABLE OPTIONS
 ################################################################
 #
 # You can also save your config options in /etc/weberarc and
-# $HOME/.weberarc but know that they will get overriden by the
-# config options set up in the config file of the project.
+# $HOME/.weberarc but they can get overriden by the ones 
+# present in the config file of the project (.weberarc)
 #
 
 ## Paths
 #
-# config:DIR_TEMPLATES:tem
-# config:DIR_RESOURCES:res
-# config:DIR_BUILD:build
-# config:DIR_OUTPUT:out
+# config : DIR_TEMPLATES : tem
+# config : DIR_RESOURCES : res
+# config : DIR_BUILD     : build
+# config : DIR_OUTPUT    : out
 
 
 ## Delete the output & build folders before starting to write on them
 #
-# config:OPTION_DELETE_DIR_BUILD:true
-# config:OPTION_DELETE_DIR_OUTPUT:true
+# config : OPTION_DELETE_DIR_BUILD  : true
+# config : OPTION_DELETE_DIR_OUTPUT : true
 
 
 ## Web Browser & Server
@@ -31,33 +41,33 @@
 # You can use any supported server type:
 #   python | php | none | custom
 #
-# config:WEB_BROWSER_BIN:firefox
-# config:SERVER_PORT:8192
-# config:SERVER_TYPE:python
+# config : WEB_BROWSER_BIN : firefox
+# config : SERVER_PORT     : 8192
+# config : SERVER_TYPE     : python
 
 
 ## Custom HTTP Server start/stop commands
 #
-# config:SERVER_TYPE:custom
-# config:SERVER_START:
-# config:SERVER_STOP:
+# config : SERVER_TYPE  : custom
+# config : SERVER_START :
+# config : SERVER_STOP  :
 
 
 ## Logging
 #
-# config:FILE_LOG:log.txt
-# config:OPTION_LOG_LEVEL:0
-# config:OPTION_CLEAR_LOG:false
+# config : FILE_LOG         : log.txt
+# config : OPTION_LOG_LEVEL : 0
+# config : OPTION_CLEAR_LOG : false
 
 
 
 ## CUSTOM COMMANDS
 ################################################################
 #
-# They can be applied both to resource: and template: operations
+# Can be applied both to resource: and template: operations
 #
 # Format:
-#   define_cmd:<name>:<command(until EOL)>
+#   command : <name> : <command(until EOL)>
 #
 # Special Tags:
 #                    directory when processing:
@@ -69,47 +79,52 @@
 #
 # Built-in commands:
 #   copy              Copy a file or a directory (recursively)
-#                     [resource|template]:copy:<origin>:<target>
+#                     [resource|template] : copy : <origin> : <target>
 #
 
 # Copy commands to/from the build directory
-define_cmd : copy_res2build    : mkdir -p $(dirname {ORIGIN}); cp -r {ORIGIN} {BUILD}
-define_cmd : copy_build2target : mkdir -p $(dirname {BUILD});  cp -r {BUILD} {TARGET}
+command : copy_res2build    : mkdir -p $(dirname {ORIGIN}); cp -r {ORIGIN} {BUILD}
+command : copy_build2target : mkdir -p $(dirname {BUILD});  cp -r {BUILD} {TARGET}
 
 # Sass compilation
-define_cmd : sass : sass -t compact {ORIGIN} {TARGET}
+command : sass : sass -t compact {ORIGIN} {TARGET}
 
 
 
 ## RESOURCES
 ################################################################
 #
-# Info:
-#   Resources are processed serially, from top to bottom
+# Resources are processed serially, from top to bottom
 #
 # Format:
-#   resouce:<processor>:<origin>:<destination>
+#   resouce : <command> : <origin> : <destination>
 #
 
-#resource : copy : css/main.css   : css/main.css
-#resource : copy : img/           : img/
-#resource : copy : font/          : font/
+# resource : copy : css/main.css   : css/main.css
+# resource : copy : img/           : img/
+# resource : copy : font/          : font/
 
 
 
 ## TEMPLATES
 ################################################################
 #
-# Info:
-#   Templates are processed serially, from top to bottom
+# Templates are processed serially, from top to bottom
 #
 # Built-in commands:
 #   route             Create a route from a template file
 #                     template:route:<template_file>:<url_slug>
 #
 
-#template : route : index.html     : /
-#template : route : contact.html   : /contact
+# template : route : index.html     : /
+# template : route : contact.html   : /contact
 
 
 
+## INCLUDES
+################################################################
+#
+# You can require other config files, relative to this one
+#
+# require : .weberarc-dependencies
+# include : .weberarc-optional-pages

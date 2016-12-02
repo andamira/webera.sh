@@ -24,23 +24,23 @@
 <h2 id="features">Features</h2>
 <ul>
 <li>process templates and static resources<br /></li>
-<li>preview the generated website locally<br /></li>
+<li>flexible logging system<br /></li>
 <li>define custom commands and workflows<br /></li>
-<li><p>use HTML template directives:</p>
+<li><p>Template directives for</p>
 <ul>
-<li>declare variables<br /></li>
-<li>nest templates<br /></li>
-<li>run commands</li>
+<li>outputting commands<br /></li>
+<li>nesting templates<br /></li>
+<li>setting variables</li>
 </ul></li>
 </ul>
 <h2 id="quick-start">Quick Start</h2>
-<p>To start using webera you really only <em>need</em> to download the <a href="https://raw.githubusercontent.com/andamira/webera/master/webera">webera script</a> and make it executable:</p>
+<p>The simplest way to start is to download the <a href="https://raw.githubusercontent.com/andamira/webera/master/webera">webera script</a> and make it executable.</p>
 <pre class="sh"><code>wget raw.githubusercontent.com/andamira/webera/master/webera &amp;&amp; chmod +x webera</code></pre>
-<p>You can generate (<code>webera -n</code>), <a href="https://raw.githubusercontent.com/andamira/webera/master/.weberarc">download</a> or write a new configuration file for your project.</p>
-<p>Then put the templates in the <code>tem/</code> directory, and add the corresponding routes in the <code>.weberarc</code> config file:</p>
+<p>Then you can generate (<code>webera -n</code>) or <a href="https://raw.githubusercontent.com/andamira/webera/master/.weberarc">download</a> a new configuration file for your project.</p>
+<p>Place the templates inside the <code>tem/</code> directory, and configure the corresponding routes in the <code>.weberarc</code> config file, like this:</p>
 <pre><code>template : route : index.html   : /</code></pre>
-<p>Finally generate the website in the <code>out</code> directory, and preview it in firefox:</p>
-<pre class="sh"><code>./webera -tw</code></pre>
+<p>Finally generate the website in the <code>out</code> directory, by default.</p>
+<pre class="sh"><code>./webera -tr</code></pre>
 <h2 id="examples">Examples</h2>
 <p>You can find several <a href="https://andamira.github.io/webera/examples/">generated examples here</a><br />and their original source in the <a href="https://github.com/andamira/webera/tree/master/examples">examples/</a> directory.</p>
 <h3 id="usage-examples">Usage Examples</h3>
@@ -76,10 +76,10 @@
 <span class="kw">config</span> : DIR_OUTPUT      : /home/website/public_html
 
 <span class="co"># Define Custom commands</span>
-<span class="kw">define_cmd</span> : sass:sass -t compact <span class="dt">{ORIGIN}</span> <span class="dt">{TARGET}</span>
+<span class="kw">command</span> : sass2css : sass <span class="dt">{ORIGIN}</span> <span class="dt">{TARGET}</span>
 
 <span class="co"># Process resources</span>
-<span class="kw">resource</span> : sass : scss/styles.scss : css/main.css
+<span class="kw">resource</span> : sass2css : scss/styles.scss : css/main.css
 
 <span class="co"># Process templates to URL endpoints</span>
 <span class="kw">template</span> : route : index.html   : /

@@ -5,7 +5,7 @@
 # is a simple, handy & versatile shellscript for static website generation
 #
 # Repository: https://github.com/andamira/webera
-# Version: 0.1.26
+# Version: 0.1.27
 #
 # Author: José Luis Cruz (andamira)
 # License: MIT
@@ -88,69 +88,51 @@ main() {
 
 	configureSettings
 
-	# Override the settings with the parsed arguments
-	for OPT in "${!ARG_OPTIONS[@]}"; do
-		printf -v ${OPT} "${ARG_OPTIONS[$OPT]}"
-	done
-
-	if [[ "$OPERATIONAL" == false ]]; then
-		printf "You must use at least one MAIN FLAG!\n\n"
-		usage
-	fi
-
 	setupLog
 
 	deleteDirectories
 
-	defineCommands
+	readConfigCommands
 
-	if [[ $OPTION_PROCESS_RESOURCES == true ]]; then
-		processResources
-	fi
+	[[ "$OPTION_PROCESS_RESOURCES" = true ]] && processResources
+	[[ "$OPTION_PROCESS_TEMPLATES" = true ]] && processTemplates
 
-	if [[ $OPTION_PROCESS_TEMPLATES == true ]]; then
-		processTemplates
-	fi
+	printf 'Done.\n'
 
-	printf "Done.\n"
-
-	if [[ $OPTION_LOAD_IN_WEB_BROWSER == true ]]; then
-		serverSetup
-		previewWebsite
-	fi
+	[[ "$OPTION_LOAD_IN_WEB_BROWSER" = true ]] && serverSetup && previewWebsite
 }
 
 usage() {
-	cat <<ENDHERE
-Usage: ./webera -[trwn] [optional flags]
+	cat <<-ENDUSAGE
+	Usage: ./webera -[trwn] [optional flags]
 
-MAIN FLAGS
+	MAIN FLAGS
 
-  -t              process the templates
-  -r              process the resources
-  -w              preview in web browser
+	  -t              process the templates
+	  -r              process the resources
+	  -w              preview in web browser
 
-  -n              generate a new configuration file
+	  -n              generate a new configuration file
 
-OPTIONAL FLAGS                      (default value)
+	OPTIONAL FLAGS                      (default value)
 
-  -C <FILE>       indicate the configuration file ($FILE_CONFIG)
+	  -C <FILE>       indicate the configuration file ($FILE_CONFIG)
 
-  -T <DIR>        indicate the templates directory ($DIR_TEMPLATES)
-  -R <DIR>        indicate the resources directory ($DIR_RESOURCES)
-  -O <DIR>        indicate the output directory ($DIR_OUTPUT)
-  -B <DIR>        indicate the build directory ($DIR_BUILD)
+	  -T <DIR>        indicate the templates directory ($DIR_TEMPLATES)
+	  -R <DIR>        indicate the resources directory ($DIR_RESOURCES)
+	  -O <DIR>        indicate the output directory ($DIR_OUTPUT)
+	  -B <DIR>        indicate the build directory ($DIR_BUILD)
 
-  -d              switch deleting the output dir (delete=$OPTION_DELETE_DIR_OUTPUT)
-  -c              switch clearing the log file (clear=$OPTION_CLEAR_LOG)
+	  -d              switch deleting the output dir (delete=$OPTION_DELETE_DIR_OUTPUT)
+	  -c              switch clearing the log file (clear=$OPTION_CLEAR_LOG)
 
-  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
-  -G <FILE>       log file ($FILE_LOG)
-  -W <BIN>        web browser binary ($WEB_BROWSER_BIN)
+	  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
+	  -G <FILE>       log file ($FILE_LOG)
+	  -W <BIN>        web browser binary ($WEB_BROWSER_BIN)
 
-FILE CONFIG
-  You can set all these options, and more, in $FILE_CONFIG
-ENDHERE
+	FILE CONFIG
+	  You can set all these options, and more, in $FILE_CONFIG
+	ENDUSAGE
 	exit 1
 }
 
@@ -226,9 +208,7 @@ setupLog() {
 
 	PRELOG="noprelog"
 
-	if [ "$PARSED_PRELOG" != "" ]; then
-		log "$PARSED_PRELOG";
-	fi
+	[[ -z "$PARSED_PRELOG" ]] || log "$PARSED_PRELOG"
 }
 
 log() {
@@ -315,14 +295,13 @@ previewWebsite() {
 	sleep 1s && eval $RUN_BROWSER > /dev/null 2>&1
 
 	if [ ! -z "$START_SERVER" ]; then
-		eval "$STOP_SERVER $REDIR_CLI_OUTPUT"; eval "$START_SERVER $REDIR_CLI_OUTPUT"
+		eval "$STOP_SERVER $REDIR_CLI_OUTPUT";
+		eval "$START_SERVER $REDIR_CLI_OUTPUT"
 	fi
 }
 
 deleteDirectories() {
-	if [[ $OPTION_DELETE_DIR_BUILD ]]; then
-		rm -r "$DIR_BUILD" 2>/dev/null
-	fi
+	[[ "$OPTION_DELETE_DIR_BUILD" = true ]] && rm -r "$DIR_BUILD" 2>/dev/null
 
 	if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
 			$OPTION_PROCESS_RESOURCES == true \
@@ -391,6 +370,16 @@ configureSettings() {
 			printf -v $setting_name "$setting_value"
 		done
 	fi
+
+	# Override the settings with the parsed arguments
+	for OPT in "${!ARG_OPTIONS[@]}"; do
+		printf -v ${OPT} "${ARG_OPTIONS[$OPT]}"
+	done
+
+	if [[ "$OPERATIONAL" == false ]]; then
+		printf "You must use at least one MAIN FLAG!\n\n"
+		usage
+	fi
 }
 
 generateConfig() {
@@ -409,8 +398,8 @@ generateConfig() {
 	done
 }
 
-defineCommands() {
-	local DEFINED_CMD="$(printf '%s' "$CONFIG" | grep ^$WS*define_cmd$WS*: )"
+readConfigCommands() {
+	local DEFINED_CMD="$(printf '%s' "$CONFIG" | grep ^$WS*command$WS*: )"
 
 	if [ "$DEFINED_CMD" ]; then
 		local CNUM=$(printf '%s' "$DEFINED_CMD" | wc -l )
@@ -657,14 +646,14 @@ templateRender() {
 		local CMDOUT=$(eval "$CMD")
 		log "    cmd: $CMD" 3
 
-		local -i CMDOUT_MAX=50
+		local -i CMDOUT_LOGMAX=50 # log up to this number of chars
 		local -i CMDOUT_LEN=$(printf "%s" "$CMDOUT" | wc -c)
 
-		if [ "$CMDOUT_LEN" -le $CMDOUT_MAX ]; then
+		if [ "$CMDOUT_LEN" -le $CMDOUT_LOGMAX ]; then
 			log "      =: $CMDOUT" 3
 		else
 			log "      =: $(printf '%s' "$CMDOUT" | tr '\n' ' ' \
-				| head -c$CMDOUT_MAX) (...) + $(($CMDOUT_LEN-$CMDOUT_MAX)) chars" 3
+				| head -c$CMDOUT_LOGMAX) (...) + $(($CMDOUT_LEN-$CMDOUT_LOGMAX)) chars" 3
 		fi
 
 		# Substitute the directive in the template with the command output
