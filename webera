@@ -5,13 +5,13 @@
 # is a simple, handy & versatile shellscript for static website generation
 #
 # Repository: https://github.com/andamira/webera
-# Version: 0.1.27
+# Version: 0.1.28
 #
 # Author: José Luis Cruz (andamira)
 # License: MIT
 #
 ## Dependencies:
-#     bash 4 , grep (with PCRE support) , sed , awk
+#     bash 4, grep -P, sed, awk, coreutils
 #
 ## Optional Dependencies:
 #     python | php (to leverage their built-in web server)
@@ -21,8 +21,9 @@
 ##
 
 main() {
+	__VARS_BEFORE=$(set -o posix ; set)
 
-	## CONFIGURABLE OPTIONS
+	## CONFIGURABLE SETTINGS
 
 	# Paths
 	local DIR_TEMPLATES=tem
@@ -46,47 +47,59 @@ main() {
 	local OPTION_DELETE_DIR_BUILD=true
 
 
-	## INTERNALS
+	## NON-CONFIGURABLE SETTINGS
 
-	local OPERATIONAL=false
+	local _OPERATIONAL=false
 
-	local OPTION_PROCESS_TEMPLATES=false
-	local OPTION_PROCESS_RESOURCES=false
-	local OPTION_LOAD_IN_WEB_BROWSER=false
+	local _DO_PROCESS_TEMPLATES=false
+	local _DO_PROCESS_RESOURCES=false
+	local _DO_LOAD_IN_WEB_BROWSER=false
 
-	local FILE_CONFIG_GENERATE=false # has it been requested to generate? (-n)
-	local FILE_CONFIG_EXPLICIT=false # has it been explicitly indicated?  (-C)
+	local _FILE_CONFIG_GENERATE=false # has it been requested to generate? (-n)
+	local _FILE_CONFIG_EXPLICIT=false # has it been explicitly indicated?  (-C)
 
-	declare -A ARG_OPTIONS
-	declare -A DEFINED_CMD_MAP
+	declare -A _ARG_OPTIONS
+	declare -A _DEFINED_CMD_MAP
 
-	local -i NESTING_LEVEL=0
-	local -ri NESTING_MAX=8
+	local -i _NESTING_LEVEL=0
+	local -ri _NESTING_MAX=8
 
-	local -r DATE=$(date '+%Y-%m-%d %H:%M:%S')
-	local PRELOG="" # where saving the log before the logfile is ready
-	local -i LOG_LEVEL_MIN=1
-	local -i LOG_LEVEL_MAX=3
+	local -r _DATE=$(date '+%Y-%m-%d %H:%M:%S')
+	local _PRELOG="" # where the log is saved before logfile is ready
+	local -i _LOG_LEVEL_MIN=1
+	local -i _LOG_LEVEL_MAX=3
 
 	# reusable regexp patterns
-	local -r WS="[[:space:]]" # whitespace
-	local -r SED_TRIM_WS="s/^$WS*//;s/$WS*$//"
-	local -r SED_DEL_COMMENTS="/^$WS*#.*/d"
-	local -r SED_DEL_EMPTYLINES="/^$WS*$/d"
-	local -r SED_JOIN_SPLITLINES=':x; /\\$/ { N; s/\\\n//; tx }' # ending in \
+	local -r _WS="[[:space:]]" # whitespace
+	local -r _SED_TRIM_WS="s/^$_WS*//;s/$_WS*$//"
+	local -r _SED_DEL_COMMENTS="/^$_WS*#.*/d"
+	local -r _SED_DEL_EMPTYLINES="/^$_WS*$/d"
+	local -r _SED_JOIN_SPLITLINES=':x; /\\$/ { N; s/\\\n//; tx }' # ending in \
+
+
+	## DEBUG HELPERS
+
+	# main variables defined alongside their default values
+	local __VARS_WEBERA=$(grep -vFe "$__VARS_BEFORE" \
+		<<<"$(set -o posix ; set)" \
+		| sed 's/^/[vars]::/' )
+	unset __VARS_BEFORE;
+	local __DO_PRINT_VARS=false
 
 
 	## MAIN PROCESS
 
-	log "\n===============[$DATE]==============@\n" 1
+	log "\n===============[$_DATE]==============@\n" 1
 
 	parseArguments "$@"
 
-	readConfig "/etc/weberarc"
-	readConfig "$HOME/.weberarc"
+	[[ "$FILE_CONFIG" != "/etc/weberarc" ]] && readConfig "/etc/weberarc"
+	[[ "$FILE_CONFIG" != "$HOME/.weberarc" ]] && readConfig "$HOME/.weberarc"
 	readConfig "$FILE_CONFIG"
 
 	configureSettings
+
+	[[ "$__DO_PRINT_VARS" = true ]] && ( __printVars; exit )
 
 	setupLog
 
@@ -94,12 +107,12 @@ main() {
 
 	readConfigCommands
 
-	[[ "$OPTION_PROCESS_RESOURCES" = true ]] && processResources
-	[[ "$OPTION_PROCESS_TEMPLATES" = true ]] && processTemplates
+	[[ "$_DO_PROCESS_RESOURCES" = true ]] && processResources
+	[[ "$_DO_PROCESS_TEMPLATES" = true ]] && processTemplates
 
 	printf 'Done.\n'
 
-	[[ "$OPTION_LOAD_IN_WEB_BROWSER" = true ]] && serverSetup && previewWebsite
+	[[ "$_DO_LOAD_IN_WEB_BROWSER" = true ]] && ( serverSetup && previewWebsite )
 }
 
 usage() {
@@ -114,7 +127,7 @@ usage() {
 
 	  -n              generate a new configuration file
 
-	OPTIONAL FLAGS                      (default value)
+	OPTIONAL          ... (DEFAULT)
 
 	  -C <FILE>       indicate the configuration file ($FILE_CONFIG)
 
@@ -130,6 +143,10 @@ usage() {
 	  -G <FILE>       log file ($FILE_LOG)
 	  -W <BIN>        web browser binary ($WEB_BROWSER_BIN)
 
+	DEBUG
+
+	  -_              print variables
+
 	FILE CONFIG
 	  You can set all these options, and more, in $FILE_CONFIG
 	ENDUSAGE
@@ -141,45 +158,47 @@ parseArguments() {
 
 	local OPTIND OPTION
 
-	while getopts ':trwnC:T:R:O:B:dcL:G:W:h:' OPTION; do
+	while getopts ':trwnC:T:R:O:B:dcL:G:W:_h:' OPTION; do
 		case "$OPTION" in
-			t) OPERATIONAL=true; OPTION_PROCESS_TEMPLATES=true ;;
-			r) OPERATIONAL=true; OPTION_PROCESS_RESOURCES=true ;;
-			w) OPERATIONAL=true; OPTION_LOAD_IN_WEB_BROWSER=true ;;
+			t) _OPERATIONAL=true; _DO_PROCESS_TEMPLATES=true ;;
+			r) _OPERATIONAL=true; _DO_PROCESS_RESOURCES=true ;;
+			w) _OPERATIONAL=true; _DO_LOAD_IN_WEB_BROWSER=true ;;
 
-			n) OPERATIONAL=true; FILE_CONFIG_GENERATE=true ;;
+			n) _OPERATIONAL=true; _FILE_CONFIG_GENERATE=true ;;
 
 			C) FILE_CONFIG="$OPTARG"
-				FILE_CONFIG_EXPLICIT=true;
+				_FILE_CONFIG_EXPLICIT=true;
 				;;
 
 			# The following options can also be defined in $FILE_CONFIG, but
 			# passing them as arguments to the script has a higher priority.
 
-			T) ARG_OPTIONS[DIR_TEMPLATES]="$OPTARG" ;;
-			R) ARG_OPTIONS[DIR_RESOURCES]="$OPTARG" ;;
-			O) ARG_OPTIONS[DIR_OUTPUT]="$OPTARG" ;;
-			B) ARG_OPTIONS[DIR_BUILD]="$OPTARG" ;;
+			T) _ARG_OPTIONS[DIR_TEMPLATES]="$OPTARG" ;;
+			R) _ARG_OPTIONS[DIR_RESOURCES]="$OPTARG" ;;
+			O) _ARG_OPTIONS[DIR_OUTPUT]="$OPTARG" ;;
+			B) _ARG_OPTIONS[DIR_BUILD]="$OPTARG" ;;
 
 			# These flags switches the default boolean value,
 			# (without checking first the values in file config).
 			d) if [ "$OPTION_DELETE_DIR_OUTPUT" == true ]; then
-					ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]=false
+					_ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]=false
 				else
-					ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]=true
+					_ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]=true
 				fi
 				;;
 			c) if [ "$OPTION_CLEAR_LOG" == true ]; then
-					ARG_OPTIONS[OPTION_CLEAR_LOG]=false
+					_ARG_OPTIONS[OPTION_CLEAR_LOG]=false
 				else
-					ARG_OPTIONS[OPTION_CLEAR_LOG]=true
+					_ARG_OPTIONS[OPTION_CLEAR_LOG]=true
 				fi
 				;;
 
-			L) ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
-			G) ARG_OPTIONS[FILE_LOG]="$OPTARG" ;;
+			L) _ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
+			G) _ARG_OPTIONS[FILE_LOG]="$OPTARG" ;;
 
-			W) ARG_OPTIONS[WEB_BROWSER_BIN]="$OPTARG" ;;
+			W) _ARG_OPTIONS[WEB_BROWSER_BIN]="$OPTARG" ;;
+
+			_) _OPERATIONAL=true; __DO_PRINT_VARS=true ;;
 
 			h|*) usage ;;
 		esac
@@ -200,13 +219,13 @@ setupLog() {
 	# 2. leave only the log message, discard the rest. (TODO: filter out error|warn)
 	# 3. bring back the newlines
 	# 4. put the log level in the date header
-	local PARSED_PRELOG=$(printf "$PRELOG" \
+	local PARSED_PRELOG=$(printf "$_PRELOG" \
 		| awk -v ll=$OPTION_LOG_LEVEL -F '|' '$1<=ll' \
 		| cut -d'|' -f3- \
 		| tr '\a' '\n' \
 		| sed "s/====@$/====$OPTION_LOG_LEVEL/" )
 
-	PRELOG="noprelog"
+	_PRELOG="noprelog"
 
 	[[ -z "$PARSED_PRELOG" ]] || log "$PARSED_PRELOG"
 }
@@ -214,13 +233,13 @@ setupLog() {
 log() {
 	declare logMsg=$1 logLevelNeeded=$2 logType=$3
 
-	if [ "$PRELOG" == "noprelog" ]; then
+	if [ "$_PRELOG" == "noprelog" ]; then
 
 		if [[ -z "$logLevelNeeded" || ( "$logLevelNeeded" -lt "1" ) ]]; then
-			LOG_LEVEL=$LOG_LEVEL_MIN
+			LOG_LEVEL=$_LOG_LEVEL_MIN
 		else
-			if [[ "$LOG_LEVEL" -gt "$LOG_LEVEL_MAX" ]]; then
-				LOG_LEVEL=$LOG_LEVEL_MAX
+			if [[ "$LOG_LEVEL" -gt "$_LOG_LEVEL_MAX" ]]; then
+				LOG_LEVEL=$_LOG_LEVEL_MAX
 			else
 				LOG_LEVEL=$logLevelNeeded
 			fi
@@ -235,7 +254,7 @@ log() {
 		# 1. replace the newlines with a BEL
 		# 2. put the log level and type at the beginning
 		local msg_1line=$(printf "$logMsg" | tr '\n' '\a')
-		PRELOG="$PRELOG\n$logLevelNeeded|$logType|$msg_1line"
+		_PRELOG="$_PRELOG\n$logLevelNeeded|$logType|$msg_1line"
 	fi
 
 	# Print errors to stderr
@@ -280,7 +299,7 @@ previewWebsite() {
 	case $OPTION_LOG_LEVEL in
 		0)
 			# no CLI output whatsoever
-			local REDIR_CLI_OUTPUT="> /dev/null 2>&1"
+			local REDIR_CLI_OUTPUT="&>> /dev/null"
 			;;
 		1)
 			# hide errors
@@ -292,7 +311,7 @@ previewWebsite() {
 			;;
 	esac
 
-	sleep 1s && eval $RUN_BROWSER > /dev/null 2>&1
+	sleep 1s && eval $RUN_BROWSER &>> /dev/null
 
 	if [ ! -z "$START_SERVER" ]; then
 		eval "$STOP_SERVER $REDIR_CLI_OUTPUT";
@@ -304,8 +323,8 @@ deleteDirectories() {
 	[[ "$OPTION_DELETE_DIR_BUILD" = true ]] && rm -r "$DIR_BUILD" 2>/dev/null
 
 	if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
-			$OPTION_PROCESS_RESOURCES == true \
-			|| $OPTION_PROCESS_TEMPLATES == true \
+			$_DO_PROCESS_RESOURCES == true \
+			|| $_DO_PROCESS_TEMPLATES == true \
 		) ]]; then
 
 		rm -r "$DIR_OUTPUT" 2>/dev/null
@@ -317,27 +336,39 @@ readConfig() {
 
 	if [ -f "$FILE" ]; then # config file exists
 		# and tried to generate a new config file
-		if [[ "$FILE_CONFIG_GENERATE" == true ]] \
+		if [[ "$_FILE_CONFIG_GENERATE" == true ]] \
 			&& [[ "$FILE" == "$FILE_CONFIG" ]]; then
 			log "Warning: local config file '$FILE' already exists. Overwrite is not allowed." 2 warn
 		fi
 
 		local TMPCONF="$(cat "$FILE" \
-			| sed -e "$SED_TRIM_WS" \
-			| sed -e "$SED_DEL_COMMENTS" -e "$SED_DEL_EMPTYLINES" \
-			| sed -e "$SED_JOIN_SPLITLINES" \
+			| sed -e "$_SED_TRIM_WS" \
+			| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
+			| sed -e "$_SED_JOIN_SPLITLINES" \
 		)"$'\n'
 		CONFIG="$CONFIG$TMPCONF" # append to previously read configuration
+
+		local OLDIFS="$IFS"; IFS=$'\n'
+		for LINE in $(printf '%s' "$TMPCONF" \
+			| grep '^config' \
+			| cut -d ':' -f2- \
+			| sed "s/$_WS*:$_WS*/=/" \
+			| sed "$_SED_TRIM_WS" \
+			); do
+			#__VARS_WEBERA="$__VARS_WEBERA"$'\n'"$FILE:$LINE"
+			printf -v __VARS_WEBERA "$__VARS_WEBERA\n[file]:$FILE:$LINE"
+		done
+		IFS="$OLDIFS"
 
 	else # the config file doesn't exist
 
 		# it is the local config file
 		if [ "$FILE" == "$FILE_CONFIG" ]; then
 
-			if [[ "$FILE_CONFIG_GENERATE" == true ]]; then # generate a new one
+			if [[ "$_FILE_CONFIG_GENERATE" == true ]]; then # generate a new one
 				generateConfig
 			else
-				if [[ $FILE_CONFIG_EXPLICIT == true ]]; then # it was explicitly indicated
+				if [[ $_FILE_CONFIG_EXPLICIT == true ]]; then # it was explicitly indicated
 					printf "ERROR: Configuration file '%s' doesn't exist.\n" "$FILE_CONFIG"
 					exit 2
 				else
@@ -352,7 +383,7 @@ readConfig() {
 
 configureSettings() {
 	# Parse the commands for processing resources
-	local SETTINGS="$(printf '%s' "$CONFIG" | grep ^$WS*config$WS*: )"
+	local SETTINGS="$(printf '%s' "$CONFIG" | grep ^$_WS*config$_WS*: )"
 
 	if [ "$SETTINGS" ]; then
 		log "\nConfiguring settings...\n------------------------------------------------------" 1
@@ -360,8 +391,8 @@ configureSettings() {
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for S in $SETTINGS; do
 
-			local setting_name=$(printf '%s' "$S" | cut -d':' -f2 | sed -e "$SED_TRIM_WS")
-			local setting_value=$(printf '%s' "$S" | cut -d':' -f3 | sed -e "$SED_TRIM_WS")
+			local setting_name=$(printf '%s' "$S" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS")
+			local setting_value=$(printf '%s' "$S" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS")
 			local setting_previous_value=${!setting_name}
 
 			log "  setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
@@ -369,14 +400,17 @@ configureSettings() {
 			# NOTE: There're currently no checks. Any global variable can be (re)assigned.
 			printf -v $setting_name "$setting_value"
 		done
+		IFS="$OLDIFS"
 	fi
 
 	# Override the settings with the parsed arguments
-	for OPT in "${!ARG_OPTIONS[@]}"; do
-		printf -v ${OPT} "${ARG_OPTIONS[$OPT]}"
+	for OPT in "${!_ARG_OPTIONS[@]}"; do
+		printf -v ${OPT} "${_ARG_OPTIONS[$OPT]}"
+		printf -v __VARS_WEBERA \
+			"$__VARS_WEBERA\n[args]::$OPT=${_ARG_OPTIONS[$OPT]}"
 	done
 
-	if [[ "$OPERATIONAL" == false ]]; then
+	if [[ "$_OPERATIONAL" == false ]]; then
 		printf "You must use at least one MAIN FLAG!\n\n"
 		usage
 	fi
@@ -385,12 +419,12 @@ configureSettings() {
 generateConfig() {
 	local configLines=()
 
-	if [ "$FILE_CONFIG_EXPLICIT" == true ]; then
+	if [ "$_FILE_CONFIG_EXPLICIT" == true ]; then
 		configLines+=("config : FILE_CONFIG : $FILE_CONFIG")
 	fi
 
-	for OPT in "${!ARG_OPTIONS[@]}"; do
-		configLines+=("config : $OPT : ${ARG_OPTIONS[$OPT]}")
+	for OPT in "${!_ARG_OPTIONS[@]}"; do
+		configLines+=("config : $OPT : ${_ARG_OPTIONS[$OPT]}")
 	done
 
 	for LINE in "${configLines[@]}"; do
@@ -399,7 +433,7 @@ generateConfig() {
 }
 
 readConfigCommands() {
-	local DEFINED_CMD="$(printf '%s' "$CONFIG" | grep ^$WS*command$WS*: )"
+	local DEFINED_CMD="$(printf '%s' "$CONFIG" | grep ^$_WS*command$_WS*: )"
 
 	if [ "$DEFINED_CMD" ]; then
 		local CNUM=$(printf '%s' "$DEFINED_CMD" | wc -l )
@@ -409,10 +443,10 @@ readConfigCommands() {
 	local OLDIFS="$IFS"; IFS=$'\n'
 	for C in $DEFINED_CMD; do
 
-		local cmd_name=$(printf '%s' "$C" | cut -d':' -f2 | sed -e "$SED_TRIM_WS" )
-		local cmd_action=$(printf '%s' "$C" | cut -d':' -f3- | sed -e "$SED_TRIM_WS" )
+		local cmd_name=$(printf '%s' "$C" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
+		local cmd_action=$(printf '%s' "$C" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS" )
 
-		DEFINED_CMD_MAP[$cmd_name]=$cmd_action
+		_DEFINED_CMD_MAP[$cmd_name]=$cmd_action
 
 		log "  $cmd_name='$cmd_action'" 2
 	done
@@ -424,17 +458,17 @@ processResources() {
 
 	if [ -d "$DIR_RESOURCES" ]; then
 
-		local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$WS*resource$WS*: )"
+		local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*resource$_WS*: )"
 
-		local RNUM=$(printf '%s' "$RESOURCE_CMD_LIST" | sed "$SED_DEL_EMPTYLINES" | wc -l )
+		local RNUM=$(printf '%s' "$RESOURCE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
 		log "  Found $RNUM operations on resources:" 1
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for RCMD in $RESOURCE_CMD_LIST; do
 
-			local operation=$(printf '%s' "$RCMD" | cut -d':' -f2 | sed -e "$SED_TRIM_WS" )
-			local fileOrigin=$(printf '%s' "$RCMD" | cut -d':' -f3 | sed -e "$SED_TRIM_WS" )
-			local fileTarget=$(printf '%s' "$RCMD" | cut -d':' -f4 | sed -e "$SED_TRIM_WS" )
+			local operation=$(printf '%s' "$RCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
+			local fileOrigin=$(printf '%s' "$RCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
+			local fileTarget=$(printf '%s' "$RCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
 
 			log "  $operation: $fileOrigin > $fileTarget" 1
 
@@ -452,19 +486,19 @@ processResources() {
 					;;
 				*)
 					# custom command? Paths are adapted for resources
-					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
+					if [ "${_DEFINED_CMD_MAP[$operation]}" ]; then
 
-						local CMD=$(printf '%s' "${DEFINED_CMD_MAP[$operation]}" \
+						local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
 							| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
 							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
 							| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
 						)
 
 						# Create target paths
-						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
+						if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
 							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
 						fi
-						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
+						if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
 							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
 						fi
 
@@ -487,17 +521,17 @@ processTemplates() {
 
 	if [ -d "$DIR_TEMPLATES" ]; then
 
-		local TEMPLATE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$WS*template$WS*: )"
+		local TEMPLATE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*template$_WS*: )"
 
-		local TNUM=$(printf '%s' "$TEMPLATE_CMD_LIST" | sed "$SED_DEL_EMPTYLINES" | wc -l )
+		local TNUM=$(printf '%s' "$TEMPLATE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
 		log "  Found $TNUM operations on templates:" 1
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for TCMD in $TEMPLATE_CMD_LIST; do
 
-			local operation=$(printf '%s' "$TCMD" | cut -d':' -f2 | sed -e "$SED_TRIM_WS" )
-			local fileOrigin=$(printf '%s'  "$TCMD" | cut -d':' -f3 | sed -e "$SED_TRIM_WS" )
-			local fileTarget=$(printf '%s' "$TCMD" | cut -d':' -f4 | sed -e "$SED_TRIM_WS" )
+			local operation=$(printf '%s' "$TCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
+			local fileOrigin=$(printf '%s'  "$TCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
+			local fileTarget=$(printf '%s' "$TCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
 
 			log "  $operation: $fileOrigin > $fileTarget" 1
 
@@ -524,19 +558,19 @@ processTemplates() {
 
 				*)
 					# custom command? Paths are adapted for templates
-					if [ "${DEFINED_CMD_MAP[$operation]}" ]; then
+					if [ "${_DEFINED_CMD_MAP[$operation]}" ]; then
 
-						local CMD=$(printf '%s' "${DEFINED_CMD_MAP[$operation]}" \
+						local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
 							| sed "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
 							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
 							| sed "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
 						)
 
 						# Create target paths
-						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
+						if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
 							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
 						fi
-						if [[ "${DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
+						if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
 							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
 						fi
 
@@ -557,9 +591,9 @@ processTemplates() {
 templateParseIncludes() {
 	declare templateFileName=$1
 
-	((NESTING_LEVEL++))
-	if [ $NESTING_LEVEL -gt $NESTING_MAX ]; then
-		log "  ERROR: max nesting level ($NESTING_MAX) reached for template $templateFileName" 1 error
+	((_NESTING_LEVEL++))
+	if [ $_NESTING_LEVEL -gt $_NESTING_MAX ]; then
+		log "  ERROR: max nesting level ($_NESTING_MAX) reached for template $templateFileName" 1 error
 		exit 3
 	fi
 
@@ -572,7 +606,7 @@ templateParseIncludes() {
 		log "  ERROR: No template found '$templateFile'" 1 error
 		return
 	fi
-	local directives_include=$(grep -Po "<!--$WS*%include$WS*:.*?-->" "$templateFile")
+	local directives_include=$(grep -Po "<!--$_WS*%include$_WS*:.*?-->" "$templateFile")
 	local D=''
 
 	local OLDIFS="$IFS"; IFS=$'\n'
@@ -583,7 +617,7 @@ templateParseIncludes() {
 	fi
 
 	for D in $directives_include; do
-		local includedFileName=$(printf '%s' "$D" | sed -n -e "s/<\!--$WS*%include$WS*:$WS*\(.*\)$WS*-->/\1/p" | sed -e "s/$WS*$//" )
+		local includedFileName=$(printf '%s' "$D" | sed -n -e "s/<\!--$_WS*%include$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" | sed -e "s/$_WS*$//" )
 		log "    include: '$includedFileName'" 2
 
 		# Parse included template for further includes
@@ -594,7 +628,7 @@ templateParseIncludes() {
 	done
 	IFS="$OLDIFS"
 
-	((NESTING_LEVEL--))
+	((_NESTING_LEVEL--))
 
 	printf '%s' "$templateContent"
 }
@@ -605,16 +639,16 @@ templateRender() {
 	local templateText="$(templateParseIncludes $templateFileName)"
 
 	# Template tags must be one-liners
-	local directives_set=$(printf '%s' "$templateText" | grep -Po "<!--$WS*%set$WS*:.*?-->")
-	local directives_cmd=$(printf '%s' "$templateText" | grep -Po "<!--$WS*%cmd$WS*:.*?-->")
-	local directives_setcmd=$(printf '%s' "$templateText" | grep -Po "<!--$WS*%setcmd$WS*:.*?-->")
+	local directives_set=$(printf '%s' "$templateText" | grep -Po "<!--$_WS*%set$_WS*:.*?-->")
+	local directives_cmd=$(printf '%s' "$templateText" | grep -Po "<!--$_WS*%cmd$_WS*:.*?-->")
+	local directives_setcmd=$(printf '%s' "$templateText" | grep -Po "<!--$_WS*%setcmd$_WS*:.*?-->")
 	local D=''
 
 	# text comments
 	#
 	# <!-- // Comment -->
 	#
-	templateText=$(printf '%s' "$templateText" | sed -e :a -re "s/<!--$WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
+	templateText=$(printf '%s' "$templateText" | sed -e :a -re "s/<!--$_WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 
@@ -624,7 +658,7 @@ templateRender() {
 	# <!-- @VARIABLE -->
 	#
 	for D in $directives_set; do
-		local SET=$(printf '%s' "$D" | sed -n -e "s/<\!--$WS*%set$WS*:$WS*\(.*\)$WS*-->/\1/p" | sed -e "s/$WS*$//")
+		local SET=$(printf '%s' "$D" | sed -n -e "s/<\!--$_WS*%set$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" | sed -e "s/$_WS*$//")
 		local SETVAR="${SET%%=*}"
 		local SETVAL="${SET#*=}"
 		log "      set: $SETVAR = $SETVAL" 3
@@ -634,7 +668,7 @@ templateRender() {
 		templateText=$(printf '%s' "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?//g")
 		templateText=$(printf '%s' "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$WS*@$SETVAR$WS*-->\n\?/$SETVAL/g")
+			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$_WS*@$SETVAR$_WS*-->\n\?/$SETVAL/g")
 	done
 
 	# execute commands, render output
@@ -642,7 +676,7 @@ templateRender() {
 	# <!-- %cmd : ls -l -->
 	#
 	for D in $directives_cmd ; do
-		local CMD=$(printf '%s' "$D" | sed -n -e "s/^.*<\!--$WS*%cmd$WS*:$WS*\(.*\)$WS*-->.*$/\1/p" | sed -e "s/$WS*$//")
+		local CMD=$(printf '%s' "$D" | sed -n -e "s/^.*<\!--$_WS*%cmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" | sed -e "s/$_WS*$//")
 		local CMDOUT=$(eval "$CMD")
 		log "    cmd: $CMD" 3
 
@@ -657,7 +691,7 @@ templateRender() {
 		fi
 
 		# Substitute the directive in the template with the command output
-		# attribution: @anubhava in http://stackoverflow.com/a/40749641/940200
+		# http://stackoverflow.com/a/40749641/940200
 		templateText=$(awk -v repl="$CMDOUT" 'FNR==NR {
 				a = a $0; next
 			}
@@ -673,7 +707,7 @@ templateRender() {
 	# <!-- @VARIABLE -->
 	#
 	for D in $directives_setcmd; do
-		local SETCMD=$(printf '%s' "$D" | sed -n -e "s/^.*<\!--$WS*%setcmd$WS*:$WS*\(.*\)$WS*-->.*$/\1/p" | sed -e "s/$WS*$//")
+		local SETCMD=$(printf '%s' "$D" | sed -n -e "s/^.*<\!--$_WS*%setcmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" | sed -e "s/$_WS*$//")
 		local SETCMDVAR="${SETCMD%%=*}"
 		local SETCMDVAL="${SETCMD#*=}"
 		local SETCMDOUT=$(eval $SETCMDVAL)
@@ -689,7 +723,7 @@ templateRender() {
 		)
 		# Replace all the set variables with the command output
 		templateText=$(printf '%s' "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$WS*@$SETCMDVAR$WS*-->\n\?/$SETCMDOUT/g")
+			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$_WS*@$SETCMDVAR$_WS*-->\n\?/$SETCMDOUT/g")
 	done
 
 	IFS="$OLDIFS"
@@ -699,4 +733,8 @@ templateRender() {
 	printf "%s" "$templateText"
 }
 
-main "$@"
+__printVars() {
+	printf '%s\n' "$__VARS_WEBERA"
+}
+
+main "$@" # this must always be the last line

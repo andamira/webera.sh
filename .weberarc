@@ -23,8 +23,8 @@
 #
 # config : DIR_TEMPLATES : tem
 # config : DIR_RESOURCES : res
-# config : DIR_BUILD     : build
 # config : DIR_OUTPUT    : out
+# config : DIR_BUILD     : build
 
 
 ## Delete the output & build folders before starting to write on them

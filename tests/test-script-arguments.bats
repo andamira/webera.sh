@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-load header
+load helper
 
 @test "no arguments; shows usage" {
 	run webera
