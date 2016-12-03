@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
 #
 # webera
-#
 # is a simple, handy & versatile shellscript for static website generation
 #
 # Repository: https://github.com/andamira/webera
-# Version: 0.1.28
-#
-# Author: José Luis Cruz (andamira)
+# Author: José Luis Cruz
+# Version: 0.1.29
 # License: MIT
 #
-## Dependencies:
+# Dependencies:
 #     bash 4, grep -P, sed, awk, coreutils
 #
-## Optional Dependencies:
+# Optional Dependencies:
 #     python | php (to leverage their built-in web server)
 #
 # Originally Inspired by Statix
@@ -33,9 +31,10 @@ main() {
 	local FILE_CONFIG=.weberarc
 
 	# Web Browser
-	local WEB_BROWSER_BIN="firefox" # | chromium-browser | google-chrome | vivaldi | ...
+	local WEB_BROWSER="firefox"
 	local SERVER_TYPE="python"
 	local -i SERVER_PORT=8192
+	local SERVER_HOST="localhost"
 
 	# Log
 	local FILE_LOG=log.txt
@@ -99,7 +98,7 @@ main() {
 
 	configureSettings
 
-	[[ "$__DO_PRINT_VARS" = true ]] && ( __printVars; exit )
+	[[ "$__DO_PRINT_VARS" = true ]] && ( __printVars; exit 4)
 
 	setupLog
 
@@ -109,13 +108,12 @@ main() {
 
 	[[ "$_DO_PROCESS_RESOURCES" = true ]] && processResources
 	[[ "$_DO_PROCESS_TEMPLATES" = true ]] && processTemplates
-
-	printf 'Done.\n'
-
-	[[ "$_DO_LOAD_IN_WEB_BROWSER" = true ]] && ( serverSetup && previewWebsite )
+	[[ "$_DO_LOAD_IN_WEB_BROWSER" = true ]] && ( serverSetup; previewWebsite )
 }
 
 usage() {
+	local errCode="$1"
+
 	cat <<-ENDUSAGE
 	Usage: ./webera -[trwn] [optional flags]
 
@@ -141,16 +139,18 @@ usage() {
 
 	  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
 	  -G <FILE>       log file ($FILE_LOG)
-	  -W <BIN>        web browser binary ($WEB_BROWSER_BIN)
 
-	DEBUG
+	  -W <BIN>        web browser binary ($WEB_BROWSER)
+	  -S <TYPE>       server type [none|php|python|custom] ($SERVER_TYPE)
+	  -H <DOMAIN>     server host ($SERVER_HOST)
+	  -P <NUMBER>     port number ($SERVER_PORT)
 
-	  -_              print variables
+	  -_              debug. Print variables
 
 	FILE CONFIG
 	  You can set all these options, and more, in $FILE_CONFIG
 	ENDUSAGE
-	exit 1
+	[[ -z "$errCode" ]] || exit $errCode
 }
 
 parseArguments() {
@@ -158,7 +158,7 @@ parseArguments() {
 
 	local OPTIND OPTION
 
-	while getopts ':trwnC:T:R:O:B:dcL:G:W:_h:' OPTION; do
+	while getopts ':trwnC:T:R:O:B:dcL:G:W:S:H:P:_h:' OPTION; do
 		case "$OPTION" in
 			t) _OPERATIONAL=true; _DO_PROCESS_TEMPLATES=true ;;
 			r) _OPERATIONAL=true; _DO_PROCESS_RESOURCES=true ;;
@@ -196,11 +196,14 @@ parseArguments() {
 			L) _ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
 			G) _ARG_OPTIONS[FILE_LOG]="$OPTARG" ;;
 
-			W) _ARG_OPTIONS[WEB_BROWSER_BIN]="$OPTARG" ;;
+			W) _ARG_OPTIONS[WEB_BROWSER]="$OPTARG" ;;
+			S) _ARG_OPTIONS[SERVER_TYPE]="$OPTARG" ;;
+			H) _ARG_OPTIONS[SERVER_HOST]="$OPTARG" ;;
+			P) _ARG_OPTIONS[SERVER_PORT]="$OPTARG" ;;
 
 			_) _OPERATIONAL=true; __DO_PRINT_VARS=true ;;
 
-			h|*) usage ;;
+			h|*) usage 0 ;;
 		esac
 	done
 	shift $((OPTIND-1))
@@ -266,56 +269,40 @@ log() {
 serverSetup() {
 	case $SERVER_TYPE in
 		python)
-			START_SERVER="pushd $DIR_OUTPUT; python -m SimpleHTTPServer $SERVER_PORT"
-			STOP_SERVER="kill \$(pgrep -f \"python -m SimpleHTTPServer\")"
+			SERVER_START="pushd $DIR_OUTPUT; python -m SimpleHTTPServer $SERVER_PORT"
+			SERVER_STOP='kill $(pgrep -f "python -m SimpleHTTPServer")'
 			;;
 		php)
-			START_SERVER="php -S localhost:$SERVER_PORT -t $DIR_OUTPUT"
-			STOP_SERVER="kill \$(pgrep -f \"php -S localhost\")"
+			SERVER_START="php -S localhost:$SERVER_PORT -t $DIR_OUTPUT"
+			SERVER_STOP='kill $(pgrep -f "php -S localhost")'
 			;;
-		none)
-			START_SERVER=""
-			STOP_SERVER=""
+		none) # useful when not using `dir/index.html` structure
+			SERVER_START=""
+			SERVER_STOP=""
+			;;
+		custom) # for when a server is already running, or custom SERVER_START
 			;;
 		*)
-			log "Not recognized SERVER_TYPE='$SERVER_TYPE'" 2 warn
-			START_SERVER=""
-			STOP_SERVER=""
+			log "ERROR: Not recognized SERVER_TYPE='$SERVER_TYPE'" 2 error
+			exit 5
 			;;
 	esac
 }
 
 previewWebsite() {
-	printf "Loading website in '$WEB_BROWSER_BIN'..."
+	printf "Loading website in '$WEB_BROWSER'...\n"
 
-	if [ ! -z "$START_SERVER" ]; then
-		printf " (Use CTRL+C to stop the web server)\n"
+	if [[ "$SERVER_TYPE" == "none" ]]; then
+		local RUN_BROWSER="$WEB_BROWSER file://$(readlink -f $DIR_OUTPUT) &"
 	else
-		printf '\n'
+		local RUN_BROWSER="$WEB_BROWSER http://$SERVER_HOST:$SERVER_PORT &"
 	fi
 
-	local RUN_BROWSER="$WEB_BROWSER_BIN http://localhost:$SERVER_PORT &"
-
-	case $OPTION_LOG_LEVEL in
-		0)
-			# no CLI output whatsoever
-			local REDIR_CLI_OUTPUT="&>> /dev/null"
-			;;
-		1)
-			# hide errors
-			local REDIR_CLI_OUTPUT="2>/dev/null"
-			;;
-		*)
-			# output everything
-			local REDIR_CLI_OUTPUT=""
-			;;
-	esac
-
 	sleep 1s && eval $RUN_BROWSER &>> /dev/null
-
-	if [ ! -z "$START_SERVER" ]; then
-		eval "$STOP_SERVER $REDIR_CLI_OUTPUT";
-		eval "$START_SERVER $REDIR_CLI_OUTPUT"
+	if [ ! -z "$SERVER_START" ]; then
+		printf "(Use CTRL+C to stop the '$SERVER_TYPE' web server)\n"
+		printf "SERVER_START=$SERVER_START"
+		eval "$SERVER_STOP &>> /dev/null"; eval "$SERVER_START"
 	fi
 }
 
@@ -334,7 +321,7 @@ deleteDirectories() {
 readConfig() {
 	local FILE="$1" # string
 
-	if [ -f "$FILE" ]; then # config file exists
+	if [ -f "$FILE" ]; then # config file exists already
 		# and tried to generate a new config file
 		if [[ "$_FILE_CONFIG_GENERATE" == true ]] \
 			&& [[ "$FILE" == "$FILE_CONFIG" ]]; then
@@ -382,7 +369,6 @@ readConfig() {
 }
 
 configureSettings() {
-	# Parse the commands for processing resources
 	local SETTINGS="$(printf '%s' "$CONFIG" | grep ^$_WS*config$_WS*: )"
 
 	if [ "$SETTINGS" ]; then
@@ -392,7 +378,7 @@ configureSettings() {
 		for S in $SETTINGS; do
 
 			local setting_name=$(printf '%s' "$S" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS")
-			local setting_value=$(printf '%s' "$S" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS")
+			local setting_value=$(printf '%s' "$S" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS")
 			local setting_previous_value=${!setting_name}
 
 			log "  setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
@@ -411,8 +397,8 @@ configureSettings() {
 	done
 
 	if [[ "$_OPERATIONAL" == false ]]; then
-		printf "You must use at least one MAIN FLAG!\n\n"
-		usage
+		log "You must use at least one MAIN FLAG!\n\n" 1 error
+		usage 1
 	fi
 }
 
@@ -465,7 +451,6 @@ processResources() {
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for RCMD in $RESOURCE_CMD_LIST; do
-
 			local operation=$(printf '%s' "$RCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
 			local fileOrigin=$(printf '%s' "$RCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
 			local fileTarget=$(printf '%s' "$RCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
@@ -485,7 +470,7 @@ processResources() {
 						"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget"
 					;;
 				*)
-					# custom command? Paths are adapted for resources
+					# Here {PATHS} are adapted for resources
 					if [ "${_DEFINED_CMD_MAP[$operation]}" ]; then
 
 						local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
@@ -503,7 +488,7 @@ processResources() {
 						fi
 
 						log "  Executing: $CMD" 3
-						eval $CMD # HACK dangerous
+						eval "$CMD"
 					else
 						log "  ERROR: operation '$operation' not recognized" 1 error
 					fi
@@ -528,7 +513,6 @@ processTemplates() {
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for TCMD in $TEMPLATE_CMD_LIST; do
-
 			local operation=$(printf '%s' "$TCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
 			local fileOrigin=$(printf '%s'  "$TCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
 			local fileTarget=$(printf '%s' "$TCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
@@ -557,7 +541,7 @@ processTemplates() {
 					;;
 
 				*)
-					# custom command? Paths are adapted for templates
+					# Here {PATHS} are adapted for templates
 					if [ "${_DEFINED_CMD_MAP[$operation]}" ]; then
 
 						local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
