@@ -21,16 +21,15 @@ main() {
 }
 
 usage() {
-	cat << ENDHERE
+	cat <<- ENDUSAGE
 
-Generates every example.
+	Generates every example.
 
-Usage: ./generate-examples.sh [OPTIONS]
+	Usage: ./generate-examples [OPTIONS]
 
-  -w              preview in web browser
-  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
-
-ENDHERE
+	  -w              preview in web browser
+	  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
+	ENDUSAGE
 	exit 1
 }
 

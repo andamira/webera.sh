@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.29
+# Version: 0.1.30
 # License: MIT
 #
 # Dependencies:
@@ -19,7 +19,9 @@
 ##
 
 main() {
-	__VARS_BEFORE=$(set -o posix ; set)
+	local __VARS_WEBERA="" # A list of the settings, for debugging purposes
+	local __VARS_BEFORE=$(set -o posix ; set | awk -F= '{print $1"="}' )
+
 
 	## CONFIGURABLE SETTINGS
 
@@ -35,6 +37,8 @@ main() {
 	local SERVER_TYPE="python"
 	local -i SERVER_PORT=8192
 	local SERVER_HOST="localhost"
+	local SERVER_START=""
+	local SERVER_STOP=""
 
 	# Log
 	local FILE_LOG=log.txt
@@ -46,7 +50,7 @@ main() {
 	local OPTION_DELETE_DIR_BUILD=true
 
 
-	## NON-CONFIGURABLE SETTINGS
+	## INTERNAL SETTINGS
 
 	local _OPERATIONAL=false
 
@@ -63,26 +67,28 @@ main() {
 	local -i _NESTING_LEVEL=0
 	local -ri _NESTING_MAX=8
 
+	local _PRELOG="" # where log is saved before there's a logfile
 	local -r _DATE=$(date '+%Y-%m-%d %H:%M:%S')
-	local _PRELOG="" # where the log is saved before logfile is ready
 	local -i _LOG_LEVEL_MIN=1
 	local -i _LOG_LEVEL_MAX=3
+
+	# indentation for logs
+	local -r _IN="  "; local -r _IN2="    "
+	local -r _IN3="$_IN2$_IN"; local -r _IN4="$_IN2$_IN2"
 
 	# reusable regexp patterns
 	local -r _WS="[[:space:]]" # whitespace
 	local -r _SED_TRIM_WS="s/^$_WS*//;s/$_WS*$//"
-	local -r _SED_DEL_COMMENTS="/^$_WS*#.*/d"
+	local -r _SED_DEL_COMMENTS="/^$_WS*#.*/d" # starting in #
 	local -r _SED_DEL_EMPTYLINES="/^$_WS*$/d"
 	local -r _SED_JOIN_SPLITLINES=':x; /\\$/ { N; s/\\\n//; tx }' # ending in \
 
-
-	## DEBUG HELPERS
-
-	# main variables defined alongside their default values
-	local __VARS_WEBERA=$(grep -vFe "$__VARS_BEFORE" \
-		<<<"$(set -o posix ; set)" \
-		| sed 's/^/[vars]::/' )
-	unset __VARS_BEFORE;
+	# save all the default settings
+	local __VARS_AFTER="$(set -o posix ; set | sed '/^'\''/d' )"
+	printf -v __VARS_WEBERA '%s\n' "$(grep -vFf \
+		<(printf '%s' "$__VARS_BEFORE") <(printf '%s' "$__VARS_AFTER") \
+		| sed 's/^/[vars]::/' )"
+	unset __VARS_BEFORE; unset __VARS_AFTER;
 	local __DO_PRINT_VARS=false
 
 
@@ -342,8 +348,7 @@ readConfig() {
 			| sed "s/$_WS*:$_WS*/=/" \
 			| sed "$_SED_TRIM_WS" \
 			); do
-			#__VARS_WEBERA="$__VARS_WEBERA"$'\n'"$FILE:$LINE"
-			printf -v __VARS_WEBERA "$__VARS_WEBERA\n[file]:$FILE:$LINE"
+			printf -v __VARS_WEBERA '%s' "$__VARS_WEBERA[file]:$FILE:$LINE"
 		done
 		IFS="$OLDIFS"
 
@@ -381,7 +386,7 @@ configureSettings() {
 			local setting_value=$(printf '%s' "$S" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS")
 			local setting_previous_value=${!setting_name}
 
-			log "  setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
+			log "${_IN}setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
 
 			# NOTE: There're currently no checks. Any global variable can be (re)assigned.
 			printf -v $setting_name "$setting_value"
@@ -392,7 +397,7 @@ configureSettings() {
 	# Override the settings with the parsed arguments
 	for OPT in "${!_ARG_OPTIONS[@]}"; do
 		printf -v ${OPT} "${_ARG_OPTIONS[$OPT]}"
-		printf -v __VARS_WEBERA \
+		printf -v __VARS_WEBERA '%s' \
 			"$__VARS_WEBERA\n[args]::$OPT=${_ARG_OPTIONS[$OPT]}"
 	done
 
@@ -434,7 +439,7 @@ readConfigCommands() {
 
 		_DEFINED_CMD_MAP[$cmd_name]=$cmd_action
 
-		log "  $cmd_name='$cmd_action'" 2
+		log "${_IN}$cmd_name='$cmd_action'" 2
 	done
 	IFS="$OLDIFS"
 }
@@ -447,7 +452,7 @@ processResources() {
 		local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*resource$_WS*: )"
 
 		local RNUM=$(printf '%s' "$RESOURCE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
-		log "  Found $RNUM operations on resources:" 1
+		log "${_IN}Found $RNUM operations on resources:" 1
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for RCMD in $RESOURCE_CMD_LIST; do
@@ -455,10 +460,10 @@ processResources() {
 			local fileOrigin=$(printf '%s' "$RCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
 			local fileTarget=$(printf '%s' "$RCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
 
-			log "  $operation: $fileOrigin > $fileTarget" 1
+			log "${_IN}$operation: $fileOrigin > $fileTarget" 1
 
 			if [ ! -e "$DIR_RESOURCES/$fileOrigin" ]; then
-				log "  ERROR: '$fileOrigin' don't exist" 1 error
+				log "${_IN}ERROR: '$fileOrigin' don't exist" 1 error
 				continue # XXX do break instead?
 			fi
 
@@ -487,10 +492,10 @@ processResources() {
 							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
 						fi
 
-						log "  Executing: $CMD" 3
+						log "${_IN}Executing: $CMD" 3
 						eval "$CMD"
 					else
-						log "  ERROR: operation '$operation' not recognized" 1 error
+						log "${_IN}ERROR: operation '$operation' not recognized" 1 error
 					fi
 					;;
 			esac
@@ -509,7 +514,7 @@ processTemplates() {
 		local TEMPLATE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*template$_WS*: )"
 
 		local TNUM=$(printf '%s' "$TEMPLATE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
-		log "  Found $TNUM operations on templates:" 1
+		log "${_IN}Found $TNUM operations on templates:" 1
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for TCMD in $TEMPLATE_CMD_LIST; do
@@ -517,7 +522,7 @@ processTemplates() {
 			local fileOrigin=$(printf '%s'  "$TCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
 			local fileTarget=$(printf '%s' "$TCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
 
-			log "  $operation: $fileOrigin > $fileTarget" 1
+			log "${_IN}$operation: $fileOrigin > $fileTarget" 1
 
 			# built-in command for templates?
 			case "$operation" in
@@ -536,7 +541,7 @@ processTemplates() {
 							log "templateRender \"$fileOrigin\" > \"${DIR_OUTPUT}/${fileTarget}\""
 						fi
 					else
-						log "  ERROR: missing arguments for 'template:route' command" 1 error
+						log "${_IN}ERROR: missing arguments for 'template:route' command" 1 error
 					fi
 					;;
 
@@ -558,10 +563,10 @@ processTemplates() {
 							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
 						fi
 
-						log "  Executing: $CMD" 3
+						log "${_IN}Executing: $CMD" 3
 						eval $CMD # HACK dangerous
 					else
-						log "  ERROR: operation '$operation' not recognized" 1 error
+						log "${_IN}ERROR: operation '$operation' not recognized" 1 error
 					fi
 					;;
 			esac
@@ -577,7 +582,7 @@ templateParseIncludes() {
 
 	((_NESTING_LEVEL++))
 	if [ $_NESTING_LEVEL -gt $_NESTING_MAX ]; then
-		log "  ERROR: max nesting level ($_NESTING_MAX) reached for template $templateFileName" 1 error
+		log "${_IN}ERROR: max nesting level ($_NESTING_MAX) reached for template $templateFileName" 1 error
 		exit 3
 	fi
 
@@ -587,7 +592,7 @@ templateParseIncludes() {
 	if [ -f "$templateFile" ]; then
 		local templateContent="$(<$templateFile)"
 	else
-		log "  ERROR: No template found '$templateFile'" 1 error
+		log "${_IN}ERROR: No template found '$templateFile'" 1 error
 		return
 	fi
 	local directives_include=$(grep -Po "<!--$_WS*%include$_WS*:.*?-->" "$templateFile")
@@ -602,7 +607,7 @@ templateParseIncludes() {
 
 	for D in $directives_include; do
 		local includedFileName=$(printf '%s' "$D" | sed -n -e "s/<\!--$_WS*%include$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" | sed -e "s/$_WS*$//" )
-		log "    include: '$includedFileName'" 2
+		log "${_IN2}include: '$includedFileName'" 2
 
 		# Parse included template for further includes
 		local includedFileContent="$(templateParseIncludes ${includedFileName})"
@@ -645,7 +650,7 @@ templateRender() {
 		local SET=$(printf '%s' "$D" | sed -n -e "s/<\!--$_WS*%set$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" | sed -e "s/$_WS*$//")
 		local SETVAR="${SET%%=*}"
 		local SETVAL="${SET#*=}"
-		log "      set: $SETVAR = $SETVAL" 3
+		log "${_IN3}set: $SETVAR = $SETVAL" 3
 
 		# Cross-platform syntax to replace including newlines
 		# http://stackoverflow.com/a/1252191
@@ -662,15 +667,15 @@ templateRender() {
 	for D in $directives_cmd ; do
 		local CMD=$(printf '%s' "$D" | sed -n -e "s/^.*<\!--$_WS*%cmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" | sed -e "s/$_WS*$//")
 		local CMDOUT=$(eval "$CMD")
-		log "    cmd: $CMD" 3
+		log "${_IN2}cmd: $CMD" 3
 
 		local -i CMDOUT_LOGMAX=50 # log up to this number of chars
 		local -i CMDOUT_LEN=$(printf "%s" "$CMDOUT" | wc -c)
 
 		if [ "$CMDOUT_LEN" -le $CMDOUT_LOGMAX ]; then
-			log "      =: $CMDOUT" 3
+			log "${_IN3}=: $CMDOUT" 3
 		else
-			log "      =: $(printf '%s' "$CMDOUT" | tr '\n' ' ' \
+			log "${_IN3}=: $(printf '%s' "$CMDOUT" | tr '\n' ' ' \
 				| head -c$CMDOUT_LOGMAX) (...) + $(($CMDOUT_LEN-$CMDOUT_LOGMAX)) chars" 3
 		fi
 
@@ -695,7 +700,7 @@ templateRender() {
 		local SETCMDVAR="${SETCMD%%=*}"
 		local SETCMDVAL="${SETCMD#*=}"
 		local SETCMDOUT=$(eval $SETCMDVAL)
-		log "    setcmd: $SETCMDVAR = $SETCMDVAL" 3
+		log "${_IN2}setcmd: $SETCMDVAR = $SETCMDVAL" 3
 
 		# Delete the directive from the template
 		templateText=$(awk -v 'FNR==NR {
