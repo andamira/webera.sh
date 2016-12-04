@@ -4,16 +4,18 @@ is a simple, handy & versatile shellscript for static website generation
 
 It follows the [Unix Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) and depends on common tools like grep, sed, awk and coreutils to do its job.
 
+You can download the small script wherever there is Bash, and start creating your website.
 
 ## Features
 
-- process templates and static resources
-- flexible logging system
-- define custom commands and workflows
-- Template directives for
+- Custom commands and workflows for templates and static resources
+- Template directives for:
 	- outputting commands
 	- nesting templates
 	- setting variables
+- Configuration files
+- Logging system
+- Preview
 
 ## Quick Start
 

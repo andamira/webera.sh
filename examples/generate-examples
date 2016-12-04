@@ -2,6 +2,7 @@
 
 main() {
 	local OPTION_LOG_LEVEL=0
+	local OPTION_LOG_CLEAR=''
 	local OPTION_LOAD_IN_WEB_BROWSER=false;
 
 	local DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -29,17 +30,19 @@ usage() {
 
 	  -w              preview in web browser
 	  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
+	  -c              switch clearing the log file (clear=$OPTION_CLEAR_LOG)
 	ENDUSAGE
 	exit 1
 }
 
 parseArguments() {
 	local OPTIND OPTION
-	while getopts 'L:wh' OPTION; do
+	while getopts 'wL:ch' OPTION; do
 
 		case "$OPTION" in
-			L) OPTION_LOG_LEVEL="$OPTARG" ;;
 			w) OPTION_LOAD_IN_WEB_BROWSER=true ;;
+			L) OPTION_LOG_LEVEL="$OPTARG" ;;
+			c) OPTION_LOG_CLEAR='c' ;;
 			h|*) usage; exit ;;
 		esac
 	done
@@ -60,7 +63,7 @@ generateExamples() {
 
 		printf "generating '$E'. . . \n"
 
-		$WEBERA -rt -L${OPTION_LOG_LEVEL} -G $LOGFILE
+		$WEBERA -rt -${OPTION_LOG_CLEAR}L${OPTION_LOG_LEVEL} -G $LOGFILE
 
 		cd $DIR
 	done

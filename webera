@@ -5,14 +5,11 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.30
+# Version: 0.1.31
 # License: MIT
 #
 # Dependencies:
 #     bash 4, grep -P, sed, awk, coreutils
-#
-# Optional Dependencies:
-#     python | php (to leverage their built-in web server)
 #
 # Originally Inspired by Statix
 #     https://gist.github.com/plugnburn/c2f7cc3807e8934b179e
@@ -21,7 +18,6 @@
 main() {
 	local __VARS_WEBERA="" # A list of the settings, for debugging purposes
 	local __VARS_BEFORE=$(set -o posix ; set | awk -F= '{print $1"="}' )
-
 
 	## CONFIGURABLE SETTINGS
 
@@ -42,7 +38,7 @@ main() {
 
 	# Log
 	local FILE_LOG=log.txt
-	local OPTION_CLEAR_LOG=false
+	local OPTION_LOG_CLEAR=false
 	local -i OPTION_LOG_LEVEL=0 # 0 = no log | 1 | 2 | 3
 
 	# Delete output & build directories
@@ -72,9 +68,10 @@ main() {
 	local -i _LOG_LEVEL_MIN=1
 	local -i _LOG_LEVEL_MAX=3
 
-	# indentation for logs
+	# log indentation and formatting
 	local -r _IN="  "; local -r _IN2="    "
 	local -r _IN3="$_IN2$_IN"; local -r _IN4="$_IN2$_IN2"
+	local -r _HEADING='------------------------------------------------------'
 
 	# reusable regexp patterns
 	local -r _WS="[[:space:]]" # whitespace
@@ -141,7 +138,7 @@ usage() {
 	  -B <DIR>        indicate the build directory ($DIR_BUILD)
 
 	  -d              switch deleting the output dir (delete=$OPTION_DELETE_DIR_OUTPUT)
-	  -c              switch clearing the log file (clear=$OPTION_CLEAR_LOG)
+	  -c              switch clearing the log file (clear=$OPTION_LOG_CLEAR)
 
 	  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
 	  -G <FILE>       log file ($FILE_LOG)
@@ -150,11 +147,6 @@ usage() {
 	  -S <TYPE>       server type [none|php|python|custom] ($SERVER_TYPE)
 	  -H <DOMAIN>     server host ($SERVER_HOST)
 	  -P <NUMBER>     port number ($SERVER_PORT)
-
-	  -_              debug. Print variables
-
-	FILE CONFIG
-	  You can set all these options, and more, in $FILE_CONFIG
 	ENDUSAGE
 	[[ -z "$errCode" ]] || exit $errCode
 }
@@ -186,16 +178,16 @@ parseArguments() {
 
 			# These flags switches the default boolean value,
 			# (without checking first the values in file config).
-			d) if [ "$OPTION_DELETE_DIR_OUTPUT" == true ]; then
+			d) if [[ "$OPTION_DELETE_DIR_OUTPUT" == true ]]; then
 					_ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]=false
 				else
 					_ARG_OPTIONS[OPTION_DELETE_DIR_OUTPUT]=true
 				fi
 				;;
-			c) if [ "$OPTION_CLEAR_LOG" == true ]; then
-					_ARG_OPTIONS[OPTION_CLEAR_LOG]=false
+			c) if [[ "$OPTION_LOG_CLEAR" == true ]]; then
+					_ARG_OPTIONS[OPTION_LOG_CLEAR]=false
 				else
-					_ARG_OPTIONS[OPTION_CLEAR_LOG]=true
+					_ARG_OPTIONS[OPTION_LOG_CLEAR]=true
 				fi
 				;;
 
@@ -207,7 +199,7 @@ parseArguments() {
 			H) _ARG_OPTIONS[SERVER_HOST]="$OPTARG" ;;
 			P) _ARG_OPTIONS[SERVER_PORT]="$OPTARG" ;;
 
-			_) _OPERATIONAL=true; __DO_PRINT_VARS=true ;;
+			_) _OPERATIONAL=true; __DO_PRINT_VARS=true ;; # hidden arg
 
 			h|*) usage 0 ;;
 		esac
@@ -217,14 +209,14 @@ parseArguments() {
 
 setupLog() {
 
-	if [[ $OPTION_CLEAR_LOG == true ]]; then
+	if [[ "$OPTION_LOG_CLEAR" == true ]]; then
 		log "\nWarning: deleting previous log file '$FILE_LOG'" 3 warn
-		rm $FILE_LOG 2>/dev/null;
+		rm "$FILE_LOG" 2>/dev/null;
 	fi
 
 	# Write the pre-saved log to the file
 	#
-	# 1. filter out the lines with log level greater than current
+	# 1. filter out the lines with greater than current log level
 	# 2. leave only the log message, discard the rest. (TODO: filter out error|warn)
 	# 3. bring back the newlines
 	# 4. put the log level in the date header
@@ -242,20 +234,22 @@ setupLog() {
 log() {
 	declare logMsg=$1 logLevelNeeded=$2 logType=$3
 
-	if [ "$_PRELOG" == "noprelog" ]; then
+	if [[ "$_PRELOG" == "noprelog" ]]; then
+		# TODO CHECK false instead of "noprelog"
 
-		if [[ -z "$logLevelNeeded" || ( "$logLevelNeeded" -lt "1" ) ]]; then
-			LOG_LEVEL=$_LOG_LEVEL_MIN
+		# TODO CHECK no sub-shell
+		if [[ -z "$logLevelNeeded" || "$logLevelNeeded" -lt "1" ]]; then
+			LOG_LEVEL="$_LOG_LEVEL_MIN"
 		else
 			if [[ "$LOG_LEVEL" -gt "$_LOG_LEVEL_MAX" ]]; then
-				LOG_LEVEL=$_LOG_LEVEL_MAX
+				LOG_LEVEL="$_LOG_LEVEL_MAX"
 			else
-				LOG_LEVEL=$logLevelNeeded
+				LOG_LEVEL="$logLevelNeeded"
 			fi
 		fi
 
-		if [ $LOG_LEVEL -le $OPTION_LOG_LEVEL ]; then
-			printf "$logMsg\n" >> $FILE_LOG
+		if [[ "$LOG_LEVEL" -le "$OPTION_LOG_LEVEL" ]]; then
+			printf "$logMsg\n" >> "$FILE_LOG"
 		fi
 	else
 		# Pre-save this log message as a single line
@@ -263,7 +257,7 @@ log() {
 		# 1. replace the newlines with a BEL
 		# 2. put the log level and type at the beginning
 		local msg_1line=$(printf "$logMsg" | tr '\n' '\a')
-		_PRELOG="$_PRELOG\n$logLevelNeeded|$logType|$msg_1line"
+		_PRELOG+="\n$logLevelNeeded|$logType|$msg_1line"
 	fi
 
 	# Print errors to stderr
@@ -273,13 +267,13 @@ log() {
 }
 
 serverSetup() {
-	case $SERVER_TYPE in
+	case "$SERVER_TYPE" in
 		python)
-			SERVER_START="pushd $DIR_OUTPUT; python -m SimpleHTTPServer $SERVER_PORT"
+			SERVER_START="pushd \"$DIR_OUTPUT\"; python -m SimpleHTTPServer $SERVER_PORT"
 			SERVER_STOP='kill $(pgrep -f "python -m SimpleHTTPServer")'
 			;;
 		php)
-			SERVER_START="php -S localhost:$SERVER_PORT -t $DIR_OUTPUT"
+			SERVER_START="php -S localhost:$SERVER_PORT -t \"$DIR_OUTPUT\""
 			SERVER_STOP='kill $(pgrep -f "php -S localhost")'
 			;;
 		none) # useful when not using `dir/index.html` structure
@@ -304,8 +298,8 @@ previewWebsite() {
 		local RUN_BROWSER="$WEB_BROWSER http://$SERVER_HOST:$SERVER_PORT &"
 	fi
 
-	sleep 1s && eval $RUN_BROWSER &>> /dev/null
-	if [ ! -z "$SERVER_START" ]; then
+	sleep 1s && eval "$RUN_BROWSER" &>> /dev/null
+	if [[ -n "$SERVER_START" ]]; then
 		printf "(Use CTRL+C to stop the '$SERVER_TYPE' web server)\n"
 		printf "SERVER_START=$SERVER_START"
 		eval "$SERVER_STOP &>> /dev/null"; eval "$SERVER_START"
@@ -315,11 +309,9 @@ previewWebsite() {
 deleteDirectories() {
 	[[ "$OPTION_DELETE_DIR_BUILD" = true ]] && rm -r "$DIR_BUILD" 2>/dev/null
 
-	if [[ $OPTION_DELETE_DIR_OUTPUT && ( \
-			$_DO_PROCESS_RESOURCES == true \
-			|| $_DO_PROCESS_TEMPLATES == true \
-		) ]]; then
-
+	if [[ "$OPTION_DELETE_DIR_OUTPUT" == true ]] && \
+		[[ $_DO_PROCESS_RESOURCES == true \
+		|| $_DO_PROCESS_TEMPLATES == true ]]; then
 		rm -r "$DIR_OUTPUT" 2>/dev/null
 	fi
 }
@@ -327,8 +319,8 @@ deleteDirectories() {
 readConfig() {
 	local FILE="$1" # string
 
-	if [ -f "$FILE" ]; then # config file exists already
-		# and tried to generate a new config file
+	if [[ -f "$FILE" ]]; then # config file exists already
+		# and trying to generate a new config file
 		if [[ "$_FILE_CONFIG_GENERATE" == true ]] \
 			&& [[ "$FILE" == "$FILE_CONFIG" ]]; then
 			log "Warning: local config file '$FILE' already exists. Overwrite is not allowed." 2 warn
@@ -339,7 +331,7 @@ readConfig() {
 			| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
 			| sed -e "$_SED_JOIN_SPLITLINES" \
 		)"$'\n'
-		CONFIG="$CONFIG$TMPCONF" # append to previously read configuration
+		CONFIG+="$TMPCONF" # append to previously read configuration
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for LINE in $(printf '%s' "$TMPCONF" \
@@ -357,10 +349,10 @@ readConfig() {
 		# it is the local config file
 		if [ "$FILE" == "$FILE_CONFIG" ]; then
 
-			if [[ "$_FILE_CONFIG_GENERATE" == true ]]; then # generate a new one
+			if [[ "$_FILE_CONFIG_GENERATE" == true ]]; then
 				generateConfig
 			else
-				if [[ $_FILE_CONFIG_EXPLICIT == true ]]; then # it was explicitly indicated
+				if [[ "$_FILE_CONFIG_EXPLICIT" == true ]]; then
 					printf "ERROR: Configuration file '%s' doesn't exist.\n" "$FILE_CONFIG"
 					exit 2
 				else
@@ -376,19 +368,15 @@ readConfig() {
 configureSettings() {
 	local SETTINGS="$(printf '%s' "$CONFIG" | grep ^$_WS*config$_WS*: )"
 
-	if [ "$SETTINGS" ]; then
-		log "\nConfiguring settings...\n------------------------------------------------------" 1
+	if [[ -n "$SETTINGS" ]]; then
+		log "\nConfiguring settings...\n$_HEADING" 1
 
 		local OLDIFS="$IFS"; IFS=$'\n'
-		for S in $SETTINGS; do
-
+		for S in "$SETTINGS"; do
 			local setting_name=$(printf '%s' "$S" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS")
 			local setting_value=$(printf '%s' "$S" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS")
 			local setting_previous_value=${!setting_name}
-
 			log "${_IN}setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
-
-			# NOTE: There're currently no checks. Any global variable can be (re)assigned.
 			printf -v $setting_name "$setting_value"
 		done
 		IFS="$OLDIFS"
@@ -410,7 +398,7 @@ configureSettings() {
 generateConfig() {
 	local configLines=()
 
-	if [ "$_FILE_CONFIG_EXPLICIT" == true ]; then
+	if [[ "$_FILE_CONFIG_EXPLICIT" == true ]]; then
 		configLines+=("config : FILE_CONFIG : $FILE_CONFIG")
 	fi
 
@@ -426,14 +414,13 @@ generateConfig() {
 readConfigCommands() {
 	local DEFINED_CMD="$(printf '%s' "$CONFIG" | grep ^$_WS*command$_WS*: )"
 
-	if [ "$DEFINED_CMD" ]; then
+	if [[ -n "$DEFINED_CMD" ]]; then
 		local CNUM=$(printf '%s' "$DEFINED_CMD" | wc -l )
-		log "\nDefining $CNUM commands...\n------------------------------------------------------" 1
+		log "\nDefining $CNUM commands...\n" 1
 	fi
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 	for C in $DEFINED_CMD; do
-
 		local cmd_name=$(printf '%s' "$C" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
 		local cmd_action=$(printf '%s' "$C" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS" )
 
@@ -445,143 +432,143 @@ readConfigCommands() {
 }
 
 processResources() {
-	log "\nProcessing resources...\n------------------------------------------------------" 1
+	log "\nProcessing resources...\n$_HEADING" 1
 
-	if [ -d "$DIR_RESOURCES" ]; then
-
-		local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*resource$_WS*: )"
-
-		local RNUM=$(printf '%s' "$RESOURCE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
-		log "${_IN}Found $RNUM operations on resources:" 1
-
-		local OLDIFS="$IFS"; IFS=$'\n'
-		for RCMD in $RESOURCE_CMD_LIST; do
-			local operation=$(printf '%s' "$RCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
-			local fileOrigin=$(printf '%s' "$RCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
-			local fileTarget=$(printf '%s' "$RCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
-
-			log "${_IN}$operation: $fileOrigin > $fileTarget" 1
-
-			if [ ! -e "$DIR_RESOURCES/$fileOrigin" ]; then
-				log "${_IN}ERROR: '$fileOrigin' don't exist" 1 error
-				continue # XXX do break instead?
-			fi
-
-			# built-in command for resources?
-			case "$operation" in
-				"copy")
-					mkdir -p $DIR_OUTPUT/$DIR_RESOURCES/$(dirname $fileTarget)
-					cp -r "$DIR_RESOURCES/$fileOrigin" \
-						"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget"
-					;;
-				*)
-					# Here {PATHS} are adapted for resources
-					if [ "${_DEFINED_CMD_MAP[$operation]}" ]; then
-
-						local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
-							| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
-							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
-							| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
-						)
-
-						# Create target paths
-						if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
-							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
-						fi
-						if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
-							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
-						fi
-
-						log "${_IN}Executing: $CMD" 3
-						eval "$CMD"
-					else
-						log "${_IN}ERROR: operation '$operation' not recognized" 1 error
-					fi
-					;;
-			esac
-		done
-		IFS="$OLDIFS"
-	else
+	if [[ ! -d "$DIR_RESOURCES" ]]; then
 		log "No resources dir '$DIR_RESOURCES' found." 1 error
+		return	
 	fi
+
+	local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*resource$_WS*: )"
+
+	local RNUM=$(printf '%s\n' "$RESOURCE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
+	log "${_IN}Found $RNUM operations on resources:" 1
+
+	local OLDIFS="$IFS"; IFS=$'\n'
+	for RCMD in $RESOURCE_CMD_LIST; do
+		local operation=$(printf '%s' "$RCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
+		local fileOrigin=$(printf '%s' "$RCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
+		local fileTarget=$(printf '%s' "$RCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
+
+		log "${_IN}$operation: $fileOrigin > $fileTarget" 1
+
+		if [[ ! -e "$DIR_RESOURCES/$fileOrigin" ]]; then
+			log "${_IN}ERROR: '$fileOrigin' don't exist" 1 error
+			continue # XXX do break instead?
+		fi
+
+		# built-in command for resources?
+		case "$operation" in
+			"copy")
+				mkdir -p $DIR_OUTPUT/$DIR_RESOURCES/$(dirname $fileTarget)
+				cp -r "$DIR_RESOURCES/$fileOrigin" \
+					"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget"
+				;;
+			*)
+				# Here {PATHS} are adapted for resources
+				if [[ -n "${_DEFINED_CMD_MAP[$operation]}" ]]; then
+
+					local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
+						| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
+						| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
+						| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
+					)
+
+					# Create target paths
+					if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
+						mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
+					fi
+					if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
+						mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
+					fi
+
+					log "${_IN}Executing: $CMD" 3
+					eval "$CMD"
+				else
+					log "${_IN}ERROR: operation '$operation' not recognized" 1 error
+				fi
+				;;
+		esac
+	done
+	IFS="$OLDIFS"
 }
 
 processTemplates() {
-	log "\nProcessing templates...\n------------------------------------------------------" 1
+	log "\nProcessing templates...\n$_HEADING" 1
 
-	if [ -d "$DIR_TEMPLATES" ]; then
-
-		local TEMPLATE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*template$_WS*: )"
-
-		local TNUM=$(printf '%s' "$TEMPLATE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
-		log "${_IN}Found $TNUM operations on templates:" 1
-
-		local OLDIFS="$IFS"; IFS=$'\n'
-		for TCMD in $TEMPLATE_CMD_LIST; do
-			local operation=$(printf '%s' "$TCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
-			local fileOrigin=$(printf '%s'  "$TCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
-			local fileTarget=$(printf '%s' "$TCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
-
-			log "${_IN}$operation: $fileOrigin > $fileTarget" 1
-
-			# built-in command for templates?
-			case "$operation" in
-				"route")
-					if [[ "$fileOrigin" && "$fileTarget" ]]; then
-						# A path ending in `/`, will be a directory with an index.html
-						if [[ "$fileTarget" == */ ]]; then
-							mkdir -p "${DIR_OUTPUT}${fileTarget}"
-							templateRender "$fileOrigin" > "${DIR_OUTPUT}${fileTarget}/index.html"
-						else
-							mkdir -p $(dirname "${DIR_OUTPUT}/${fileTarget}")
-							templateRender "$fileOrigin" > "${DIR_OUTPUT}/${fileTarget}"
-							# DEBUG
-							log "DIR_OUTPUT: $DIR_OUTPUT"
-							log "dirname: mkdir -p \$(dirname \"${DIR_OUTPUT}/${fileTarget}\")"
-							log "templateRender \"$fileOrigin\" > \"${DIR_OUTPUT}/${fileTarget}\""
-						fi
-					else
-						log "${_IN}ERROR: missing arguments for 'template:route' command" 1 error
-					fi
-					;;
-
-				*)
-					# Here {PATHS} are adapted for templates
-					if [ "${_DEFINED_CMD_MAP[$operation]}" ]; then
-
-						local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
-							| sed "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
-							| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
-							| sed "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
-						)
-
-						# Create target paths
-						if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
-							mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
-						fi
-						if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
-							mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
-						fi
-
-						log "${_IN}Executing: $CMD" 3
-						eval $CMD # HACK dangerous
-					else
-						log "${_IN}ERROR: operation '$operation' not recognized" 1 error
-					fi
-					;;
-			esac
-		done
-		IFS="$OLDIFS"
-	else
+	if [[ ! -d "$DIR_TEMPLATES" ]]; then
 		log "No templates dir '$DIR_TEMPLATES' found." 1 error
+		return
 	fi
+
+	local TEMPLATE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*template$_WS*: )"
+
+	local TNUM=$(printf '%s\n' "$TEMPLATE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
+	log "${_IN}Found $TNUM operations on templates:" 1
+
+	local OLDIFS="$IFS"; IFS=$'\n'
+	for TCMD in $TEMPLATE_CMD_LIST; do
+		local operation=$(printf '%s' "$TCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
+		local fileOrigin=$(printf '%s'  "$TCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
+		local fileTarget=$(printf '%s' "$TCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
+
+		log "${_IN}$operation: $fileOrigin > $fileTarget" 1
+
+		# built-in command for templates?
+		case "$operation" in
+			"route")
+				if [[ -n "$fileOrigin" && -n "$fileTarget" ]]; then
+					# A path ending in `/`, will be a directory with an index.html
+					if [[ "$fileTarget" == */ ]]; then
+						mkdir -p "${DIR_OUTPUT}${fileTarget}"
+						templateRender "$fileOrigin" > "${DIR_OUTPUT}${fileTarget}/index.html"
+					else
+						mkdir -p $(dirname "${DIR_OUTPUT}/${fileTarget}")
+						templateRender "$fileOrigin" > "${DIR_OUTPUT}/${fileTarget}"
+						# DEBUG
+						log "DIR_OUTPUT: $DIR_OUTPUT"
+						log "dirname: mkdir -p \$(dirname \"${DIR_OUTPUT}/${fileTarget}\")"
+						log "templateRender \"$fileOrigin\" > \"${DIR_OUTPUT}/${fileTarget}\""
+					fi
+				else
+					log "${_IN}ERROR: missing arguments for 'template:route' command" 1 error
+				fi
+				;;
+
+			*)
+				# Here {PATHS} are adapted for templates
+				if [[ -n "${_DEFINED_CMD_MAP[$operation]}" ]]; then
+
+					local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
+						| sed "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
+						| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
+						| sed "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
+					)
+
+					# Create target paths
+					if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
+						mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
+					fi
+					if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
+						mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
+					fi
+
+					log "${_IN}Executing: $CMD" 3
+					eval "$CMD"
+				else
+					log "${_IN}ERROR: operation '$operation' not recognized" 1 error
+				fi
+				;;
+		esac
+	done
+	IFS="$OLDIFS"
 }
 
 templateParseIncludes() {
 	declare templateFileName=$1
 
 	((_NESTING_LEVEL++))
-	if [ $_NESTING_LEVEL -gt $_NESTING_MAX ]; then
+	if [[ "$_NESTING_LEVEL" -gt "$_NESTING_MAX" ]]; then
 		log "${_IN}ERROR: max nesting level ($_NESTING_MAX) reached for template $templateFileName" 1 error
 		exit 3
 	fi
@@ -589,7 +576,7 @@ templateParseIncludes() {
 	# Parse template
 	# TODO: search first in DIR_BUILD, if not found, don't ouput anything
 	local templateFile="${DIR_TEMPLATES}/$templateFileName"
-	if [ -f "$templateFile" ]; then
+	if [[ -f "$templateFile" ]]; then
 		local templateContent="$(<$templateFile)"
 	else
 		log "${_IN}ERROR: No template found '$templateFile'" 1 error
@@ -601,12 +588,14 @@ templateParseIncludes() {
 	local OLDIFS="$IFS"; IFS=$'\n'
 
 	# Remove duplicates
-	if [ "$directives_include" ]; then
+	if [[ -n "$directives_include" ]]; then
 		directives_include=$(printf '%s' "$directives_include" | uniq)
 	fi
 
 	for D in $directives_include; do
-		local includedFileName=$(printf '%s' "$D" | sed -n -e "s/<\!--$_WS*%include$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" | sed -e "s/$_WS*$//" )
+		local includedFileName=$(printf '%s' "$D" \
+			| sed -n -e "s/<\!--$_WS*%include$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" \
+			| sed -e "s/$_WS*$//" )
 		log "${_IN2}include: '$includedFileName'" 2
 
 		# Parse included template for further includes
@@ -628,16 +617,20 @@ templateRender() {
 	local templateText="$(templateParseIncludes $templateFileName)"
 
 	# Template tags must be one-liners
-	local directives_set=$(printf '%s' "$templateText" | grep -Po "<!--$_WS*%set$_WS*:.*?-->")
-	local directives_cmd=$(printf '%s' "$templateText" | grep -Po "<!--$_WS*%cmd$_WS*:.*?-->")
-	local directives_setcmd=$(printf '%s' "$templateText" | grep -Po "<!--$_WS*%setcmd$_WS*:.*?-->")
+	local directives_set=$(printf '%s' "$templateText" \
+		| grep -Po "<!--$_WS*%set$_WS*:.*?-->")
+	local directives_cmd=$(printf '%s' "$templateText" \
+		| grep -Po "<!--$_WS*%cmd$_WS*:.*?-->")
+	local directives_setcmd=$(printf '%s' "$templateText" \
+		| grep -Po "<!--$_WS*%setcmd$_WS*:.*?-->")
 	local D=''
 
 	# text comments
 	#
 	# <!-- // Comment -->
 	#
-	templateText=$(printf '%s' "$templateText" | sed -e :a -re "s/<!--$_WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
+	templateText=$(printf '%s' "$templateText" \
+		| sed -e :a -re "s/<!--$_WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 
@@ -647,7 +640,9 @@ templateRender() {
 	# <!-- @VARIABLE -->
 	#
 	for D in $directives_set; do
-		local SET=$(printf '%s' "$D" | sed -n -e "s/<\!--$_WS*%set$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" | sed -e "s/$_WS*$//")
+		local SET=$(printf '%s' "$D" \
+			| sed -n -e "s/<\!--$_WS*%set$_WS*:$_WS*\(.*\)$_WS*-->/\1/p"\
+			| sed -e "s/$_WS*$//")
 		local SETVAR="${SET%%=*}"
 		local SETVAL="${SET#*=}"
 		log "${_IN3}set: $SETVAR = $SETVAL" 3
@@ -657,7 +652,8 @@ templateRender() {
 		templateText=$(printf '%s' "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?//g")
 		templateText=$(printf '%s' "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$_WS*@$SETVAR$_WS*-->\n\?/$SETVAL/g")
+			| sed -e ":a" -e "N" -e "\$!ba" \
+			-e "s/<!--$_WS*@$SETVAR$_WS*-->\n\?/$SETVAL/g")
 	done
 
 	# execute commands, render output
@@ -665,14 +661,16 @@ templateRender() {
 	# <!-- %cmd : ls -l -->
 	#
 	for D in $directives_cmd ; do
-		local CMD=$(printf '%s' "$D" | sed -n -e "s/^.*<\!--$_WS*%cmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" | sed -e "s/$_WS*$//")
+		local CMD=$(printf '%s' "$D" \
+			| sed -n -e "s/^.*<\!--$_WS*%cmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" \
+			| sed -e "s/$_WS*$//")
 		local CMDOUT=$(eval "$CMD")
 		log "${_IN2}cmd: $CMD" 3
 
 		local -i CMDOUT_LOGMAX=50 # log up to this number of chars
 		local -i CMDOUT_LEN=$(printf "%s" "$CMDOUT" | wc -c)
 
-		if [ "$CMDOUT_LEN" -le $CMDOUT_LOGMAX ]; then
+		if [[ "$CMDOUT_LEN" -le "$CMDOUT_LOGMAX" ]]; then
 			log "${_IN3}=: $CMDOUT" 3
 		else
 			log "${_IN3}=: $(printf '%s' "$CMDOUT" | tr '\n' ' ' \
@@ -696,10 +694,12 @@ templateRender() {
 	# <!-- @VARIABLE -->
 	#
 	for D in $directives_setcmd; do
-		local SETCMD=$(printf '%s' "$D" | sed -n -e "s/^.*<\!--$_WS*%setcmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" | sed -e "s/$_WS*$//")
+		local SETCMD=$(printf '%s' "$D" \
+			| sed -n -e "s/^.*<\!--$_WS*%setcmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" \
+			| sed -e "s/$_WS*$//")
 		local SETCMDVAR="${SETCMD%%=*}"
 		local SETCMDVAL="${SETCMD#*=}"
-		local SETCMDOUT=$(eval $SETCMDVAL)
+		local SETCMDOUT=$(eval "$SETCMDVAL")
 		log "${_IN2}setcmd: $SETCMDVAR = $SETCMDVAL" 3
 
 		# Delete the directive from the template
@@ -712,7 +712,8 @@ templateRender() {
 		)
 		# Replace all the set variables with the command output
 		templateText=$(printf '%s' "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" -e "s/<!--$_WS*@$SETCMDVAR$_WS*-->\n\?/$SETCMDOUT/g")
+			| sed -e ":a" -e "N" -e "\$!ba" \
+			-e "s/<!--$_WS*@$SETCMDVAR$_WS*-->\n\?/$SETCMDOUT/g")
 	done
 
 	IFS="$OLDIFS"

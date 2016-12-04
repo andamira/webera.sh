@@ -6,14 +6,25 @@
 By leveraging the Unix Philosophy, webera depends on several unix programs:
 
 * Bash
-	- Version: 4
+	- Version >= 4 ([v4 changes](http://wiki.bash-hackers.org/bash4), [+ changes](http://wiki.bash-hackers.org/scripting/bashchanges))
+		- associative arrays: `declare -A`
+		- `&>>` (equiv. to `>>FILE 2>&1`)
+		- `;;&` case terminator
+		- `[[ ]]` double squared brackets conditionals
+		- `==` double equal test operators
 * grep
 	- At the moment, it must have support for PCRE (`--perl-regexp` argument).
 	- It may be possible to substitute this requirement by using awk.
 * coreutils
 	- cat
+	- cut
+	- dirname
+	- env
+	- head
+	- readlink
 	- tr
 	- uniq
+	- wc
 * awk
 	- Only old awk syntax is used [not verified exhaustly]
 	- Verify compatibility.
