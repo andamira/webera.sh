@@ -1,11 +1,9 @@
 sudo: false
-language: generic
-
+language: bash
 before_install:
     - cd ..
     - git clone --depth 1 https://github.com/sstephenson/bats.git
     - export PATH="$(pwd)/bats/libexec/:$PATH"
     - cd "$TRAVIS_BUILD_DIR"
-
 script:
     - ./tests/run-all

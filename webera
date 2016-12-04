@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
 # webera
-# is a simple, handy & versatile shellscript for static website generation
+# is a handy shellscript for static website generation
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.32
+# Version: 0.1.33
 # License: MIT
 #
 # Dependencies:
@@ -18,6 +18,7 @@
 main() {
 	local __VARS_WEBERA="" # A list of the settings, for debugging purposes
 	local __VARS_BEFORE=$(set -o posix ; set | awk -F= '{print $1"="}' )
+
 
 	## CONFIGURABLE SETTINGS
 
@@ -52,9 +53,9 @@ main() {
 
 	local _DO_PROCESS_TEMPLATES=false
 	local _DO_PROCESS_RESOURCES=false
-	local _DO_LOAD_IN_WEB_BROWSER=false
+	local _DO_PREVIEW_IN_BROWSER=false
 
-	local _FILE_CONFIG_GENERATE=false # has it been requested to generate? (-n)
+	local _DO_GENERATE_FILE_CONFIG=false # has it been requested to generate? (-n)
 	local _FILE_CONFIG_EXPLICIT=false # has it been explicitly indicated?  (-C)
 
 	declare -A _ARG_OPTIONS
@@ -79,11 +80,12 @@ main() {
 	local -r _SED_DEL_EMPTYLINES="/^$_WS*$/d"
 	local -r _SED_JOIN_SPLITLINES=':x; /\\$/ { N; s/\\\n//; tx }' # ending in \
 
+
 	# save all the default settings
 	local __VARS_AFTER="$(set -o posix ; set | sed '/^'\''/d' )"
-	printf -v __VARS_WEBERA '%s\n' "$(grep -vFf \
+	printf -v __VARS_WEBERA '%s' "$(grep -vFf \
 		<(printf '%s' "$__VARS_BEFORE") <(printf '%s' "$__VARS_AFTER") \
-		| sed 's/^/[vars]::/' )"
+		| sed 's/^/[vdef]::/' )"
 	unset __VARS_BEFORE; unset __VARS_AFTER;
 	local __DO_PRINT_VARS=false
 
@@ -100,7 +102,7 @@ main() {
 
 	configureSettings
 
-	[[ "$__DO_PRINT_VARS" = true ]] && ( __printVars; exit 4)
+	if [[ "$__DO_PRINT_VARS" == true ]]; then __printVars; return $?; fi
 
 	setupLog
 
@@ -108,9 +110,9 @@ main() {
 
 	readConfigCommands
 
-	[[ "$_DO_PROCESS_RESOURCES" = true ]] && processResources
-	[[ "$_DO_PROCESS_TEMPLATES" = true ]] && processTemplates
-	[[ "$_DO_LOAD_IN_WEB_BROWSER" = true ]] && ( serverSetup; previewWebsite )
+	[[ "$_DO_PROCESS_RESOURCES" == true ]] && processResources
+	[[ "$_DO_PROCESS_TEMPLATES" == true ]] && processTemplates
+	[[ "$_DO_PREVIEW_IN_BROWSER" == true ]] && ( serverSetup; previewWebsite )
 }
 
 usage() {
@@ -157,13 +159,15 @@ parseArguments() {
 
 	while getopts ':trwnC:T:R:O:B:dcL:G:W:S:H:P:_h:' OPTION; do
 		case "$OPTION" in
-			t) _OPERATIONAL=true; _DO_PROCESS_TEMPLATES=true ;;
-			r) _OPERATIONAL=true; _DO_PROCESS_RESOURCES=true ;;
-			w) _OPERATIONAL=true; _DO_LOAD_IN_WEB_BROWSER=true ;;
+			t) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PROCESS_TEMPLATES]=true ;;
+			r) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true ;;
+			w) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PREVIEW_IN_BROWSER]=true ;;
 
-			n) _OPERATIONAL=true; _FILE_CONFIG_GENERATE=true ;;
+			n) _OPERATIONAL=true; _DO_GENERATE_FILE_CONFIG=true;
+				_ARG_OPTIONS[_DO_GENERATE_FILE_CONFIG]=true ;;
 
 			C) FILE_CONFIG="$OPTARG"
+				_ARG_OPTIONS[FILE_CONFIG]="$OPTARG"
 				_FILE_CONFIG_EXPLICIT=true;
 				;;
 
@@ -303,7 +307,7 @@ previewWebsite() {
 }
 
 deleteDirectories() {
-	[[ "$OPTION_DELETE_DIR_BUILD" = true ]] && rm -r "$DIR_BUILD" 2>/dev/null
+	[[ "$OPTION_DELETE_DIR_BUILD" == true ]] && rm -r "$DIR_BUILD" 2>/dev/null
 
 	if [[ "$OPTION_DELETE_DIR_OUTPUT" == true ]] && \
 		[[ $_DO_PROCESS_RESOURCES == true \
@@ -315,9 +319,9 @@ deleteDirectories() {
 readConfig() {
 	local FILE="$1" # string
 
-	if [[ -f "$FILE" ]]; then # config file exists already
-		# and trying to generate a new config file
-		if [[ "$_FILE_CONFIG_GENERATE" == true ]] \
+	if [[ -f "$FILE" ]]; then # the config file exists already
+
+		if [[ "$_DO_GENERATE_FILE_CONFIG" == true ]] \
 			&& [[ "$FILE" == "$FILE_CONFIG" ]]; then
 			log "Warning: local config file '$FILE' already exists. Overwrite is not allowed." 2 warn
 		fi
@@ -327,7 +331,7 @@ readConfig() {
 			| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
 			| sed -e "$_SED_JOIN_SPLITLINES" \
 		)"$'\n'
-		CONFIG+="$TMPCONF" # append to previously read configuration
+		CONFIG+="$TMPCONF" # append new to previously read configuration
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for LINE in $(printf '%s' "$TMPCONF" \
@@ -336,16 +340,16 @@ readConfig() {
 			| sed "s/$_WS*:$_WS*/=/" \
 			| sed "$_SED_TRIM_WS" \
 			); do
-			printf -v __VARS_WEBERA '%s' "$__VARS_WEBERA[file]:$FILE:$LINE"
+			printf -v __VARS_WEBERA '%s' "$__VARS_WEBERA"$'\n'"[file]:$FILE:$LINE"
 		done
 		IFS="$OLDIFS"
 
-	else # the config file doesn't exist
-
-		# it is the local config file
+	else # when the config file doesn't exist
+		# and if it's the config file of the project
 		if [ "$FILE" == "$FILE_CONFIG" ]; then
+			[[ "$__DO_PRINT_VARS" == true ]] && return # if printing debug info
 
-			if [[ "$_FILE_CONFIG_GENERATE" == true ]]; then
+			if [[ "$_DO_GENERATE_FILE_CONFIG" == true ]]; then
 				generateConfig
 			else
 				if [[ "$_FILE_CONFIG_EXPLICIT" == true ]]; then
@@ -382,7 +386,7 @@ configureSettings() {
 	for OPT in "${!_ARG_OPTIONS[@]}"; do
 		printf -v ${OPT} "${_ARG_OPTIONS[$OPT]}"
 		printf -v __VARS_WEBERA '%s' \
-			"$__VARS_WEBERA\n[args]::$OPT=${_ARG_OPTIONS[$OPT]}"
+			"$__VARS_WEBERA"$'\n'"[args]::$OPT=${_ARG_OPTIONS[$OPT]}"
 	done
 
 	if [[ "$_OPERATIONAL" == false ]]; then
@@ -412,7 +416,8 @@ readConfigCommands() {
 
 	if [[ -n "$DEFINED_CMD" ]]; then
 		local CNUM=$(printf '%s\n' "$DEFINED_CMD" | wc -l )
-		log "\nDefining $CNUM commands...\n" 1
+		log "\nParsing commands...\n$_HEADING" 1
+		log "${_IN}Found $CNUM defined command:" 1
 	else return; fi
 
 	local OLDIFS="$IFS"; IFS=$'\n'
@@ -453,7 +458,6 @@ processResources() {
 			continue # XXX do break instead?
 		fi
 
-		# built-in command for resources?
 		case "$operation" in
 			"copy")
 				mkdir -p $DIR_OUTPUT/$DIR_RESOURCES/$(dirname $fileTarget)
@@ -461,7 +465,7 @@ processResources() {
 					"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget"
 				;;
 			*)
-				# Here {PATHS} are adapted for resources
+				# On custom commands, {PATHS} tags are adapted for resources
 				if [[ -n "${_DEFINED_CMD_MAP[$operation]}" ]]; then
 
 					local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
@@ -510,7 +514,6 @@ processTemplates() {
 
 		log "${_IN}$operation: $fileOrigin > $fileTarget" 1
 
-		# built-in command for templates?
 		case "$operation" in
 			"route")
 				if [[ -n "$fileOrigin" && -n "$fileTarget" ]]; then
@@ -532,7 +535,7 @@ processTemplates() {
 				;;
 
 			*)
-				# Here {PATHS} are adapted for templates
+				# On custom commands, the {PATHS} tags are adapted for templates
 				if [[ -n "${_DEFINED_CMD_MAP[$operation]}" ]]; then
 
 					local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
@@ -719,8 +722,6 @@ templateRender() {
 	printf "%s" "$templateText"
 }
 
-__printVars() {
-	printf '%s\n' "$__VARS_WEBERA"
-}
+__printVars() { printf '%s\n' "$__VARS_WEBERA"; }
 
 main "$@" # this must always be the last line

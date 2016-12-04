@@ -19,83 +19,89 @@
 
 		<article class="markdown readme">
 			<h1 id="webera">webera</h1>
-<p>is a simple, handy &amp; versatile shellscript for static website generation</p>
-<p>It follows the <a href="https://en.wikipedia.org/wiki/Unix_philosophy">Unix Philosophy</a> and depends on common tools like grep, sed, awk and coreutils to do its job.</p>
-<p>You can download the small script wherever there is Bash, and start creating your website.</p>
+<p>A handy, transparent and versatile shellscript for static website generation.</p>
+<p>It follows the <a href="https://en.wikipedia.org/wiki/Unix_philosophy">Unix Philosophy</a> and uses common unix commands (grep, sed, awk) to do its job.</p>
+<p>You can download the small script wherever there is Bash, and use it to create your website.</p>
 <h2 id="features">Features</h2>
 <ul>
-<li>Custom commands and workflows for templates and static resources<br /></li>
-<li><p>Template directives for:</p>
+<li>Custom commands and workflows for processing templates and static resources</li>
+<li>Template directives for:
 <ul>
-<li>outputting commands<br /></li>
-<li>nesting templates<br /></li>
-<li>setting variables<br /></li>
+<li>outputting commands</li>
+<li>nesting templates</li>
+<li>setting variables</li>
 </ul></li>
-<li>Configuration files<br /></li>
-<li>Logging system<br /></li>
-<li><p>Preview</p></li>
+<li>Flexible configuration</li>
+<li>Decent logging system</li>
+<li>Adaptable browser preview</li>
 </ul>
 <h2 id="quick-start">Quick Start</h2>
 <p>The simplest way to start is to download the <a href="https://raw.githubusercontent.com/andamira/webera/master/webera">webera script</a> and make it executable.</p>
-<pre class="sh"><code>wget raw.githubusercontent.com/andamira/webera/master/webera &amp;&amp; chmod +x webera</code></pre>
-<p>Then you can generate (<code>webera -n</code>) or <a href="https://raw.githubusercontent.com/andamira/webera/master/.weberarc">download</a> a new configuration file for your project.</p>
-<p>Place the templates inside the <code>tem/</code> directory, and configure the corresponding routes in the <code>.weberarc</code> config file, like this:</p>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">wget</span> raw.githubusercontent.com/andamira/webera/master/webera <span class="kw">&amp;&amp;</span> <span class="fu">chmod</span> +x webera</code></pre></div>
+<p>You can generate (<code>webera -n</code>) or <a href="https://raw.githubusercontent.com/andamira/webera/master/.weberarc">download</a> a new example configuration file for the project.</p>
+<p>Just place the templates inside the <code>tem/</code> directory, and configure the corresponding routes in the <code>.weberarc</code> config file, like this:</p>
 <pre><code>template : route : index.html   : /</code></pre>
-<p>Finally generate the website in the <code>out</code> directory, by default.</p>
-<pre class="sh"><code>./webera -tr</code></pre>
+<p>And generate the website. It will be created in the <code>out</code> directory by default.</p>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">./webera</span> -tr</code></pre></div>
 <h2 id="examples">Examples</h2>
-<p>You can find several <a href="https://andamira.github.io/webera/examples/">generated examples here</a><br />and their original source in the <a href="https://github.com/andamira/webera/tree/master/examples">examples/</a> directory.</p>
+<p>You can find several <a href="https://andamira.github.io/webera/examples/">rendered examples here</a><br />
+and their original source in the <a href="https://github.com/andamira/webera/tree/master/examples">examples/</a> directory.</p>
 <h3 id="usage">Usage</h3>
-<table>
+<table style="width:62%;">
+<colgroup>
+<col style="width: 44%" />
+<col style="width: 18%" />
+</colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: left;">example</th>
-<th style="text-align: left;">what it does</th>
+<th>example</th>
+<th>what it does</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;"><code>./webera -t -cL2</code></td>
-<td style="text-align: left;">Process <strong>t</strong>emplates and write a level 2 <strong>L</strong>ogfile, clearing any previous logfile first</td>
+<td><code>./webera -t -cL2</code></td>
+<td>Process <strong>t</strong>emplates and write a level 2 <strong>L</strong>ogfile, clearing any previous logfile first</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><code>./webera -trw -W vivaldi</code></td>
-<td style="text-align: left;">Process templates and resources; and preview using another bro<strong>W</strong>ser</td>
+<td><code>./webera -trw -W vivaldi</code></td>
+<td>Process templates and resources; and preview using another bro<strong>W</strong>ser</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;"><code>./webera -r -R resB/ -O outB/</code></td>
-<td style="text-align: left;">Process resources from a custom <strong>R</strong>esources directory, and also to a custom <strong>O</strong>utput directory</td>
+<td><code>./webera -r -R resB/ -O outB/</code></td>
+<td>Process resources from a custom <strong>R</strong>esources directory, and also to a custom <strong>O</strong>utput directory</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><code>./webera -nC conf/webera.conf</code></td>
-<td style="text-align: left;">Generate a <strong>n</strong>ew configuration, to a custom <strong>C</strong>onfig file</td>
+<td><code>./webera -nC conf/webera.conf</code></td>
+<td>Generate a <strong>n</strong>ew configuration, to a custom <strong>C</strong>onfig file</td>
 </tr>
 </tbody>
 </table>
 <h3 id="configuration">Configuration</h3>
-<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Customize Settings</span>
-<span class="kw">config</span> : WEB_BROWSER_BIN : google-chrome
-<span class="kw">config</span> : DIR_OUTPUT      : /home/website/public_html
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Customize Settings</span>
+<span class="ex">config</span> : WEB_BROWSER_BIN : google-chrome
+<span class="ex">config</span> : DIR_OUTPUT      : /home/<span class="va">$USER</span>/my-website
 
 <span class="co"># Define Custom commands</span>
-<span class="kw">command</span> : sass2css : sass <span class="dt">{ORIGIN}</span> <span class="dt">{TARGET}</span>
+<span class="bu">command</span> : sass2css : sass <span class="dt">{ORIGIN}</span> <span class="dt">{TARGET}</span>
 
 <span class="co"># Process resources</span>
-<span class="kw">resource</span> : sass2css : scss/styles.scss : css/main.css
+<span class="ex">resource</span> : sass2css : scss/styles.scss : css/main.css
 
 <span class="co"># Process templates to URL endpoints</span>
-<span class="kw">template</span> : route : index.html   : /
-<span class="kw">template</span> : route : about.html   : /about-me/</code></pre>
+<span class="ex">template</span> : route : index.html    : /
+<span class="ex">template</span> : route : about.html    : /about-me/
+<span class="ex">template</span> : route : render-2.html : target-file.html</code></pre></div>
 <p>See <a href="https://github.com/andamira/webera/blob/master/.weberarc"><code>.weberarc</code></a> for more options.</p>
 <h2 id="planned-features">Planned Features</h2>
 <ul>
-<li>define custom directives<br /></li>
-<li>manage blog | custom post types<br /></li>
+<li>define custom directives</li>
+<li>manage custom post types</li>
 <li>generate navigation menus</li>
+<li>support metadata</li>
 </ul>
-<p><a href="https://github.com/andamira/webera/issues?q=is%3Aissue+is%3Aopen+label%3A%22type%3A+feature%22">See open features</a></p>
 <h2 id="here-be-dragons">Here Be Dragons</h2>
-<p>This project is not considered stable yet, and anything can change at any moment, including features, paths, and syntax.</p>
+<p>This project is not yet near stable. That means anything can change at any moment, including existing features, defaults and syntax.</p>
 		</article>
 
 		</main>

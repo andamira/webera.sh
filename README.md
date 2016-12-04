@@ -1,21 +1,21 @@
 # webera
 
-is a simple, handy & versatile shellscript for static website generation 
+A handy, transparent and versatile shellscript for static website generation.
 
-It follows the [Unix Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) and depends on common tools like grep, sed, awk and coreutils to do its job.
+It follows the [Unix Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) and uses common unix commands (grep, sed, awk) to do its job.
 
-You can download the small script wherever there is Bash, and start creating your website.
+You can download the small script wherever there is Bash, and use it to create your website.
 
 ## Features
 
-- Custom commands and workflows for templates and static resources
+- Custom commands and workflows for processing templates and static resources
 - Template directives for:
 	- outputting commands
 	- nesting templates
 	- setting variables
-- Configuration files
-- Logging system
-- Preview
+- Flexible configuration
+- Decent logging system
+- Adaptable browser preview
 
 ## Quick Start
 
@@ -25,15 +25,15 @@ The simplest way to start is to download the [webera script](https://raw.githubu
 wget raw.githubusercontent.com/andamira/webera/master/webera && chmod +x webera
 ```
 
-Then you can generate (`webera -n`) or [download](https://raw.githubusercontent.com/andamira/webera/master/.weberarc) a new configuration file for your project.
+You can generate (`webera -n`) or [download](https://raw.githubusercontent.com/andamira/webera/master/.weberarc) a new example configuration file for the project.
 
-Place the templates inside the `tem/` directory, and configure the corresponding routes in the `.weberarc` config file, like this:
+Just place the templates inside the `tem/` directory, and configure the corresponding routes in the `.weberarc` config file, like this:
 
 ```
 template : route : index.html   : /
 ```
 
-Finally generate the website in the `out` directory, by default.
+And generate the website. It will be created in the `out` directory by default.
 
 ```sh
 ./webera -tr
@@ -41,7 +41,7 @@ Finally generate the website in the `out` directory, by default.
 
 ## Examples
 
-You can find several [generated examples here](https://andamira.github.io/webera/examples/)
+You can find several [rendered examples here](https://andamira.github.io/webera/examples/)
 and their original source in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory.
 
 ### Usage
@@ -58,7 +58,7 @@ and their original source in the [examples/](https://github.com/andamira/webera/
 ```bash
 # Customize Settings
 config : WEB_BROWSER_BIN : google-chrome
-config : DIR_OUTPUT      : /home/website/public_html
+config : DIR_OUTPUT      : /home/$USER/my-website
 
 # Define Custom commands
 command : sass2css : sass {ORIGIN} {TARGET}
@@ -67,8 +67,9 @@ command : sass2css : sass {ORIGIN} {TARGET}
 resource : sass2css : scss/styles.scss : css/main.css
 
 # Process templates to URL endpoints
-template : route : index.html   : /
-template : route : about.html   : /about-me/
+template : route : index.html    : /
+template : route : about.html    : /about-me/
+template : route : render-2.html : target-file.html
 ```
 
 See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for more options.
@@ -76,11 +77,10 @@ See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for 
 ## Planned Features
 
 - define custom directives
-- manage blog | custom post types
+- manage custom post types
 - generate navigation menus
-
-[See open features](https://github.com/andamira/webera/issues?q=is%3Aissue+is%3Aopen+label%3A%22type%3A+feature%22)
+- support metadata
 
 ## Here Be Dragons
 
-This project is not considered stable yet, and anything can change at any moment, including features, paths, and syntax.
+This project is not yet near stable. That means anything can change at any moment, including existing features, defaults and syntax.
