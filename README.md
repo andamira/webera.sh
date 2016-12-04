@@ -44,7 +44,7 @@ Finally generate the website in the `out` directory, by default.
 You can find several [generated examples here](https://andamira.github.io/webera/examples/)
 and their original source in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory.
 
-### Usage Examples
+### Usage
 
 | example                         | what it does |
 | ------------------------------- | ------------ |
@@ -53,7 +53,7 @@ and their original source in the [examples/](https://github.com/andamira/webera/
 | `./webera -r -R resB/ -O outB/` | Process resources from a custom **R**esources directory, and also to a custom **O**utput directory |
 | `./webera -nC conf/webera.conf` | Generate a **n**ew configuration, to a custom **C**onfig file |
 
-### Configuration Example
+### Configuration
 
 ```bash
 # Customize Settings

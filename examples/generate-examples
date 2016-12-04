@@ -42,7 +42,7 @@ parseArguments() {
 		case "$OPTION" in
 			w) OPTION_LOAD_IN_WEB_BROWSER=true ;;
 			L) OPTION_LOG_LEVEL="$OPTARG" ;;
-			c) OPTION_LOG_CLEAR='c' ;;
+			c) OPTION_LOG_CLEAR=true ;;
 			h|*) usage; exit ;;
 		esac
 	done
@@ -51,6 +51,8 @@ parseArguments() {
 generateExamples() {
 
 	cd $DIR
+
+	[[ "$OPTION_LOG_CLEAR" == true ]] && rm "$LOGFILE"
 
 	local EXAMPLES=$(find . -maxdepth 1 -type d \
 		| cut -d'/' -f2 \
@@ -63,7 +65,7 @@ generateExamples() {
 
 		printf "generating '$E'. . . \n"
 
-		$WEBERA -rt -${OPTION_LOG_CLEAR}L${OPTION_LOG_LEVEL} -G $LOGFILE
+		$WEBERA -rt -L${OPTION_LOG_LEVEL} -G $LOGFILE
 
 		cd $DIR
 	done

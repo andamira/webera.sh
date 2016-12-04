@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.31
+# Version: 0.1.32
 # License: MIT
 #
 # Dependencies:
@@ -69,8 +69,7 @@ main() {
 	local -i _LOG_LEVEL_MAX=3
 
 	# log indentation and formatting
-	local -r _IN="  "; local -r _IN2="    "
-	local -r _IN3="$_IN2$_IN"; local -r _IN4="$_IN2$_IN2"
+	declare -r _IN="  " _IN2="    " _IN3="      " _IN4="        "
 	local -r _HEADING='------------------------------------------------------'
 
 	# reusable regexp patterns
@@ -226,7 +225,7 @@ setupLog() {
 		| tr '\a' '\n' \
 		| sed "s/====@$/====$OPTION_LOG_LEVEL/" )
 
-	_PRELOG="noprelog"
+	_PRELOG=false
 
 	[[ -z "$PARSED_PRELOG" ]] || log "$PARSED_PRELOG"
 }
@@ -234,11 +233,8 @@ setupLog() {
 log() {
 	declare logMsg=$1 logLevelNeeded=$2 logType=$3
 
-	if [[ "$_PRELOG" == "noprelog" ]]; then
-		# TODO CHECK false instead of "noprelog"
-
-		# TODO CHECK no sub-shell
-		if [[ -z "$logLevelNeeded" || "$logLevelNeeded" -lt "1" ]]; then
+	if [[ "$_PRELOG" == false ]]; then
+		if [[ -z "$logLevelNeeded" || ( "$logLevelNeeded" -lt "1" ) ]]; then
 			LOG_LEVEL="$_LOG_LEVEL_MIN"
 		else
 			if [[ "$LOG_LEVEL" -gt "$_LOG_LEVEL_MAX" ]]; then
@@ -370,17 +366,17 @@ configureSettings() {
 
 	if [[ -n "$SETTINGS" ]]; then
 		log "\nConfiguring settings...\n$_HEADING" 1
+	else return; fi
 
-		local OLDIFS="$IFS"; IFS=$'\n'
-		for S in "$SETTINGS"; do
-			local setting_name=$(printf '%s' "$S" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS")
-			local setting_value=$(printf '%s' "$S" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS")
-			local setting_previous_value=${!setting_name}
-			log "${_IN}setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
-			printf -v $setting_name "$setting_value"
-		done
-		IFS="$OLDIFS"
-	fi
+	local OLDIFS="$IFS"; IFS=$'\n'
+	for S in $SETTINGS; do
+		local setting_name=$(printf '%s' "$S" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS")
+		local setting_value=$(printf '%s' "$S" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS")
+		local setting_previous_value=${!setting_name}
+		log "${_IN}setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
+		printf -v $setting_name "$setting_value"
+	done
+	IFS="$OLDIFS"
 
 	# Override the settings with the parsed arguments
 	for OPT in "${!_ARG_OPTIONS[@]}"; do
@@ -415,16 +411,16 @@ readConfigCommands() {
 	local DEFINED_CMD="$(printf '%s' "$CONFIG" | grep ^$_WS*command$_WS*: )"
 
 	if [[ -n "$DEFINED_CMD" ]]; then
-		local CNUM=$(printf '%s' "$DEFINED_CMD" | wc -l )
+		local CNUM=$(printf '%s\n' "$DEFINED_CMD" | wc -l )
 		log "\nDefining $CNUM commands...\n" 1
-	fi
+	else return; fi
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 	for C in $DEFINED_CMD; do
 		local cmd_name=$(printf '%s' "$C" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
 		local cmd_action=$(printf '%s' "$C" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS" )
 
-		_DEFINED_CMD_MAP[$cmd_name]=$cmd_action
+		_DEFINED_CMD_MAP["$cmd_name"]="$cmd_action"
 
 		log "${_IN}$cmd_name='$cmd_action'" 2
 	done
@@ -436,7 +432,7 @@ processResources() {
 
 	if [[ ! -d "$DIR_RESOURCES" ]]; then
 		log "No resources dir '$DIR_RESOURCES' found." 1 error
-		return	
+		return
 	fi
 
 	local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*resource$_WS*: )"
