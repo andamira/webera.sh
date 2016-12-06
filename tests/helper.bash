@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 
-# import testing library
-. extern/assert.sh -v
+# Imports
+source extern/assert.sh -v
+source ../webera
 
-# import webera functions
-. <( sed "\$d" ../webera ) &>>/dev/null
-
-# webera binary wrapper
+# Binary wrapper
 webera() { ../webera "$@" 2>/dev/null; }
 
 

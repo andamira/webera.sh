@@ -1,25 +1,23 @@
 #!/usr/bin/env bash
 
-. ./helper.bash
+source ./helper.bash
 
 test_arguments() {
 	declare default newval
 
 	test_h1 "Script Arguments"
+	# ========================
 
 	test_h2 "Usage"
+	# =====
 
 	assert_raises "webera" "1"
 	assert "webera -h | grep '^Usage' | cut -d' ' -f1-2" \
 		"Usage: ./webera"
 
 
-	# FIXME DEBUG
-	echo " test1: $(webera -h | grep '^Usage')"
-	echo " test2: $(../webera -h | grep '^Usage')"
-
-
 	test_h2 "Debug"
+	# =====
 
 	assert_raises "webera -_" "0"
 
@@ -27,11 +25,11 @@ test_arguments() {
 
 	# Check expected format, and the minimum number of arguments
 	newval=$( echo "$defaults" | grep '^\[[a-z]\+\]:.\+=' | wc -l)
-	[[ "$newval" -ge 38 ]]
-	assert_raises "echo $?" "0"
+	assert_raises "[[ $newval -ge 37 ]]"
 
 
 	test_h2 "Main Flags"
+	# =====
 
 	newval=$(weberaVarValue "$(webera -_t)" \
 		'args' '_DO_PROCESS_TEMPLATES')
@@ -51,6 +49,7 @@ test_arguments() {
 
 	
 	test_h2 "File Paths"
+	# =====
 
 	default=$(weberaVarValue "$defaults" 'vdef' 'FILE_CONFIG')
 	assert "echo $default" ".weberarc"
@@ -60,6 +59,7 @@ test_arguments() {
 
 
 	test_h2 "Dir Paths"
+	# =====
 
 	default=$(weberaVarValue "$defaults" 'vdef' 'DIR_TEMPLATES')
 	assert "echo $default" "tem"
@@ -87,6 +87,7 @@ test_arguments() {
 
 
 	test_h2 "Switch Flags"
+	# =====
 
 	default=$(weberaVarValue "$defaults" \
 		'vdef' 'OPTION_DELETE_DIR_OUTPUT')
@@ -104,6 +105,7 @@ test_arguments() {
 
 
 	test_h2 "Log"
+	# =====
 
 	default=$(weberaVarValue "$defaults" 'vdef' 'OPTION_LOG_LEVEL')
 	assert "echo $default" "0"
@@ -119,6 +121,7 @@ test_arguments() {
 
 
 	test_h2 "Website Preview"
+	# =====
 
 	default=$(weberaVarValue "$defaults" 'vdef' 'WEB_BROWSER')
 	assert "echo $default" "firefox"
