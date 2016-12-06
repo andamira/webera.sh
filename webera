@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.33
+# Version: 0.1.34
 # License: MIT
 #
 # Dependencies:
@@ -14,6 +14,8 @@
 # Originally Inspired by Statix
 #     https://gist.github.com/plugnburn/c2f7cc3807e8934b179e
 ##
+
+set -o errexit
 
 main() {
 	local __VARS_WEBERA="" # A list of the settings, for debugging purposes
@@ -112,7 +114,7 @@ main() {
 
 	[[ "$_DO_PROCESS_RESOURCES" == true ]] && processResources
 	[[ "$_DO_PROCESS_TEMPLATES" == true ]] && processTemplates
-	[[ "$_DO_PREVIEW_IN_BROWSER" == true ]] && ( serverSetup; previewWebsite )
+	[[ "$_DO_PREVIEW_IN_BROWSER" == true ]] && serverSetup && previewWebsite
 }
 
 usage() {
@@ -307,12 +309,13 @@ previewWebsite() {
 }
 
 deleteDirectories() {
-	[[ "$OPTION_DELETE_DIR_BUILD" == true ]] && rm -r "$DIR_BUILD" 2>/dev/null
+
+	[[ "$OPTION_DELETE_DIR_BUILD" == true ]] && rm -rf "$DIR_BUILD" 2>/dev/null
 
 	if [[ "$OPTION_DELETE_DIR_OUTPUT" == true ]] && \
 		[[ $_DO_PROCESS_RESOURCES == true \
 		|| $_DO_PROCESS_TEMPLATES == true ]]; then
-		rm -r "$DIR_OUTPUT" 2>/dev/null
+		rm -rf "$DIR_OUTPUT" 2>/dev/null
 	fi
 }
 
@@ -347,7 +350,7 @@ readConfig() {
 	else # when the config file doesn't exist
 		# and if it's the config file of the project
 		if [ "$FILE" == "$FILE_CONFIG" ]; then
-			[[ "$__DO_PRINT_VARS" == true ]] && return # if printing debug info
+			[[ "$__DO_PRINT_VARS" == true ]] && return 0 # if printing debug info
 
 			if [[ "$_DO_GENERATE_FILE_CONFIG" == true ]]; then
 				generateConfig
@@ -370,7 +373,7 @@ configureSettings() {
 
 	if [[ -n "$SETTINGS" ]]; then
 		log "\nConfiguring settings...\n$_HEADING" 1
-	else return; fi
+	else return 0; fi
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 	for S in $SETTINGS; do
@@ -418,7 +421,7 @@ readConfigCommands() {
 		local CNUM=$(printf '%s\n' "$DEFINED_CMD" | wc -l )
 		log "\nParsing commands...\n$_HEADING" 1
 		log "${_IN}Found $CNUM defined command:" 1
-	else return; fi
+	else return 0; fi
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 	for C in $DEFINED_CMD; do

@@ -5,9 +5,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
 # find all tests and run them one by one
-TESTS=$(find . -maxdepth 1 -name "test-*.bats" -type f | tr '\n' ' ')
+TESTS=$(find . -maxdepth 1 -name "test-*.sh" -type f | tr '\n' ' ')
 
-for T in $TESTS; do
-	printf "\nrunning '$T'. . .\n\n"
-	bats $T
-done
+for T in $TESTS; do $T; done

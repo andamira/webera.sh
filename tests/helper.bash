@@ -1,20 +1,49 @@
 #!/usr/bin/env bash
-#
 
-setup() {
-	WEBERA_TEST_DIR=$(mktemp -d)
+# import testing library
+. extern/assert.sh -v
 
-	# add webera to path
-	export PATH="$BATS_TEST_DIRNAME/..:$PATH"
+# import webera functions
+. <( sed "\$d" ../webera ) &>>/dev/null
 
-	# import webera functions
-	#source <( sed "\$d" $BATS_TEST_DIRNAME/../webera ) &>>/dev/null
+# webera binary wrapper
+webera() { ../webera "$@" 2>/dev/null; }
+
+
+# Generic Helper Functions
+# ========================
+
+test_endline() {
+	if [[ "$DEBUG" -gt 0 ]]; then
+		printf '\n----------------' "$@"
+	fi
+}
+test_h1() {
+	if [[ "$DEBUG" -gt 0 ]]; then
+		printf '\nTesting %s:\n--------------------------------\n' "$@"
+	fi
+}
+test_h2() {
+	if [[ "$DEBUG" -gt 0 ]]; then
+		printf '\ntesting %s ' "$@"
+	fi
+}
+test_h3() {
+	if [[ "$DEBUG" -gt 0 ]]; then
+		printf '\n  testing %s ' "$@"
+	fi
 }
 
-teardown() {
+test_setup() {
+	WEBERA_TEST_DIR=$(mktemp -d)
+}
+test_teardown() {
 	[[ -d "$WEBERA_TEST_DIR" ]] && rm -rf "$WEBERA_TEST_DIR"
 }
 
+
+# Webera Specific Helper Functions
+# ================================
 
 # Parse a list of variables in debug info format
 # and return the corresponding value.
@@ -25,7 +54,7 @@ weberaVarValue() {
 	local webera_vars="$1"
 	local varType="$2"
 	local varName="$3"
-	
+
 	shopt -s extglob
 	local varTypesAllowed='@(vdef|file|args)'
 
@@ -36,87 +65,8 @@ weberaVarValue() {
 	shopt -u extglob
 
 	printf '%s' "$webera_vars" \
-		| grep "^\[$varType\]" \
-		| grep "$varName" \
+		| grep "^\[$varType\]:.*:$varName=" \
 		| cut -d':' -f3 \
 		| cut -d'=' -f2
 }
 
-
-# Test helper functions, based on:
-# https://github.com/rbenv/rbenv/blob/master/test/test_helper.bash
-#
-
-flunk() {
-	{ if [ "$#" -eq 0 ]; then cat -
-		else echo "$@"
-		fi
-	} | sed "s:${WEBERA_TEST_DIR}:TEST_DIR:g" >&2
-	return 1
-}
-
-assert() {
-	if ! "$@"; then
-		flunk "failed: $@"
-	fi
-}
-
-assert_equal() {
-	if [ "$1" != "$2" ]; then
-		{ echo "expected: $1"
-			echo "actual:	 $2"
-		} | flunk
-	fi
-}
-
-assert_output() {
-	local expected
-	if [ $# -eq 0 ]; then expected="$(cat -)"
-	else expected="$1"
-	fi
-	assert_equal "$expected" "$output"
-}
-
-assert_success() {
-	if [ "$status" -ne 0 ]; then
-		flunk "command failed with exit status $status"
-	elif [ "$#" -gt 0 ]; then
-		assert_output "$1"
-	fi
-}
-
-assert_failure() {
-	if [ "$status" -eq 0 ]; then
-		flunk "expected failed exit status"
-	elif [ "$#" -gt 0 ]; then
-		assert_output "$1"
-	fi
-}
-
-assert_line() {
-	if [ "$1" -ge 0 ] 2>/dev/null; then
-		assert_equal "$2" "${lines[$1]}"
-	else
-		local line
-		for line in "${lines[@]}"; do
-			if [ "$line" = "$1" ]; then return 0; fi
-		done
-		flunk "expected line \`$1'"
-	fi
-}
-
-refute_line() {
-	if [ "$1" -ge 0 ] 2>/dev/null; then
-		local num_lines="${#lines[@]}"
-		if [ "$1" -lt "$num_lines" ]; then
-			flunk "output has $num_lines lines"
-		fi
-	else
-		local line
-		for line in "${lines[@]}"; do
-			if [ "$line" = "$1" ]; then
-				flunk "expected to not find line \`$line'"
-			fi
-		done
-	fi
-}

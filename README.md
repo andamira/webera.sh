@@ -67,19 +67,13 @@ command : sass2css : sass {ORIGIN} {TARGET}
 resource : sass2css : scss/styles.scss : css/main.css
 
 # Process templates to URL endpoints
-template : route : index.html    : /
-template : route : about.html    : /about-me/
-template : route : render-2.html : target-file.html
+template : route : index.html     : /
+template : route : about.html     : /about/
+template : route : about-me.html  : /about/me/
+template : route : about-you.html : /about/you.html
 ```
 
 See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for more options.
-
-## Planned Features
-
-- define custom directives
-- manage custom post types
-- generate navigation menus
-- support metadata
 
 ## Here Be Dragons
 
