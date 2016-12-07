@@ -1,0 +1,20 @@
+build:
+  bash:
+    image: bash:$$BASH_VERSION
+    commands: ./tests/run-all
+
+  debian:
+    image: debian:$$DEBIAN_VERSION
+    commands: ./tests/run-all
+
+matrix:
+  BASH_VERSION:
+    - latest
+    - 4.0
+    - 3.2
+  DEBIAN_VERSION:
+    - sid
+    - wheezy-slim
+
+branches:
+  - master

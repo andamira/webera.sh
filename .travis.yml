@@ -1,3 +1,33 @@
 sudo: false
+
 language: generic
+
+matrix:
+  include:
+      # Ubuntu Precise
+    - os: linux
+      dist: precise
+      sudo: false
+
+      # Ubuntu 14.04.4 LTS (Trusty Tahr)
+    - os: linux
+      dist: trusty
+      sudo: false
+
+      # OS X 10.12
+    - os: osx
+      osx_image: xcode8.2
+
+      # OS X 10.11
+    - os: osx
+      osx_image: xcode7.3
+
+      # OS X 10.10
+    - os: osx
+      osx_image: xcode6.4
+
+  fast_finish: true
+  allow_failures:
+    - os: osx
+
 script: ./tests/run-all

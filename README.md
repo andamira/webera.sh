@@ -4,10 +4,18 @@
 
 A handy shellscript to help you create static websites.
 
-Its purpose is to be like a swiss knife: a small and versatile field tool.
+Its purpose is to be like a swiss knife: a versatile tool in a small package.
 
-It follows the [Unix Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) and uses Bash 4 with common unix commands (grep, sed, awk) to do its job.
+It follows the [Unix Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) and depends on Bash 4 alongside common unix commands (grep, sed, awk) to do its job.
 
+---
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Examples](#examples)
+  - [Usage](#usage)
+  - [Config](#config)
+- [Warning](#here-be-dragons)
 
 ## Features
 
@@ -38,7 +46,7 @@ template : route : my-index.html   : /
 template : route : other-page.html : /other-url/
 ```
 
-Then generate the website, to the `out` directory by default:
+Then generate the website, to the `out/` directory by default:
 
 ```sh
 ./webera -tr
@@ -93,8 +101,9 @@ and their original source in the [examples/](https://github.com/andamira/webera/
 
 </tbody></table>
 
+Run `./webera -h` for more usage flags.
 
-### Configuration
+### Config
 
 ```bash
 # Customize Settings
@@ -114,9 +123,9 @@ template : route : about-me.html  : /about/me/
 template : route : about-you.html : /about/you.html
 ```
 
-See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for more options.
+See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for more config options.
 
 
 ## Here Be Dragons
 
-This project is not stable yet. Anything can change.
+This project is not stable yet. Anything can change at any moment.

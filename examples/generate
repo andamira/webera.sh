@@ -7,7 +7,7 @@ main() {
 
 	local DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 	local WEBERA="$DIR/../webera"
-	local LOGFILE="$DIR/examples-generated.log"
+	local LOGFILE="$DIR/examples.log"
 	local OUTPUT="$DIR/../docs"
 
 	parseArguments "$@"

@@ -21,8 +21,17 @@
 			<h1 id="webera">webera</h1>
 <p><a href="https://travis-ci.org/andamira/webera"><embed src="https://travis-ci.org/andamira/webera.png?branch=master" /></a></p>
 <p>A handy shellscript to help you create static websites.</p>
-<p>Its purpose is to be like a swiss knife: a small and versatile field tool.</p>
-<p>It follows the <a href="https://en.wikipedia.org/wiki/Unix_philosophy">Unix Philosophy</a> and uses Bash 4 with common unix commands (grep, sed, awk) to do its job.</p>
+<p>Its purpose is to be like a swiss knife: a versatile tool in a small package.</p>
+<p>It follows the <a href="https://en.wikipedia.org/wiki/Unix_philosophy">Unix Philosophy</a> and depends on Bash 4 alongside common unix commands (grep, sed, awk) to do its job.</p>
+<hr />
+<ul>
+<li><a href="#features">Features</a><br /></li>
+<li><a href="#quick-start">Quick Start</a><br /></li>
+<li><a href="#examples">Examples</a><br /></li>
+<li><a href="#usage">Usage</a><br /></li>
+<li><a href="#config">Config</a><br /></li>
+<li><a href="#here-be-dragons">Warning</a></li>
+</ul>
 <h2 id="features">Features</h2>
 <ul>
 <li>Custom commands and workflows for processing templates and static resources<br /></li>
@@ -41,7 +50,7 @@
 <p>Place your templates in the <code>tem/</code> directory, and configure the corresponding routes in the <code>.weberarc</code> config file, like this:</p>
 <pre><code>template : route : my-index.html   : /
 template : route : other-page.html : /other-url/</code></pre>
-<p>Then generate the website, to the <code>out</code> directory by default:</p>
+<p>Then generate the website, to the <code>out/</code> directory by default:</p>
 <pre class="sh"><code>./webera -tr</code></pre>
 <h2 id="examples">Examples</h2>
 <p>You can find several <a href="https://andamira.github.io/webera/examples/">rendered examples here</a><br />and their original source in the <a href="https://github.com/andamira/webera/tree/master/examples">examples/</a> directory.</p>
@@ -88,8 +97,8 @@ template : route : other-page.html : /other-url/</code></pre>
 </tbody></table>
 
 
-
-<h3 id="configuration">Configuration</h3>
+<p>Run <code>./webera -h</code> for more usage flags.</p>
+<h3 id="config">Config</h3>
 <pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Customize Settings</span>
 <span class="kw">config</span> : WEB_BROWSER_BIN : google-chrome
 <span class="kw">config</span> : DIR_OUTPUT      : /home/<span class="ot">$USER</span>/my-website
@@ -105,9 +114,9 @@ template : route : other-page.html : /other-url/</code></pre>
 <span class="kw">template</span> : route : about.html     : /about/
 <span class="kw">template</span> : route : about-me.html  : /about/me/
 <span class="kw">template</span> : route : about-you.html : /about/you.html</code></pre>
-<p>See <a href="https://github.com/andamira/webera/blob/master/.weberarc"><code>.weberarc</code></a> for more options.</p>
+<p>See <a href="https://github.com/andamira/webera/blob/master/.weberarc"><code>.weberarc</code></a> for more config options.</p>
 <h2 id="here-be-dragons">Here Be Dragons</h2>
-<p>This project is not stable yet. Anything can change.</p>
+<p>This project is not stable yet. Anything can change at any moment.</p>
 		</article>
 
 		</main>
