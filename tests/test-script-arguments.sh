@@ -24,8 +24,8 @@ test_arguments() {
 	local -r defaults="$(webera -_)"
 
 	# Check expected format, and the minimum number of arguments
-	newval=$( echo "$defaults" | grep '^\[[a-z]\+\]:.\+=' | wc -l)
-	assert_raises "[[ $newval -ge 37 ]]"
+	newval=$( echo "$defaults" | grep -c '^\[[a-z]\+\]:.\+=')
+	assert_raises "[[ $newval -ge 36 ]]"
 
 
 	test_h2 "Main Flags"
@@ -148,7 +148,7 @@ test_arguments() {
 	assert "echo $newval" "9000"
 
 	test_endline
-}
+} #test_arguments() 
 
 test_arguments
-assert_end arguments
+assert_end "arguments"
