@@ -17,6 +17,8 @@ It follows the [Unix Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) 
   - [Config](#config)
 - [Warning](#here-be-dragons)
 
+---
+
 ## Features
 
 - Custom commands and workflows for processing templates and static resources

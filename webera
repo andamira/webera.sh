@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.37
+# Version: 0.1.38
 # License: MIT
 #
 # Dependencies:
@@ -301,11 +301,11 @@ previewWebsite() {
 		local RUN_BROWSER="$WEB_BROWSER http://$SERVER_HOST:$SERVER_PORT &"
 	fi
 
-	sleep 1s && eval "$RUN_BROWSER" &>> /dev/null
+	sleep 1s && eval "$RUN_BROWSER" >&2 2>/dev/null
 	if [[ -n "$SERVER_START" ]]; then
 		printf "(Use CTRL+C to stop the '$SERVER_TYPE' web server)\n"
 		printf "SERVER_START=$SERVER_START"
-		eval "$SERVER_STOP &>> /dev/null"; eval "$SERVER_START"
+		eval "$SERVER_STOP >&2 2>/dev/null"; eval "$SERVER_START"
 	fi
 } #previewWebsite()
 
@@ -723,9 +723,19 @@ templateRender() {
 
 __printVars() { printf '%s\n' "$__VARS_WEBERA"; }
 
+__compat() {
+	local bashBigVersion=$(echo "$BASH_VERSION" | cut -d'.' -f1)
+	if [[ "$bashBigVersion" -lt 4 ]]; then
+		printf '%s\n' "Bash version 4 needed. Detected version is $BASH_VERSION"
+		exit 6
+	fi
+}
+
 # debugging settings
 set -o errexit
 [[ -n "$WEBERA_DEBUG" ]] && set -o xtrace
 export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+__compat "$@" # Compatibility checks
 
 [[ "$0" == "$BASH_SOURCE" ]] && main "$@" || true # Avoid running when sourced
