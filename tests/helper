@@ -29,6 +29,7 @@ helper_main() {
 	# Initializations
 	export TOTAL_TEST_NUM=$(mktemp); echo "0" > "$TOTAL_TEST_NUM"
 	export TOTAL_TEST_TIME=$(mktemp); echo "0" > "$TOTAL_TEST_TIME"
+	export TOTAL_TEST_ERROR_NUM=$(mktemp); echo "0" > "$TOTAL_TEST_ERROR_NUM"
 
 	helper_arguments "$@"
 
@@ -66,15 +67,21 @@ helper_arguments() {
 } # helper_parseArguments()
 
 helper_run_all_tests() {
-	cd "$DIR_TESTS"
 
-	# find all the test files
-	local testFiles=$(find . -maxdepth 1 -name "test-*" -type f )
-	local testFilesNum="$(echo "$testFiles" | wc -l)"
+	# Manual ordered list of test files
+	local testFiles=()
 
-	# run them all
-	printf '%s\n' "Running tests in $testFilesNum files. . ."
-	for T in $testFiles; do $T; done
+	testFiles+=('test-helper')
+	testFiles+=('test-arguments')
+	testFiles+=('test-config')
+	#testFiles+=('test-templates')
+	#testFiles+=('test-resources')
+
+	printf '%s\n' "Running tests from ${#testFiles[@]} test files. . ."
+
+	for T in ${testFiles[@]}; do
+		"$DIR_TESTS/$T"
+	done
 
 	test_total_summary
 }
@@ -159,16 +166,41 @@ test_clean() {
 # prints the report and stores the time for global summary
 test_summary() {
 	local testStr="$1"
-	local testReport="$(assert_end "$testStr" | tr -d '\n' )"
+	local testReport="$(assert_end \'"$testStr"\' | tr -d '\n' )"
 
 	printf '\n  %s\n' "$(test_separator)"
-	printf '  %s\n' "$testReport"
 
-	# Number of tests
+	if [[ "$(echo "$testReport" | cut -d' ' -f1)" == "all" ]]; then
+		# No tests failed
+		printf '  %s\n' "$testReport"
+	else
+		# Some tests failed
+		local pattern='[0-9]\+ of [0-9]\+ .* tests failed.*$'
+		local whatFailed="$(printf "%s" "$testReport" | sed "s/\($pattern\)//" )"
+		local errorReport="$(printf "%s" "$testReport" | grep -o "$pattern" )"
+		printf '%s\n' "$whatFailed" | tr '\t' '\n' | sed 's/^/  /'
+		printf '  %s\n' "$(test_separator)"
+		printf '  %s\n' "$errorReport"
+
+		# Update the tests failed number
+		if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
+			local testErrNum="$(echo "$errorReport" | cut -d' ' -f1 )"
+			local previousTotalErrNum="$(cat "$TOTAL_TEST_ERROR_NUM")"
+			local newTotalErrNum="$(awk \
+				"BEGIN {print $testErrNum+$previousTotalErrNum; exit}")"
+
+			echo "$newTotalErrNum" > "$TOTAL_TEST_ERROR_NUM"
+		fi
+	fi
+
+	# Update the number of tests
 	if [[ -f "$TOTAL_TEST_NUM" ]]; then
-		local testNum="$(echo "$testReport" | grep -o '^all [0-9]\+' | cut -d' ' -f2 )"
+		local testNum="$(echo "$testReport" \
+			| grep -o '^all [0-9]\+' | cut -d' ' -f2 )"
 		local previousTotalNum="$(cat "$TOTAL_TEST_NUM")"
-		local newTotalNum="$(awk "BEGIN {print $testNum+$previousTotalNum; exit}")"
+		local newTotalNum="$(awk \
+			"BEGIN {print $testNum+$previousTotalNum; exit}")"
+
 		echo "$newTotalNum" > "$TOTAL_TEST_NUM"
 	fi
 
@@ -181,14 +213,21 @@ test_summary() {
 	fi
 }
 
-# prints the global summary
+# prints the final summary
 test_total_summary() {
+	local -i testTotal="$(cat "$TOTAL_TEST_NUM")"
+	local -i testFailed="$(cat "$TOTAL_TEST_ERROR_NUM")"
+	local -i testPassed="$(($testTotal-$testFailed))"
+
 	printf '\n\n%s\n%s\n' "SUMMARY:" "$(test_separator)"
-	printf '%s %5u\n' "Total tests:" "$(cat "$TOTAL_TEST_NUM")"
+	printf '%s %16u\n' "Tests done:" "$testTotal"
+
+	printf '%s %16u\n' "Tests pass:" "$testPassed"
+	printf '%s %16u\n' "Tests fail:" "$testFailed"
 
 	if [[ -z "$INVARIANT" ]]; then
 		LC_NUMERIC=C LC_COLLATE=C
-		printf '%s %5.2fs\n' "Time spent:" "$(cat "$TOTAL_TEST_TIME")"
+		printf '%s %16.2fs\n' "Time spent:" "$(cat "$TOTAL_TEST_TIME")"
 	fi
 
 	printf '%s\n' "$(test_separator)"
