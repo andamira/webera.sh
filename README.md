@@ -2,20 +2,22 @@
 
 [![Build Status](https://travis-ci.org/andamira/webera.png?branch=master)](https://travis-ci.org/andamira/webera)
 
-A handy shellscript to help you create static websites.
+Is a handy shellscript to help you create static websites.
 
 Its purpose is to be like a swiss knife: a versatile tool in a small package.
 
-It follows the [Unix Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) and depends on Bash 4 alongside common unix commands (grep, sed, awk) to do its job.
+It depends on Bash 4 alongside common unix commands (grep, sed, awk) to do its job.
 
----
+It's originally Inspired by [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e).
+
+**Index**
 
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Examples](#examples)
   - [Usage](#usage)
   - [Config](#config)
-- [Warning](#here-be-dragons)
+- [Stability](#here-be-dragons)
 
 ---
 

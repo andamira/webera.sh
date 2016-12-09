@@ -21,4 +21,4 @@ matrix:
   allow_failures:
     - os: osx
 
-script: ./tests/run-all
+script: ./tests/helper -r

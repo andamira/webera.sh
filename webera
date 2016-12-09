@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 #
 # webera
-# is a handy shellscript for static website generation
+# a handy shellscript for static website generation
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.38
+# Version: 0.1.39
 # License: MIT
 #
 # Dependencies:
 #     bash 4, grep -P, sed, awk, coreutils
-#
-# Originally Inspired by Statix
-#     https://gist.github.com/plugnburn/c2f7cc3807e8934b179e
 ##
 
 main() {
-	local __VARS_WEBERA="" # A list of the settings, for debugging purposes
+	__setupDebugging
+	__checkCompatibility
+	local __VARS_WEBERA="" # a list of all the settings (-_)
 	local __VARS_BEFORE=$(set -o posix ; set | awk -F= '{print $1"="}' )
 
 
@@ -81,7 +80,7 @@ main() {
 	local -r _SED_JOIN_SPLITLINES=':x; /\\$/ { N; s/\\\n//; tx }' # ending in \
 
 
-	# save all the default settings
+	# -- Save the default settings
 	local __VARS_AFTER="$(set -o posix ; set | sed '/^'\''/d' )"
 	printf -v __VARS_WEBERA '%s' "$(grep -vFf \
 		<(printf '%s' "$__VARS_BEFORE") <(printf '%s' "$__VARS_AFTER") \
@@ -721,9 +720,7 @@ templateRender() {
 	printf "%s" "$templateText"
 } #templateRender()
 
-__printVars() { printf '%s\n' "$__VARS_WEBERA"; }
-
-__compat() {
+__checkCompatibility() {
 	local bashBigVersion=$(echo "$BASH_VERSION" | cut -d'.' -f1)
 	if [[ "$bashBigVersion" -lt 4 ]]; then
 		printf '%s\n' "Bash version 4 needed. Detected version is $BASH_VERSION"
@@ -731,11 +728,12 @@ __compat() {
 	fi
 }
 
-# debugging settings
-set -o errexit
-[[ -n "$WEBERA_DEBUG" ]] && set -o xtrace
-export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+__setupDebugging() {
+	set -o errexit
+	[[ -n "$WEBERA_DEBUG" ]] && set -o xtrace && \
+	export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+}
 
-__compat "$@" # Compatibility checks
+__printVars() { printf '%s\n' "$__VARS_WEBERA"; }
 
-[[ "$0" == "$BASH_SOURCE" ]] && main "$@" || true # Avoid running when sourced
+[[ "$0" == "$BASH_SOURCE" ]] && main "$@" || true # Run if not sourced

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-source ./helper.bash
+cd "${BASH_SOURCE%/*}" || exit 1
+source helper
 
 test_arguments() {
 	declare default newval
@@ -147,8 +148,7 @@ test_arguments() {
 		'args' 'SERVER_PORT')
 	assert "echo $newval" "9000"
 
-	test_endline
 } #test_arguments() 
 
 test_arguments
-assert_end "arguments"
+test_summary 'arguments'

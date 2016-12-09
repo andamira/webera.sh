@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+
+set -o errexit
+
+
+# Globals
+
+DIR_TESTS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DIR_WEBERA="$DIR_TESTS/.."
+
+
+# Exports
+
+if [[ ! -d $DIR_WORKDIR ]]; then
+	# if possible, use a previously created workdir
+	# if not, create a new one and export it again
+	export DIR_WORKDIR="$(mktemp -d)"
+fi
+
+
+# Imports
+
+source "$DIR_TESTS/extern/assert.sh" -v
+source "$DIR_WEBERA/webera"
+
+
+helper_main() {
+
+	# Initializations
+	export TOTAL_TEST_NUM=$(mktemp); echo "0" > "$TOTAL_TEST_NUM"
+	export TOTAL_TEST_TIME=$(mktemp); echo "0" > "$TOTAL_TEST_TIME"
+
+	helper_arguments "$@"
+
+} # helper_main()
+
+
+helper_usage() {
+	cat <<- ENDUSAGE
+
+	Runs all the examples.
+	Also, it must be imported by each example.
+
+	Usage: ./helper -r
+
+	  -r              run every test
+	  -h              displays this help
+	ENDUSAGE
+	exit
+} # helper_usage()
+
+helper_arguments() {
+
+	[[ -z "$@" ]] && helper_usage
+
+	local OPTIND OPTION
+	while getopts 'rh' OPTION; do
+		case "$OPTION" in
+			r) helper_run_all_tests; ;;
+			h) helper_usage ;;
+			*)
+				printf 'Error: "%s" is not a valid argument' "$OPTION" >&2
+				exit 1
+		esac
+	done
+} # helper_parseArguments()
+
+helper_run_all_tests() {
+	cd "$DIR_TESTS"
+
+	# find all the test files
+	local testFiles=$(find . -maxdepth 1 -name "test-*" -type f )
+	local testFilesNum="$(echo "$testFiles" | wc -l)"
+
+	# run them all
+	printf '%s\n' "Running tests in $testFilesNum files. . ."
+	for T in $testFiles; do $T; done
+
+	test_total_summary
+}
+
+
+# PRESENTATION
+# ############
+
+test_separator() {
+	printf '%s' '-----------------------------'
+}
+
+test_h1() {
+	if [[ "$DEBUG" -gt 0 ]]; then
+		printf '\n\n[Testing %s]\n' "$@"
+	fi
+}
+
+test_h2() {
+	if [[ "$DEBUG" -gt 0 ]]; then
+		printf '\n  test: %s ' "$@"
+	fi
+}
+
+test_h3() {
+	if [[ "$DEBUG" -gt 0 ]]; then
+		printf '\n    test: %s ' "$@"
+	fi
+}
+
+
+# SETUP
+# #####
+
+# enters the working directory
+test_setup() {
+	if [[ -d "$DIR_WORKDIR" ]]; then
+		pushd "$DIR_WORKDIR" >/dev/null 2>&1
+	else
+		printf 'Warning: %s %s.' \
+			"couldn't find working directory" \
+			"'$DIR_WORKDIR'" >&2
+
+		export DIR_WORKDIR="$(mktemp -d)"
+
+		printf 'Warning: %s %s.' \
+			"creating a new working directory at" \
+			"'$DIR_WORKDIR'" >&2
+
+		pushd "$DIR_WORKDIR"
+	fi
+}
+
+# returns from and delets the working directory
+test_teardown() {
+	if [[ "$(pwd)" == "$DIR_WORKDIR" ]]; then
+		popd >/dev/null 2>&1
+	fi
+
+	if [[ -d "$DIR_WORKDIR" ]]; then
+		test_clean
+	   	rmdir "$DIR_WORKDIR"
+	fi
+}
+
+# cleans the working directory
+test_clean() {
+	if [[ -d "$DIR_WORKDIR" ]]; then
+		pushd "$DIR_WORKDIR" >/dev/null 2>&1
+		rm -rf .[^.] .??* ./*
+		popd >/dev/null 2>&1
+	else
+		printf '%s\n' \
+			"Warning: couldn't find working directory '$DIR_WORKDIR'" >&2
+	fi
+}
+
+
+# REPORT
+# ######
+
+# prints the report and stores the time for global summary
+test_summary() {
+	local testStr="$1"
+	local testReport="$(assert_end "$testStr" | tr -d '\n' )"
+
+	printf '\n  %s\n' "$(test_separator)"
+	printf '  %s\n' "$testReport"
+
+	# Number of tests
+	if [[ -f "$TOTAL_TEST_NUM" ]]; then
+		local testNum="$(echo "$testReport" | grep -o '^all [0-9]\+' | cut -d' ' -f2 )"
+		local previousTotalNum="$(cat "$TOTAL_TEST_NUM")"
+		local newTotalNum="$(awk "BEGIN {print $testNum+$previousTotalNum; exit}")"
+		echo "$newTotalNum" > "$TOTAL_TEST_NUM"
+	fi
+
+	# Total time spent
+	if [[ -z "$INVARIANT"  && -f "$TOTAL_TEST_TIME" ]]; then
+		local testTime="$(echo "$testReport" | grep -o '[0-9]\+.[0-9]\+s.' | cut -d's' -f1 )"
+		local previousTotalTime="$(cat "$TOTAL_TEST_TIME")"
+		local newTotalTime="$(awk "BEGIN {print $testTime+$previousTotalTime; exit}")"
+		echo "$newTotalTime" > "$TOTAL_TEST_TIME"
+	fi
+}
+
+# prints the global summary
+test_total_summary() {
+	printf '\n\n%s\n%s\n' "SUMMARY:" "$(test_separator)"
+	printf '%s %5u\n' "Total tests:" "$(cat "$TOTAL_TEST_NUM")"
+
+	if [[ -z "$INVARIANT" ]]; then
+		LC_NUMERIC=C LC_COLLATE=C
+		printf '%s %5.2fs\n' "Time spent:" "$(cat "$TOTAL_TEST_TIME")"
+	fi
+
+	printf '%s\n' "$(test_separator)"
+
+	test_total_cleanup
+}
+
+test_total_cleanup() {
+	[[ -f "$TOTAL_TEST_NUM" ]] && rm -f "$TOTAL_TEST_NUM"
+	[[ -f "$TOTAL_TEST_TIME" ]] && rm -f "$TOTAL_TEST_TIME"
+
+	test_teardown
+}
+
+
+# WEBERA
+# ######
+
+# Binary wrapper
+webera() { "$DIR_WEBERA/webera" "$@" 2>/dev/null; }
+
+# Parse a list of variables in debug info format
+# and return the corresponding value.
+#
+#  [$varType]::$varName=$varValue
+#
+weberaVarValue() {
+	local webera_vars="$1"
+	local varType="$2"
+	local varName="$3"
+
+	shopt -s extglob
+	local varTypesAllowed='@(vdef|file|args)'
+
+	case "$varType" in
+		$varTypesAllowed) ;;
+		*) printf '%s' "ERROR: Unknown var type '$varType'." 1>&2 ;;
+	esac
+	shopt -u extglob
+
+	printf '%s' "$webera_vars" \
+		| grep "^\[$varType\]:.*:$varName=" \
+		| cut -d':' -f3 \
+		| cut -d'=' -f2
+}
+
+[[ "$0" == "$BASH_SOURCE" ]] && helper_main "$@" || true # Run if not sourced

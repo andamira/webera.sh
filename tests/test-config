@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+cd "${BASH_SOURCE%/*}" || exit 1
+source helper
+
+test_templates() {
+	declare file_contents
+
+	test_h1 "Configuration"
+	# ===================
+	test_setup
+
+
+	test_h2 "New config file"
+	# ======
+
+	assert "webera -n" ""
+	assert_raises "ls .weberarc" "0"
+
+	assert "webera -nC .test_weberarc" ""
+	assert_raises "ls .test_weberarc" "0"
+
+
+	
+	test_teardown
+}
+
+test_templates
+test_summary 'config'
