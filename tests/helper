@@ -1,43 +1,48 @@
 #!/usr/bin/env bash
 
-# Globals
-
-DIR_TESTS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DIR_WEBERA="$DIR_TESTS/.."
-
-TEMPLATE_TEMP_NAME='webera-XXXXXXXXX'
-
-TESTS_TOTAL_ERRORS=0;
-
-# Exports
-
-if [[ ! -d $DIR_WORKDIR ]]; then
-	# if possible, use a previously created workdir
-	# if not, create a new one and export it again
-	export DIR_WORKDIR="$(mktemp -d --tmpdir "$TEMPLATE_TEMP_NAME")"
-fi
-
-
-# Imports
-
-source "$DIR_TESTS/extern/assert.sh" -v
-source "$DIR_WEBERA/webera"
-
-
 helper_main() {
 
 	# Initializations
-	export TOTAL_TEST_NUM=$(mktemp --tmpdir "$TEMPLATE_TEMP_NAME");
+	helper_init_common
+
+	export TOTAL_TEST_NUM=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
 	echo "0" > "$TOTAL_TEST_NUM"
-	export TOTAL_TEST_TIME=$(mktemp --tmpdir "$TEMPLATE_TEMP_NAME");
+	export TOTAL_TEST_TIME=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
 	echo "0" > "$TOTAL_TEST_TIME"
-	export TOTAL_TEST_ERROR_NUM=$(mktemp --tmpdir "$TEMPLATE_TEMP_NAME");
+	export TOTAL_TEST_ERROR_NUM=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
 	echo "0" > "$TOTAL_TEST_ERROR_NUM"
 
 	helper_arguments "$@"
 
 } # helper_main()
 
+helper_init_common() {
+
+	__check_compatibility
+
+	DIR_TESTS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+	DIR_WEBERA="$DIR_TESTS/.."
+
+	TEMPLATE_TEMP_NAME='webera-test-XXXXXXXXX'
+
+	TESTS_TOTAL_ERRORS=0;
+
+	# Exports
+	if [[ ! -d $DIR_WORKDIR ]]; then
+		# if possible, use a previously created workdir
+		# if not, create a new one and export it again
+		export DIR_WORKDIR="$(mktemp -d $MKTEMP_ARGS $TEMPLATE_TEMP_NAME)"
+	fi
+
+	# Imports
+	source "$DIR_TESTS/extern/assert.sh" -v
+	source "$DIR_WEBERA/webera"
+
+	# set up exit traps
+	trap helper_cleanup_signal SIGHUP SIGINT SIGTERM
+	trap helper_cleanup_exit EXIT
+
+} # helper_init_common()
 
 helper_usage() {
 	cat <<- ENDUSAGE
@@ -51,6 +56,7 @@ helper_usage() {
 	  -h              displays this help
 	ENDUSAGE
 	exit
+
 } # helper_usage()
 
 helper_arguments() {
@@ -67,6 +73,7 @@ helper_arguments() {
 				exit 1
 		esac
 	done
+
 } # helper_parseArguments()
 
 helper_run_all_tests() {
@@ -86,8 +93,9 @@ helper_run_all_tests() {
 		"$DIR_TESTS/$T"
 	done
 
-	test_total_summary
-}
+	test_final_summary
+
+} # helper_run_all_tests()
 
 
 # PRESENTATION
@@ -128,7 +136,7 @@ test_setup() {
 			"couldn't find working directory" \
 			"'$DIR_WORKDIR'" >&2
 
-		export DIR_WORKDIR="$(mktemp -d --tmpdir "$TEMPLATE_TEMP_NAME" )"
+		export DIR_WORKDIR="$(mktemp -d $MKTEMP_ARGS $TEMPLATE_TEMP_NAME)"
 
 		printf 'Warning: %s %s.' \
 			"creating a new working directory at" \
@@ -136,7 +144,8 @@ test_setup() {
 
 		pushd "$DIR_WORKDIR"
 	fi
-}
+
+} # test_setup()
 
 # returns from and delets the working directory
 test_teardown() {
@@ -148,7 +157,8 @@ test_teardown() {
 		test_clean
 	   	rmdir "$DIR_WORKDIR"
 	fi
-}
+
+} # test_teardown()
 
 # cleans the working directory
 test_clean() {
@@ -160,13 +170,14 @@ test_clean() {
 		printf '%s\n' \
 			"Warning: couldn't find working directory '$DIR_WORKDIR'" >&2
 	fi
-}
+
+} # test_clean()
 
 
 # REPORT
 # ######
 
-# prints the report and stores the time for global summary
+# prints the report and saves the counts for the final summary
 test_summary() {
 	local testStr="$1"
 	local testReport="$(assert_end \'"$testStr"\' | tr -d '\n' )"
@@ -220,10 +231,9 @@ test_summary() {
 		local newTotalTime="$(awk "BEGIN {print $testTime+$previousTotalTime; exit}")"
 		echo "$newTotalTime" > "$TOTAL_TEST_TIME"
 	fi
-}
+} # test_summary()
 
-# prints the final summary
-test_total_summary() {
+test_final_summary() {
 	local -i testTotal="$(cat "$TOTAL_TEST_NUM")"
 	local -i testFailed="$(cat "$TOTAL_TEST_ERROR_NUM")"
 	local -i testPassed="$((testTotal-testFailed))"
@@ -241,10 +251,11 @@ test_total_summary() {
 
 	printf '%s\n' "$(test_separator)"
 
-	test_total_cleanup
-}
+	test_final_cleanup
 
-test_total_cleanup() {
+} # test_final_summary()
+
+test_final_cleanup() {
 	[[ -f "$TOTAL_TEST_NUM" ]] && rm -f "$TOTAL_TEST_NUM"
 	[[ -f "$TOTAL_TEST_ERROR_NUM" ]] && rm -f "$TOTAL_TEST_ERROR_NUM"
 	[[ -f "$TOTAL_TEST_TIME" ]] && rm -f "$TOTAL_TEST_TIME"
@@ -260,7 +271,7 @@ helper_cleanup_exit() {
 
 # This function gets called on abrupt exit
 helper_cleanup_signal() {
-	test_total_cleanup
+	test_final_cleanup
 }
 
 
@@ -293,9 +304,27 @@ weberaVarValue() {
 		| grep "^\[$varType\]:.*:$varName=" \
 		| cut -d':' -f3 \
 		| cut -d'=' -f2
-}
 
-trap helper_cleanup_signal SIGHUP SIGINT SIGTERM
-trap helper_cleanup_exit EXIT
+} # weberaVarValue()
 
-[[ "$0" == "$BASH_SOURCE" ]] && helper_main "$@" # Run if not sourced
+__check_compatibility() {
+
+	# mktemp
+	if [[ "$(mktemp -qu --tmpdir TXXX >/dev/null 2>&1; echo $?)" -eq 0 ]]; then
+		MKTEMP_ARGS="--tmpdir" # new syntax
+	else
+		MKTEMP_ARGS="-t" # obsolete syntax
+	fi
+
+} # __check_compatibility()
+
+
+
+if [[ "$0" == "$BASH_SOURCE" ]]; then
+	# Run if script's not been sourced
+	helper_main "$@"
+
+else
+	# If sourced
+	helper_init_common
+fi
