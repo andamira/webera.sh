@@ -95,6 +95,7 @@ helper_run_all_tests() {
 
 	test_final_summary
 
+	[[ "$TESTS_TOTAL_ERRORS" -gt 0 ]] && exit 1
 } # helper_run_all_tests()
 
 
@@ -182,11 +183,11 @@ test_summary() {
 	local testStr="$1"
 	local testReport="$(assert_end \'"$testStr"\' | tr -d '\n' )"
 
-	printf '\n  %s\n' "$(test_separator)"
+	printf '\n  %s' "$(test_separator)"
 
 	# No tests failed
 	if [[ "$(echo "$testReport" | cut -d' ' -f1)" == "all" ]]; then
-		printf '  %s\n' "$testReport"
+		printf '\n  %s\n' "$testReport"
 
 		# get the number of passed tests
 		local testNum="$(echo "$testReport" \
@@ -197,7 +198,9 @@ test_summary() {
 		local pattern='[0-9]\+ of [0-9]\+ .* tests failed.*$'
 		local whatFailed="$(printf "%s" "$testReport" | sed "s/\($pattern\)//" )"
 		local errorReport="$(printf "%s" "$testReport" | grep -o "$pattern" )"
-		printf '%s\n' "$whatFailed" | tr '\t' '\n' | sed 's/^/  /'
+
+		printf '%s\n' "$whatFailed" | tr '\t' '\n' \
+			| sed 's/\(test\ #[0-9]\)/\n> &/g' | sed 's/^/  /'
 		printf '  %s\n' "$(test_separator)"
 		printf '  %s\n' "$errorReport"
 
@@ -231,6 +234,8 @@ test_summary() {
 		local newTotalTime="$(awk "BEGIN {print $testTime+$previousTotalTime; exit}")"
 		echo "$newTotalTime" > "$TOTAL_TEST_TIME"
 	fi
+
+	[[ "$TESTS_TOTAL_ERRORS" -gt 0 ]] && exit 1
 } # test_summary()
 
 test_final_summary() {
@@ -266,7 +271,6 @@ test_final_cleanup() {
 # This function gets called on test error
 helper_cleanup_exit() {
 	test_teardown
-	[[ "$TESTS_TOTAL_ERRORS" -gt 0 ]] && exit 1
 }
 
 # This function gets called on abrupt exit

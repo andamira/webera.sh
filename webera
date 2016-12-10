@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.42
+# Version: 0.1.43
 # License: MIT
 #
 # Dependencies:
@@ -114,6 +114,8 @@ main() {
 
 	[[ "$_DO_PREVIEW_IN_BROWSER" == true ]] \
 		&& serverSetup && previewWebsite
+
+	exit 0
 } #main()
 
 usage() {
@@ -151,6 +153,7 @@ usage() {
 	  -P <NUMBER>     port number ($SERVER_PORT)
 	ENDUSAGE
 	[[ -z "$errCode" ]] || exit "$errCode"
+
 } #usage()
 
 parseArguments() {
@@ -210,6 +213,7 @@ parseArguments() {
 		esac
 	done
 	shift $((OPTIND-1))
+
 } #parseArguments()
 
 setupLog() {
@@ -234,6 +238,7 @@ setupLog() {
 	_PRELOG=false
 
 	[[ -z "$PARSED_PRELOG" ]] || log "$PARSED_PRELOG"
+
 } #setupLog()
 
 log() {
@@ -266,6 +271,7 @@ log() {
 	if [[ "$logType" == "error" ]]; then
 		printf "$logMsg\n" 1>&2
 	fi
+
 } # log()
 
 serverSetup() {
@@ -289,6 +295,7 @@ serverSetup() {
 			exit 5
 			;;
 	esac
+
 } #serverSetup()
 
 previewWebsite() {
@@ -306,6 +313,7 @@ previewWebsite() {
 		printf "SERVER_START=$SERVER_START"
 		eval "$SERVER_STOP >&2 2>/dev/null"; eval "$SERVER_START"
 	fi
+
 } #previewWebsite()
 
 deleteDirectories() {
@@ -317,24 +325,28 @@ deleteDirectories() {
 		|| $_DO_PROCESS_TEMPLATES == true ]]; then
 		rm -rf "$DIR_OUTPUT" 2>/dev/null
 	fi
+
 } #deleteDirectories()
 
 readConfig() {
 	local FILE="$1" # string
 
-	if [[ -f "$FILE" ]]; then # the config file exists already
+	if [[ -f "$FILE" ]]; then # if the config file exists
+
+		log "Reading settings from '$FILE'" 3
 
 		if [[ "$_DO_GENERATE_FILE_CONFIG" == true ]] \
 			&& [[ "$FILE" == "$FILE_CONFIG" ]]; then
-			log "Warning: local config file '$FILE' already exists. Overwrite is not allowed." 2 warn
+			log "Warning: automatic override of an existing local config file ('$FILE') is not permitted." 2 warn
 		fi
 
+		# read new config file
 		local TMPCONF="$(cat "$FILE" \
 			| sed -e "$_SED_TRIM_WS" \
 			| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
 			| sed -e "$_SED_JOIN_SPLITLINES" \
 		)"$'\n'
-		CONFIG+="$TMPCONF" # append new to previously read configuration
+		CONFIG+="$TMPCONF" # append to previously read configuration
 
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for LINE in $(printf '%s' "$TMPCONF" \
@@ -347,8 +359,8 @@ readConfig() {
 		done
 		IFS="$OLDIFS"
 
-	else # when the config file doesn't exist
-		# and if it's the config file of the project
+	else # if the config file doesn't exist
+		# and it's the config file of the project
 		if [[ "$FILE" == "$FILE_CONFIG" ]]; then
 			[[ "$__DO_PRINT_VARS" == true ]] && return 0 # if printing debug info
 
@@ -362,10 +374,9 @@ readConfig() {
 					log "Warning: project's config file '$FILE_CONFIG' doesn't exist." 3 warn
 				fi
 			fi
-		else
-			log "Warning: can't find global config file '$FILE'" 3 warn
 		fi
 	fi
+
 } #readConfig()
 
 configureSettings() {
@@ -377,9 +388,13 @@ configureSettings() {
 		for S in $SETTINGS; do
 			local setting_name=$(printf '%s' "$S" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS")
 			local setting_value=$(printf '%s' "$S" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS")
-			local setting_previous_value=${!setting_name}
-			log "${_IN}setting: $setting_name=$setting_value (previous=$setting_previous_value)" 1
-			printf -v $setting_name "$setting_value"
+
+			[[ -n "${!setting_name}" ]] &&
+				local setting_previous_str="(previous=${!setting_name})"
+			log "${_IN}setting: $setting_name=$setting_value $setting_previous_str" 1
+
+			[[ "$OPT" != _* ]] && # read (only public) settings from file
+				printf -v $setting_name "$setting_value"
 		done
 		IFS="$OLDIFS"
 	fi
@@ -395,22 +410,22 @@ configureSettings() {
 		log "You must use at least one MAIN FLAG!\n\n" 1 error
 		usage 1
 	fi
+
 } #configureSettings()
 
 generateConfig() {
 	local configLines=()
 
-	if [[ "$_FILE_CONFIG_EXPLICIT" == true ]]; then
-		configLines+=("config : FILE_CONFIG : $FILE_CONFIG")
-	fi
-
 	for OPT in "${!_ARG_OPTIONS[@]}"; do
-		configLines+=("config : $OPT : ${_ARG_OPTIONS[$OPT]}")
+		[[ "$OPT" != _* ]] && # write (only public) vars to config file
+			configLines+=("config : $OPT : ${_ARG_OPTIONS[$OPT]}")
 	done
 
+	touch $FILE_CONFIG
 	for LINE in "${configLines[@]}"; do
 		printf '%s\n' "$LINE" >> "$FILE_CONFIG"
 	done
+
 } #generateConfig()
 
 readConfigCommands() {
@@ -432,6 +447,7 @@ readConfigCommands() {
 		log "${_IN}$cmd_name='$cmd_action'" 2
 	done
 	IFS="$OLDIFS"
+
 } #readConfigCommands()
 
 processResources() {
@@ -493,6 +509,7 @@ processResources() {
 		esac
 	done
 	IFS="$OLDIFS"
+
 } #processResources()
 
 processTemplates() {
@@ -559,6 +576,7 @@ processTemplates() {
 		esac
 	done
 	IFS="$OLDIFS"
+
 } #processTemplates()
 
 templateParseIncludes() {
@@ -606,6 +624,7 @@ templateParseIncludes() {
 	((_NESTING_LEVEL--))
 
 	printf '%s' "$templateContent"
+
 } #templateParseIncludes()
 
 templateRender() {
@@ -718,6 +737,7 @@ templateRender() {
 	log "" 2
 
 	printf "%s" "$templateText"
+
 } #templateRender()
 
 __checkCompatibility() {
