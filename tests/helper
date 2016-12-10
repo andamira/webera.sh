@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 
-set -o errexit
-
-
 # Globals
 
 DIR_TESTS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DIR_WEBERA="$DIR_TESTS/.."
 
+TEMPLATE_TEMP_NAME='webera-XXXXXXXXX'
+
+TESTS_TOTAL_ERRORS=0;
 
 # Exports
 
 if [[ ! -d $DIR_WORKDIR ]]; then
 	# if possible, use a previously created workdir
 	# if not, create a new one and export it again
-	export DIR_WORKDIR="$(mktemp -d)"
+	export DIR_WORKDIR="$(mktemp -d --tmpdir "$TEMPLATE_TEMP_NAME")"
 fi
 
 
@@ -27,9 +27,12 @@ source "$DIR_WEBERA/webera"
 helper_main() {
 
 	# Initializations
-	export TOTAL_TEST_NUM=$(mktemp); echo "0" > "$TOTAL_TEST_NUM"
-	export TOTAL_TEST_TIME=$(mktemp); echo "0" > "$TOTAL_TEST_TIME"
-	export TOTAL_TEST_ERROR_NUM=$(mktemp); echo "0" > "$TOTAL_TEST_ERROR_NUM"
+	export TOTAL_TEST_NUM=$(mktemp --tmpdir "$TEMPLATE_TEMP_NAME");
+	echo "0" > "$TOTAL_TEST_NUM"
+	export TOTAL_TEST_TIME=$(mktemp --tmpdir "$TEMPLATE_TEMP_NAME");
+	echo "0" > "$TOTAL_TEST_TIME"
+	export TOTAL_TEST_ERROR_NUM=$(mktemp --tmpdir "$TEMPLATE_TEMP_NAME");
+	echo "0" > "$TOTAL_TEST_ERROR_NUM"
 
 	helper_arguments "$@"
 
@@ -79,7 +82,7 @@ helper_run_all_tests() {
 
 	printf '%s\n' "Running tests from ${#testFiles[@]} test files. . ."
 
-	for T in ${testFiles[@]}; do
+	for T in "${testFiles[@]}"; do
 		"$DIR_TESTS/$T"
 	done
 
@@ -125,7 +128,7 @@ test_setup() {
 			"couldn't find working directory" \
 			"'$DIR_WORKDIR'" >&2
 
-		export DIR_WORKDIR="$(mktemp -d)"
+		export DIR_WORKDIR="$(mktemp -d --tmpdir "$TEMPLATE_TEMP_NAME" )"
 
 		printf 'Warning: %s %s.' \
 			"creating a new working directory at" \
@@ -170,11 +173,16 @@ test_summary() {
 
 	printf '\n  %s\n' "$(test_separator)"
 
+	# No tests failed
 	if [[ "$(echo "$testReport" | cut -d' ' -f1)" == "all" ]]; then
-		# No tests failed
 		printf '  %s\n' "$testReport"
+
+		# get the number of passed tests
+		local testNum="$(echo "$testReport" \
+			| grep -o '^all [0-9]\+' | cut -d' ' -f2 )"
+
+	# Some tests failed
 	else
-		# Some tests failed
 		local pattern='[0-9]\+ of [0-9]\+ .* tests failed.*$'
 		local whatFailed="$(printf "%s" "$testReport" | sed "s/\($pattern\)//" )"
 		local errorReport="$(printf "%s" "$testReport" | grep -o "$pattern" )"
@@ -182,21 +190,22 @@ test_summary() {
 		printf '  %s\n' "$(test_separator)"
 		printf '  %s\n' "$errorReport"
 
-		# Update the tests failed number
+		# Update the number of failed tests
 		if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
 			local testErrNum="$(echo "$errorReport" | cut -d' ' -f1 )"
 			local previousTotalErrNum="$(cat "$TOTAL_TEST_ERROR_NUM")"
-			local newTotalErrNum="$(awk \
+			TESTS_TOTAL_ERRORS="$(awk \
 				"BEGIN {print $testErrNum+$previousTotalErrNum; exit}")"
 
-			echo "$newTotalErrNum" > "$TOTAL_TEST_ERROR_NUM"
+			echo "$TESTS_TOTAL_ERRORS" > "$TOTAL_TEST_ERROR_NUM"
 		fi
+
+		# get the number of passed tests
+		local testNum="$(echo "$errorReport" | cut -d' ' -f3 )"
 	fi
 
-	# Update the number of tests
+	# Update the number of passed tests
 	if [[ -f "$TOTAL_TEST_NUM" ]]; then
-		local testNum="$(echo "$testReport" \
-			| grep -o '^all [0-9]\+' | cut -d' ' -f2 )"
 		local previousTotalNum="$(cat "$TOTAL_TEST_NUM")"
 		local newTotalNum="$(awk \
 			"BEGIN {print $testNum+$previousTotalNum; exit}")"
@@ -217,7 +226,7 @@ test_summary() {
 test_total_summary() {
 	local -i testTotal="$(cat "$TOTAL_TEST_NUM")"
 	local -i testFailed="$(cat "$TOTAL_TEST_ERROR_NUM")"
-	local -i testPassed="$(($testTotal-$testFailed))"
+	local -i testPassed="$((testTotal-testFailed))"
 
 	printf '\n\n%s\n%s\n' "SUMMARY:" "$(test_separator)"
 	printf '%s %16u\n' "Tests done:" "$testTotal"
@@ -237,9 +246,21 @@ test_total_summary() {
 
 test_total_cleanup() {
 	[[ -f "$TOTAL_TEST_NUM" ]] && rm -f "$TOTAL_TEST_NUM"
+	[[ -f "$TOTAL_TEST_ERROR_NUM" ]] && rm -f "$TOTAL_TEST_ERROR_NUM"
 	[[ -f "$TOTAL_TEST_TIME" ]] && rm -f "$TOTAL_TEST_TIME"
 
 	test_teardown
+}
+
+# This function gets called on test error
+helper_cleanup_exit() {
+	test_teardown
+	[[ "$TESTS_TOTAL_ERRORS" -gt 0 ]] && exit 1
+}
+
+# This function gets called on abrupt exit
+helper_cleanup_signal() {
+	test_total_cleanup
 }
 
 
@@ -274,4 +295,7 @@ weberaVarValue() {
 		| cut -d'=' -f2
 }
 
-[[ "$0" == "$BASH_SOURCE" ]] && helper_main "$@" || true # Run if not sourced
+trap helper_cleanup_signal SIGHUP SIGINT SIGTERM
+trap helper_cleanup_exit EXIT
+
+[[ "$0" == "$BASH_SOURCE" ]] && helper_main "$@" # Run if not sourced

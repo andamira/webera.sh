@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.40
+# Version: 0.1.41
 # License: MIT
 #
 # Dependencies:
@@ -729,11 +729,10 @@ __checkCompatibility() {
 }
 
 __setupDebugging() {
-	set -o errexit
 	[[ -n "$WEBERA_DEBUG" ]] && set -o xtrace && \
 	export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 }
 
 __printVars() { printf '%s\n' "$__VARS_WEBERA"; }
 
-[[ "$0" == "$BASH_SOURCE" ]] && main "$@" || true # Run if not sourced
+[[ "$0" == "$BASH_SOURCE" ]] && main "$@" # Run if not sourced
