@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.43
+# Version: 0.1.44
 # License: MIT
 #
 # Dependencies:
@@ -64,7 +64,7 @@ main() {
 	local -ri _NESTING_MAX=8
 
 	local _PRELOG="" # where log is saved before there's a logfile
-	local -r _DATE=$(date '+%Y-%m-%d %H:%M:%S')
+	local -r _DATE="$(date '+%Y-%m-%d %H:%M:%S')"
 	local -i _LOG_LEVEL_MIN=1
 	local -i _LOG_LEVEL_MAX=3
 
@@ -386,8 +386,10 @@ configureSettings() {
 		log "\nConfiguring settings...\n$_HEADING" 1
 		local OLDIFS="$IFS"; IFS=$'\n'
 		for S in $SETTINGS; do
-			local setting_name=$(printf '%s' "$S" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS")
-			local setting_value=$(printf '%s' "$S" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS")
+			local setting_name=$(printf '%s' "$S" | cut -d':' -f2 \
+				| sed -e "$_SED_TRIM_WS")
+			local setting_value=$(printf '%s' "$S" | cut -d':' -f3- \
+				| sed -e "$_SED_TRIM_WS")
 
 			[[ -n "${!setting_name}" ]] &&
 				local setting_previous_str="(previous=${!setting_name})"
@@ -439,8 +441,10 @@ readConfigCommands() {
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 	for C in $DEFINED_CMD; do
-		local cmd_name=$(printf '%s' "$C" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
-		local cmd_action=$(printf '%s' "$C" | cut -d':' -f3- | sed -e "$_SED_TRIM_WS" )
+		local cmd_name=$(printf '%s' "$C" | cut -d':' -f2 \
+			| sed -e "$_SED_TRIM_WS" )
+		local cmd_action=$(printf '%s' "$C" | cut -d':' -f3- \
+			| sed -e "$_SED_TRIM_WS" )
 
 		_DEFINED_CMD_MAP["$cmd_name"]="$cmd_action"
 
@@ -458,16 +462,21 @@ processResources() {
 		return
 	fi
 
-	local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*resource$_WS*: )"
+	local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" \
+		| grep ^$_WS*resource$_WS*: )"
 
-	local RNUM=$(printf '%s\n' "$RESOURCE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
+	local RNUM=$(printf '%s\n' "$RESOURCE_CMD_LIST" \
+		| sed "$_SED_DEL_EMPTYLINES" | wc -l )
 	log "${_IN}Found $RNUM operations on resources:" 1
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 	for RCMD in $RESOURCE_CMD_LIST; do
-		local operation=$(printf '%s' "$RCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
-		local fileOrigin=$(printf '%s' "$RCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
-		local fileTarget=$(printf '%s' "$RCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
+		local operation=$(printf '%s' "$RCMD" | cut -d':' -f2 \
+			| sed -e "$_SED_TRIM_WS" )
+		local fileOrigin=$(printf '%s' "$RCMD" | cut -d':' -f3 \
+			| sed -e "$_SED_TRIM_WS" )
+		local fileTarget=$(printf '%s' "$RCMD" | cut -d':' -f4 \
+			| sed -e "$_SED_TRIM_WS" )
 
 		log "${_IN}$operation: $fileOrigin > $fileTarget" 1
 
@@ -478,7 +487,7 @@ processResources() {
 
 		case "$operation" in
 			"copy")
-				mkdir -p $DIR_OUTPUT/$DIR_RESOURCES/$(dirname $fileTarget)
+				mkdir -p "$DIR_OUTPUT/$DIR_RESOURCES/$(dirname "$fileTarget")"
 				cp -r "$DIR_RESOURCES/$fileOrigin" \
 					"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget"
 				;;
@@ -489,8 +498,7 @@ processResources() {
 					local CMD=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
 						| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
 						| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
-						| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g" \
-					)
+						| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g")
 
 					# Create target paths
 					if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
@@ -520,29 +528,36 @@ processTemplates() {
 		return
 	fi
 
-	local TEMPLATE_CMD_LIST="$(printf '%s' "$CONFIG" | grep ^$_WS*template$_WS*: )"
+	local TEMPLATE_CMD_LIST="$(printf '%s' "$CONFIG" \
+		| grep ^$_WS*template$_WS*: )"
 
-	local TNUM=$(printf '%s\n' "$TEMPLATE_CMD_LIST" | sed "$_SED_DEL_EMPTYLINES" | wc -l )
+	local TNUM=$(printf '%s\n' "$TEMPLATE_CMD_LIST" \
+		| sed "$_SED_DEL_EMPTYLINES" | wc -l )
 	log "${_IN}Found $TNUM operations on templates:" 1
 
 	local OLDIFS="$IFS"; IFS=$'\n'
 	for TCMD in $TEMPLATE_CMD_LIST; do
-		local operation=$(printf '%s' "$TCMD" | cut -d':' -f2 | sed -e "$_SED_TRIM_WS" )
-		local fileOrigin=$(printf '%s'  "$TCMD" | cut -d':' -f3 | sed -e "$_SED_TRIM_WS" )
-		local fileTarget=$(printf '%s' "$TCMD" | cut -d':' -f4 | sed -e "$_SED_TRIM_WS" )
+		local operation=$(printf '%s' "$TCMD" | cut -d':' -f2 \
+			| sed -e "$_SED_TRIM_WS" )
+		local fileOrigin=$(printf '%s'  "$TCMD" | cut -d':' -f3 \
+			| sed -e "$_SED_TRIM_WS" )
+		local fileTarget=$(printf '%s' "$TCMD" | cut -d':' -f4 \
+			| sed -e "$_SED_TRIM_WS" )
 
 		log "${_IN}$operation: $fileOrigin > $fileTarget" 1
 
 		case "$operation" in
 			"route")
 				if [[ -n "$fileOrigin" && -n "$fileTarget" ]]; then
-					# A path ending in `/`, will be a directory with an index.html
+					# A path ending in `/`, will be a dir_name/index.html
 					if [[ "$fileTarget" == */ ]]; then
 						mkdir -p "${DIR_OUTPUT}${fileTarget}"
-						templateRender "$fileOrigin" > "${DIR_OUTPUT}${fileTarget}/index.html"
+						templateRender "$fileOrigin" > \
+							"${DIR_OUTPUT}${fileTarget}/index.html"
 					else
 						mkdir -p $(dirname "${DIR_OUTPUT}/${fileTarget}")
-						templateRender "$fileOrigin" > "${DIR_OUTPUT}/${fileTarget}"
+						templateRender "$fileOrigin" > \
+							"${DIR_OUTPUT}/${fileTarget}"
 					fi
 				else
 					log "${_IN}ERROR: missing arguments for 'template:route' command" 1 error
@@ -597,7 +612,8 @@ templateParseIncludes() {
 		log "${_IN}ERROR: No template found '$templateFile'" 1 error
 		return
 	fi
-	local directives_include=$(grep -Po "<!--$_WS*%include$_WS*:.*?-->" "$templateFile")
+	local directives_include=$(grep -Po "<!--$_WS*%include$_WS*:.*?-->" \
+		"$templateFile")
 	local D=''
 
 	local OLDIFS="$IFS"; IFS=$'\n'
@@ -614,7 +630,7 @@ templateParseIncludes() {
 		log "${_IN2}include: '$includedFileName'" 2
 
 		# Parse included template for further includes
-		local includedFileContent="$(templateParseIncludes ${includedFileName})"
+		local includedFileContent="$(templateParseIncludes "${includedFileName}")"
 
 		# Mass-replace directive with template contents
 		templateContent="${templateContent//$D/$includedFileContent}"

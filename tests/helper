@@ -5,14 +5,7 @@ helper_main() {
 	# Initializations
 	helper_init_common
 
-	export TOTAL_TEST_NUM=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
-	echo "0" > "$TOTAL_TEST_NUM"
-	export TOTAL_TEST_TIME=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
-	echo "0" > "$TOTAL_TEST_TIME"
-	export TOTAL_TEST_ERROR_NUM=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
-	echo "0" > "$TOTAL_TEST_ERROR_NUM"
-
-	helper_arguments "$@"
+	[[ "$NOT_SOURCED" ]] && helper_arguments "$@"
 
 } # helper_main()
 
@@ -25,13 +18,23 @@ helper_init_common() {
 
 	TEMPLATE_TEMP_NAME='webera-test-XXXXXXXXX'
 
-	TESTS_TOTAL_ERRORS=0;
-
 	# Exports
 	if [[ ! -d $DIR_WORKDIR ]]; then
 		# if possible, use a previously created workdir
 		# if not, create a new one and export it again
 		export DIR_WORKDIR="$(mktemp -d $MKTEMP_ARGS $TEMPLATE_TEMP_NAME)"
+	fi
+	if [[ -z "$TOTAL_TEST_NUM" ]]; then
+		export TOTAL_TEST_NUM=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
+		echo "0" > "$TOTAL_TEST_NUM"
+	fi
+	if [[ -z "$TOTAL_TEST_TIME" ]]; then
+		export TOTAL_TEST_TIME=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
+		echo "0" > "$TOTAL_TEST_TIME"
+	fi
+	if [[ -z "$TOTAL_TEST_ERROR_NUM" ]]; then
+		export TOTAL_TEST_ERROR_NUM=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
+		echo "0" > "$TOTAL_TEST_ERROR_NUM"
 	fi
 
 	# Imports
@@ -95,7 +98,8 @@ helper_run_all_tests() {
 
 	test_final_summary
 
-	[[ "$TESTS_TOTAL_ERRORS" -gt 0 ]] && exit 1
+	[[ "$TESTS_FAILED" -eq 0 ]]
+
 } # helper_run_all_tests()
 
 
@@ -208,10 +212,11 @@ test_summary() {
 		if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
 			local testErrNum="$(echo "$errorReport" | cut -d' ' -f1 )"
 			local previousTotalErrNum="$(cat "$TOTAL_TEST_ERROR_NUM")"
-			TESTS_TOTAL_ERRORS="$(awk \
+			local newTotalErrNum="$(awk \
 				"BEGIN {print $testErrNum+$previousTotalErrNum; exit}")"
 
-			echo "$TESTS_TOTAL_ERRORS" > "$TOTAL_TEST_ERROR_NUM"
+			echo "$newTotalErrNum" > "$TOTAL_TEST_ERROR_NUM"
+			TESTS_FAILED="$newTotalErrNum"
 		fi
 
 		# get the number of passed tests
@@ -235,7 +240,8 @@ test_summary() {
 		echo "$newTotalTime" > "$TOTAL_TEST_TIME"
 	fi
 
-	[[ "$TESTS_TOTAL_ERRORS" -gt 0 ]] && exit 1
+	[[ "$TESTS_FAILED" -eq 0 ]]
+
 } # test_summary()
 
 test_final_summary() {
@@ -262,8 +268,12 @@ test_final_summary() {
 
 test_final_cleanup() {
 	[[ -f "$TOTAL_TEST_NUM" ]] && rm -f "$TOTAL_TEST_NUM"
-	[[ -f "$TOTAL_TEST_ERROR_NUM" ]] && rm -f "$TOTAL_TEST_ERROR_NUM"
 	[[ -f "$TOTAL_TEST_TIME" ]] && rm -f "$TOTAL_TEST_TIME"
+
+	if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
+		TESTS_FAILED="$(cat "$TOTAL_TEST_ERROR_NUM")"
+		rm -f "$TOTAL_TEST_ERROR_NUM"
+	fi
 
 	test_teardown
 }
@@ -323,12 +333,6 @@ __check_compatibility() {
 } # __check_compatibility()
 
 
+[[ "$0" == "$BASH_SOURCE" ]] && NOT_SOURCED=true
 
-if [[ "$0" == "$BASH_SOURCE" ]]; then
-	# Run if script's not been sourced
-	helper_main "$@"
-
-else
-	# If sourced
-	helper_init_common
-fi
+helper_main "$@"
