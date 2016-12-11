@@ -1,0 +1,9 @@
+engines:
+  shellcheck:
+    enabled: true
+ratings:
+  paths:
+  - "webera"
+  - "tests/helper"
+  - "tests/test-*"
+  - "examples/generate"

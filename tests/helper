@@ -22,18 +22,18 @@ helper_init_common() {
 	if [[ ! -d $DIR_WORKDIR ]]; then
 		# if possible, use a previously created workdir
 		# if not, create a new one and export it again
-		export DIR_WORKDIR="$(mktemp -d $MKTEMP_ARGS $TEMPLATE_TEMP_NAME)"
+		export DIR_WORKDIR="$(mktemp -d "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
 	fi
 	if [[ -z "$TOTAL_TEST_NUM" ]]; then
-		export TOTAL_TEST_NUM=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
+		export TOTAL_TEST_NUM="$(mktemp "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
 		echo "0" > "$TOTAL_TEST_NUM"
 	fi
 	if [[ -z "$TOTAL_TEST_TIME" ]]; then
-		export TOTAL_TEST_TIME=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
+		export TOTAL_TEST_TIME="$(mktemp "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
 		echo "0" > "$TOTAL_TEST_TIME"
 	fi
 	if [[ -z "$TOTAL_TEST_ERROR_NUM" ]]; then
-		export TOTAL_TEST_ERROR_NUM=$(mktemp $MKTEMP_ARGS $TEMPLATE_TEMP_NAME);
+		export TOTAL_TEST_ERROR_NUM="$(mktemp "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
 		echo "0" > "$TOTAL_TEST_ERROR_NUM"
 	fi
 
@@ -142,7 +142,7 @@ test_setup() {
 			"couldn't find working directory" \
 			"'$DIR_WORKDIR'" >&2
 
-		export DIR_WORKDIR="$(mktemp -d $MKTEMP_ARGS $TEMPLATE_TEMP_NAME)"
+		export DIR_WORKDIR="$(mktemp -d "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
 
 		printf 'Warning: %s %s.' \
 			"creating a new working directory at" \

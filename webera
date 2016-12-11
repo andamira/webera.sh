@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.46
+# Version: 0.1.47
 # License: MIT
 #
 # Dependencies:
@@ -218,6 +218,7 @@ parseArguments() {
 
 } #parseArguments()
 
+# shellcheck disable=SC2059
 setupLog() {
 
 	if [[ "$OPTION_LOG_CLEAR" == true ]]; then
@@ -243,6 +244,7 @@ setupLog() {
 
 } #setupLog()
 
+# shellcheck disable=SC2059
 log() {
 	# log <level> <type> <message...>
 
@@ -277,7 +279,7 @@ log() {
 	esac
 
 	local OLDIFS="$IFS"; IFS=$''
-	local logMsg=${@} # The rest must all be the log message
+	local logMsg="$*" # The rest must all be the log message
 	IFS="$OLDIFS"
 
 	if [[ "$_PRELOG" == false ]]; then
@@ -304,11 +306,11 @@ serverSetup() {
 	case "$SERVER_TYPE" in
 		python)
 			SERVER_START="pushd \"$DIR_OUTPUT\"; python -m SimpleHTTPServer $SERVER_PORT"
-			SERVER_STOP='kill $(pgrep -f "python -m SimpleHTTPServer")'
+			SERVER_STOP="kill \$(pgrep -f \"python -m SimpleHTTPServer\")"
 			;;
 		php)
 			SERVER_START="php -S localhost:$SERVER_PORT -t \"$DIR_OUTPUT\""
-			SERVER_STOP='kill $(pgrep -f "php -S localhost")'
+			SERVER_STOP="kill \$(pgrep -f \"php -S localhost\")"
 			;;
 		none) # useful when not using `dir/index.html` structure
 			SERVER_START=""
@@ -325,7 +327,7 @@ serverSetup() {
 } #serverSetup()
 
 previewWebsite() {
-	printf "Loading website in '$WEB_BROWSER'...\n"
+	printf 'Loading website in "%s"...\n' "$WEB_BROWSER"
 
 	if [[ "$SERVER_TYPE" == "none" ]]; then
 		local RUN_BROWSER="$WEB_BROWSER file://$(readlink -f $DIR_OUTPUT) &"
@@ -335,8 +337,9 @@ previewWebsite() {
 
 	sleep 1s && eval "$RUN_BROWSER" >&2 2>/dev/null
 	if [[ -n "$SERVER_START" ]]; then
-		printf "(Use CTRL+C to stop the '$SERVER_TYPE' web server)\n"
-		printf "SERVER_START=$SERVER_START"
+		printf '(Use CTRL+C to stop the "%s" web server)\n' \
+			"$SERVER_TYPE"
+		printf 'SERVER_START=%s' "$SERVER_START"
 		eval "$SERVER_STOP >&2 2>/dev/null"; eval "$SERVER_START"
 	fi
 
@@ -363,13 +366,12 @@ readConfig() {
 
 		if [[ "$_DO_GENERATE_FILE_CONFIG" == true ]] \
 			&& [[ "$FILE" == "$_FILE_CONFIG" ]]; then
-			log 2 warn "Warning: automatic override of an existing" \
+			log 2 warn "Warning: automatic override of an existing " \
 				"local config file ('$FILE') is not permitted."
 		fi
 
 		# read new config file
-		local TMPCONF="$(cat "$FILE" \
-			| sed -e "$_SED_TRIM_WS" \
+		local TMPCONF="$(sed -e "$_SED_TRIM_WS" "$FILE" \
 			| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
 			| sed -e "$_SED_JOIN_SPLITLINES" \
 		)"$'\n'
@@ -403,7 +405,7 @@ readConfig() {
 					exit 2
 				else
 					log 3 warn \
-						"Warning: project's config file" \
+						"Warning: project's config file " \
 						"'$_FILE_CONFIG' doesn't exist."
 				fi
 			fi
@@ -413,7 +415,7 @@ readConfig() {
 } #readConfig()
 
 configureSettings() {
-	local SETTINGS="$(printf '%s' "$CONFIG" | grep ^$_WS*config$_WS*: )"
+	local SETTINGS="$(printf '%s' "$CONFIG" | grep "^$_WS*config$_WS*:" )"
 
 	if [[ -n "$SETTINGS" ]]; then
 		log 1 "\nConfiguring settings...\n$_HEADING"
@@ -426,18 +428,18 @@ configureSettings() {
 
 			[[ -n "${!setting_name}" ]] &&
 				local setting_previous_str="(previous=${!setting_name})"
-			log 1 "${_IN}setting: $setting_name=$setting_value" \
+			log 1 "${_IN}setting: $setting_name=$setting_value " \
 				"$setting_previous_str"
 
 			[[ "$OPT" != _* ]] && # read (only public) settings from file
-				printf -v $setting_name "$setting_value"
+				printf -v "$setting_name" '%s' "$setting_value"
 		done
 		IFS="$OLDIFS"
 	fi
 
 	# Override the settings with the parsed arguments
 	for OPT in "${!_ARG_OPTIONS[@]}"; do
-		printf -v ${OPT} "${_ARG_OPTIONS[$OPT]}"
+		printf -v "$OPT" '%s' "${_ARG_OPTIONS[$OPT]}"
 		printf -v __VARS_WEBERA '%s' \
 			"$__VARS_WEBERA"$'\n'"[args]::$OPT=${_ARG_OPTIONS[$OPT]}"
 	done
@@ -497,7 +499,7 @@ processResources() {
 	fi
 
 	local RESOURCE_CMD_LIST="$(printf '%s' "$CONFIG" \
-		| grep ^$_WS*resource$_WS*: )"
+		| grep "^$_WS*resource$_WS*:" )"
 
 	local RNUM=$(printf '%s\n' "$RESOURCE_CMD_LIST" \
 		| sed "$_SED_DEL_EMPTYLINES" | wc -l )
@@ -535,12 +537,12 @@ processResources() {
 						| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g")
 
 					# Create target paths
-					if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
-						mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
+					if [[ "${_DEFINED_CMD_MAP[$operation]}" == *"{BUILD}"* ]]; then
+						mkdir -p "$(dirname "$DIR_BUILD/$fileTarget")"
 					fi
-					if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
-						mkdir -p $(dirname \
-							"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
+					if [[ "${_DEFINED_CMD_MAP[$operation]}" == *"{TARGET}"* ]]; then
+						mkdir -p "$(dirname \
+							"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")"
 					fi
 
 					log 3 "${_IN}Executing: $CMD"
@@ -565,7 +567,7 @@ processTemplates() {
 	fi
 
 	local TEMPLATE_CMD_LIST="$(printf '%s' "$CONFIG" \
-		| grep ^$_WS*template$_WS*: )"
+		| grep "^$_WS*template$_WS*:" )"
 
 	local TNUM=$(printf '%s\n' "$TEMPLATE_CMD_LIST" \
 		| sed "$_SED_DEL_EMPTYLINES" | wc -l )
@@ -591,7 +593,7 @@ processTemplates() {
 						templateRender "$fileOrigin" > \
 							"${DIR_OUTPUT}${fileTarget}/index.html"
 					else
-						mkdir -p $(dirname "${DIR_OUTPUT}/${fileTarget}")
+						mkdir -p "$(dirname "${DIR_OUTPUT}/${fileTarget}")"
 						templateRender "$fileOrigin" > \
 							"${DIR_OUTPUT}/${fileTarget}"
 					fi
@@ -612,11 +614,11 @@ processTemplates() {
 					)
 
 					# Create target paths
-					if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{BUILD}" ]]; then
-						mkdir -p $(dirname "$DIR_BUILD/$fileTarget")
+					if [[ "${_DEFINED_CMD_MAP[$operation]}" == *"{BUILD}"* ]]; then
+						mkdir -p "$(dirname "$DIR_BUILD/$fileTarget")"
 					fi
-					if [[ "${_DEFINED_CMD_MAP[$operation]}" =~ "{TARGET}" ]]; then
-						mkdir -p $(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")
+					if [[ "${_DEFINED_CMD_MAP[$operation]}" == *"{TARGET}"* ]]; then
+						mkdir -p "$(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")"
 					fi
 
 					log 3 "${_IN}Executing: $CMD"
@@ -646,7 +648,7 @@ templateParseIncludes() {
 	# TODO: search first in DIR_BUILD, if not found, don't ouput anything
 	local templateFile="${DIR_TEMPLATES}/$templateFileName"
 	if [[ -f "$templateFile" ]]; then
-		local templateContent="$(<$templateFile)"
+		local templateContent="$(<"$templateFile")"
 	else
 		log 1 error "${_IN}ERROR: No template found '$templateFile'"
 		return
@@ -685,7 +687,7 @@ templateParseIncludes() {
 templateRender() {
 	declare templateFileName=$1
 
-	local templateText="$(templateParseIncludes $templateFileName)"
+	local templateText="$(templateParseIncludes "$templateFileName")"
 
 	# Template tags must be one-liners
 	local directives_set=$(printf '%s' "$templateText" \
@@ -746,7 +748,7 @@ templateRender() {
 		else
 			log 3 "${_IN3}=: $(printf '%s' "$CMDOUT" | tr '\n' ' ' \
 				| head -c$CMDOUT_LOGMAX) (...) +" \
-				"$(($CMDOUT_LEN-$CMDOUT_LOGMAX)) chars"
+				"$((CMDOUT_LEN-CMDOUT_LOGMAX)) chars"
 		fi
 
 		# Substitute the directive in the template with the command output

@@ -1,6 +1,4 @@
-# webera
-
-[![Build Status](https://travis-ci.org/andamira/webera.png?branch=master)](https://travis-ci.org/andamira/webera)
+# webera [![language: bash](https://img.shields.io/badge/language-bash-blue.svg?style=flat-square)]() [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/andamira/webera/blob/master/LICENSE.md) [![Build Status](https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square)](https://travis-ci.org/andamira/webera) [![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square)](https://codeclimate.com/github/andamira/webera)
 
 Is a handy shellscript to help you create static websites.
 

@@ -50,7 +50,7 @@ parseArguments() {
 
 generateExamples() {
 
-	cd $DIR
+	cd "$DIR"
 
 	[[ "$OPTION_LOG_CLEAR" == true ]] && rm "$LOGFILE"
 
@@ -61,13 +61,13 @@ generateExamples() {
 		tr '\n' ' ')
 
 	for E in $EXAMPLES; do
-		cd $E;
+		cd "$E";
 
-		printf "generating '$E'. . . \n"
+		printf 'generating '%s'. . . \n' "$E"
 
-		$WEBERA -rt -L${OPTION_LOG_LEVEL} -G $LOGFILE
+		"$WEBERA" -rt -L"${OPTION_LOG_LEVEL}" -G "$LOGFILE"
 
-		cd $DIR
+		cd "$DIR"
 	done
 }
 
