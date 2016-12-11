@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.45
+# Version: 0.1.46
 # License: MIT
 #
 # Dependencies:
@@ -20,13 +20,15 @@ main() {
 
 
 	## CONFIGURABLE SETTINGS
+	#
+	# Note: Variables starting with underscore can't be configured from file
 
 	# Paths
 	local DIR_TEMPLATES=tem
 	local DIR_RESOURCES=res
 	local DIR_BUILD=build
 	local DIR_OUTPUT=out
-	local FILE_CONFIG=.weberarc
+	local _FILE_CONFIG=.weberarc
 
 	# Web Browser
 	local WEB_BROWSER="firefox"
@@ -95,9 +97,9 @@ main() {
 
 	parseArguments "$@"
 
-	[[ "$FILE_CONFIG" != "/etc/weberarc" ]] && readConfig "/etc/weberarc"
-	[[ "$FILE_CONFIG" != "$HOME/.weberarc" ]] && readConfig "$HOME/.weberarc"
-	readConfig "$FILE_CONFIG"
+	[[ "$_FILE_CONFIG" != "/etc/weberarc" ]] && readConfig "/etc/weberarc"
+	[[ "$_FILE_CONFIG" != "$HOME/.weberarc" ]] && readConfig "$HOME/.weberarc"
+	readConfig "$_FILE_CONFIG"
 
 	configureSettings
 
@@ -134,7 +136,7 @@ usage() {
 
 	OPTIONAL          ... (DEFAULT)
 
-	  -C <FILE>       indicate the configuration file ($FILE_CONFIG)
+	  -C <FILE>       indicate the configuration file ($_FILE_CONFIG)
 
 	  -T <DIR>        indicate the templates directory ($DIR_TEMPLATES)
 	  -R <DIR>        indicate the resources directory ($DIR_RESOURCES)
@@ -170,12 +172,12 @@ parseArguments() {
 			n) _OPERATIONAL=true; _DO_GENERATE_FILE_CONFIG=true;
 				_ARG_OPTIONS[_DO_GENERATE_FILE_CONFIG]=true ;;
 
-			C) FILE_CONFIG="$OPTARG"
-				_ARG_OPTIONS[FILE_CONFIG]="$OPTARG"
+			C) _FILE_CONFIG="$OPTARG"
+				_ARG_OPTIONS[_FILE_CONFIG]="$OPTARG"
 				_FILE_CONFIG_EXPLICIT=true;
 				;;
 
-			# The following options can also be defined in $FILE_CONFIG, but
+			# The following options can also be defined in $_FILE_CONFIG, but
 			# passing them as arguments to the script has a higher priority.
 
 			T) _ARG_OPTIONS[DIR_TEMPLATES]="$OPTARG" ;;
@@ -360,7 +362,7 @@ readConfig() {
 		log 3 "Reading settings from '$FILE'"
 
 		if [[ "$_DO_GENERATE_FILE_CONFIG" == true ]] \
-			&& [[ "$FILE" == "$FILE_CONFIG" ]]; then
+			&& [[ "$FILE" == "$_FILE_CONFIG" ]]; then
 			log 2 warn "Warning: automatic override of an existing" \
 				"local config file ('$FILE') is not permitted."
 		fi
@@ -380,26 +382,29 @@ readConfig() {
 			| sed "s/$_WS*:$_WS*/=/" \
 			| sed "$_SED_TRIM_WS" \
 			); do
-			printf -v __VARS_WEBERA '%s' "$__VARS_WEBERA"$'\n'"[file]:$FILE:$LINE"
+			if [[ "$LINE" != _* ]]; then # only read public variables
+				printf -v __VARS_WEBERA '%s' \
+				"$__VARS_WEBERA"$'\n'"[file]:$FILE:$LINE"
+			fi
 		done
 		IFS="$OLDIFS"
 
 	else # if the config file doesn't exist
 		# and it's the config file of the project
-		if [[ "$FILE" == "$FILE_CONFIG" ]]; then
-			[[ "$__DO_PRINT_VARS" == true ]] && return 0 # if printing debug info
+		if [[ "$FILE" == "$_FILE_CONFIG" ]]; then
+			[[ "$__DO_PRINT_VARS" == true ]] && return 0 # printing debug info
 
 			if [[ "$_DO_GENERATE_FILE_CONFIG" == true ]]; then
 				generateConfig
 			else
 				if [[ "$_FILE_CONFIG_EXPLICIT" == true ]]; then
 					printf "ERROR: Configuration file '%s' doesn't exist.\n" \
-						"$FILE_CONFIG"
+						"$_FILE_CONFIG"
 					exit 2
 				else
 					log 3 warn \
 						"Warning: project's config file" \
-						"'$FILE_CONFIG' doesn't exist."
+						"'$_FILE_CONFIG' doesn't exist."
 				fi
 			fi
 		fi
@@ -452,9 +457,9 @@ generateConfig() {
 			configLines+=("config : $OPT : ${_ARG_OPTIONS[$OPT]}")
 	done
 
-	touch $FILE_CONFIG
+	touch "$_FILE_CONFIG"
 	for LINE in "${configLines[@]}"; do
-		printf '%s\n' "$LINE" >> "$FILE_CONFIG"
+		printf '%s\n' "$LINE" >> "$_FILE_CONFIG"
 	done
 
 } #generateConfig()

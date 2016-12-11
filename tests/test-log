@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+cd "${BASH_SOURCE%/*}" || exit 1
+source helper
+
+test_templates() {
+	declare file_contents
+
+	test_h1 "Logging"
+	# ===================
+	test_setup
+
+
+	test_h2 "New log file"
+	# ======
+
+	webera -L4
+	assert_raises "[[ -f log.txt ]]" "0"
+
+
+	test_h2 "File config contents"
+	# ======
+	#test_clean
+
+	# cat <<- EOF > .test_weberarc
+	# These contents will be written to the file.
+	# EOF
+
+	test_teardown
+}
+
+test_templates
+test_summary 'log'

@@ -4,24 +4,182 @@ cd "${BASH_SOURCE%/*}" || exit 1
 source helper
 
 test_templates() {
-	declare file_contents
+	local newval
 
 	test_h1 "Configuration"
 	# ===================
 	test_setup
 
 
-	test_h2 "New config file"
+	test_h2 "Syntax & Behaviour"
 	# ======
 
-	assert "webera -n" ""
-	assert_raises "ls .weberarc" "0"
+	test_h3 "Whitespace"
+	# ===
 
-	assert "webera -nC .test_weberarc" ""
-	assert_raises "ls .test_weberarc" "0"
+	test_clean
+#
+	# No spaces
+	printf "config:DIR_TEMPLATES:syn_nospaces" > .weberarc
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	assert "echo $newval" "syn_nospaces"
+#
+	# Spaces
+	printf "config : DIR_TEMPLATES : syn_spaces\n" > .weberarc
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	assert "echo $newval" "syn_spaces"
+#
+	# Tabs
+	printf "config\t:\tDIR_TEMPLATES\t:\tsyn_tabs\n" > .weberarc
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	assert "echo $newval" "syn_tabs"
+#
+	# Spaces, tabs, trailing and leading whitespace
+	printf "  \t config\t\t: DIR_TEMPLATES   :\tsyn_whitespace\t\n" > .weberarc
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	assert "echo $newval" "syn_whitespace"
+#
+	# Line splitting
+	printf "config : DIR_TEMPLATES : \
+		syn_linesplit\n" > .weberarc
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	assert "echo $newval" "syn_linesplit"
 
 
-	
+	test_h3 "Private variables"
+	# ===
+
+ 	test_clean
+
+	# Private variables shouldn't be read
+	cat <<- EOF > .weberarc
+	config : DIR_TEMPLATES : var_public
+	config : _FILE_CONFIG : var_private_1
+	config : _PRELOG : var_private_2
+	config : __OTHER: var_private_3
+	EOF
+#
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	assert "echo $newval" "var_public"
+#
+	newval=$(weberaVarValue "$(webera -_)" 'file' '_FILE_CONFIG')
+	assert "echo $newval"
+#
+	newval=$(weberaVarValue "$(webera -_)" 'file' '_PRELOG')
+	assert "echo $newval"
+#
+	newval=$(weberaVarValue "$(webera -_)" 'file' '__OTHER')
+	assert "echo $newval"
+
+
+	# TODO test_h3 "Missing parameters"
+	# ===
+
+
+	test_h2 "Generate config file"
+	# ======
+
+	test_clean
+#
+	# (-n) Generate with default name
+	assert "webera -n"
+#
+	assert_raises "[[ -f .weberarc ]]"
+
+#
+	# (-nC) Generate with a custom name
+	assert "webera -nC .test_weberarc"
+#
+	assert_raises "[[ .test_weberarc ]]"
+#
+	# _FILE_CONFIG shouldn't be written to config file
+	assert "cat .test_weberarc"
+
+
+	test_h2 "File contents"
+	# ======
+
+
+	test_h3 "Paths: separate"
+	# ===
+
+	test_clean
+#
+	# (-T) DIR_TEMPLATES
+	assert "webera -n -T test_tem"
+#
+	# write
+	assert "cat .weberarc" "config : DIR_TEMPLATES : test_tem"
+#
+	# read
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	assert "echo $newval" "test_tem"
+
+
+	test_clean
+#
+	# (-R) DIR_RESOURCES
+	assert "webera -n -R test_res"
+#
+	# write
+	assert "cat .weberarc" "config : DIR_RESOURCES : test_res"
+#
+	# read
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_RESOURCES')
+	assert "echo $newval" "test_res"
+
+
+	test_clean
+#
+	# (-O) DIR_OUTPUT
+	assert "webera -n -O test_out"
+#
+	# write
+	assert "cat .weberarc" "config : DIR_OUTPUT : test_out"
+#
+	# read
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_OUTPUT')
+	assert "echo $newval" "test_out"
+
+
+	test_clean
+#
+	# (-B) DIR_BUILD
+	assert "webera -n -B test_build"
+#
+	# write
+	assert "cat .weberarc" "config : DIR_BUILD : test_build"
+#
+	# read
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_BUILD')
+	assert "echo $newval" "test_build"
+
+
+	test_h3 "Paths: together"
+	# ===
+
+	test_clean
+#
+	# (-TROB) all paths together
+	assert "webera -n -T t1 -R r2 -O o3 -B b4"
+#
+	# write
+	assert "cat .weberarc | sort" "config : DIR_BUILD : b4
+config : DIR_OUTPUT : o3
+config : DIR_RESOURCES : r2
+config : DIR_TEMPLATES : t1"
+
+#
+	# read
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	assert "echo $newval" "t1"
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_RESOURCES')
+	assert "echo $newval" "r2"
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_OUTPUT')
+	assert "echo $newval" "o3"
+	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_BUILD')
+	assert "echo $newval" "b4"
+
 	test_teardown
 }
 

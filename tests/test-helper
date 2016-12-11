@@ -17,16 +17,16 @@ test_helper() {
 	test_setup
 
 	local workDir=$(pwd)
-
+#
 	# we are now in a different directory
 	assert_raises "[[ $workDir != $originalDir ]]"
-
+#
 	# we are also in the workdir directory
 	assert_raises "pwd | grep -E --silent 'webera-test-[a-Z0-9]{9}$'"
-
+#
 	# it is empty
 	assert "ls -a" ".\n.."
-
+#
 	# we can create files
 	touch test_file
 	assert_raises "ls test_file"
@@ -36,13 +36,13 @@ test_helper() {
 	# ======
 
 	test_clean
-
+#
 	# we should still be in the same directory
 	assert_raises "[[ $workDir == $(pwd) ]]"
-
+#
 	# previously created file shouldn't exist
 	assert_raises "[[ ! -f test_file ]]"
-
+#
 	# directory should be empty
 	assert "ls -a" ".\n.."
 
@@ -51,13 +51,13 @@ test_helper() {
 	# ======
 
 	test_teardown
-
+#
 	# We are not anymore in the working directory
 	assert_raises "[[ $workDir != $originalDir ]]"
-
+#
 	# We are back to the original dir
 	assert_raises "[[ $originalDir == $(pwd) ]]"
-
+#
 	# Temporary directory doesn't exist anymore
 	assert_raises "[[ ! -d $workDir ]]"
 
