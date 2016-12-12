@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1091
 
 cd "${BASH_SOURCE%/*}" || exit 1
-source helper
+# shellcheck disable=SC1091
+source ./helper
 
 test_helper() {
+	declare originalDir workDir
 
 	test_h1 "Helper Functions"
 	# ===================
@@ -13,11 +14,11 @@ test_helper() {
 	test_h2 "test_setup()"
 	# ======
 
-	local originalDir=$(pwd)
+	originalDir=$(pwd)
 
 	test_setup
 
-	local workDir=$(pwd)
+	workDir=$(pwd)
 #
 	# we are now in a different directory
 	assert_raises "[[ $workDir != $originalDir ]]"

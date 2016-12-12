@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1091
 
 cd "${BASH_SOURCE%/*}" || exit 1
-source helper
+# shellcheck disable=SC1091
+source ./helper
 
 test_templates() {
 	local newval

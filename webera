@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.48
+# Version: 0.1.49
 # License: MIT
 #
 # Dependencies:
@@ -581,10 +581,10 @@ processTemplates() {
 		return
 	fi
 
-	local templateOpList="$(printf '%s' "$CONFIG" \
+	templateOpList="$(printf '%s' "$CONFIG" \
 		| grep "^$_WS*template$_WS*:" )"
 
-	local templateOpNum=$(printf '%s\n' "$templateOpList" \
+	templateOpNum=$(printf '%s\n' "$templateOpList" \
 		| sed "$_SED_DEL_EMPTYLINES" | wc -l )
 	log 1 "${_IN}Found $templateOpNum operations on templates:"
 

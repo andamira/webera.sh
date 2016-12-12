@@ -1,12 +1,10 @@
-# webera [![language: bash](https://img.shields.io/badge/language-bash-blue.svg?style=flat-square)]() [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/andamira/webera/blob/master/LICENSE.md) [![Build Status](https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square)](https://travis-ci.org/andamira/webera) [![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square)](https://codeclimate.com/github/andamira/webera)
+# webera [![version: 0.1.X](https://img.shields.io/badge/version-0.1.X-yellow.svg?style=flat-square)](#status) [![language: bash](https://img.shields.io/badge/language-bash-blue.svg?style=flat-square)]() [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/andamira/webera/blob/master/LICENSE.md) [![Build Status](https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square)](https://travis-ci.org/andamira/webera) [![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square)](https://codeclimate.com/github/andamira/webera)
 
-Is a handy shellscript to help you create static websites.
+Is a handy, reliable and versatile script that generates static websites.
 
-Its purpose is to be like a swiss knife: a versatile tool in a small package.
+It relies on common utilities (grep, sed, awk, coreutils) to do its job.
 
-It depends on Bash 4 alongside common unix commands (grep, sed, awk) to do its job.
-
-It's originally Inspired by [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e).
+---
 
 **Index**
 
@@ -15,20 +13,17 @@ It's originally Inspired by [Statix](https://gist.github.com/plugnburn/c2f7cc380
 - [Examples](#examples)
   - [Usage](#usage)
   - [Config](#config)
-- [Stability](#here-be-dragons)
+- [Reason](#reason)
+- [Status](#status)
 
 ---
 
 ## Features
 
-- Custom commands and workflows for processing templates and static resources
-- Template directives for:
-  - outputting commands
-  - nesting templates
-  - setting variables
-- Flexible configuration
-- Decent logging system
-- Browser preview
+- A flexible configurable system to process content templates and static resources, allowing for custom commands and workflows.
+- Content template directives for: template nesting, variable setting, command output, among others.
+- Logging system and browser preview.
+- Unit testing and code quality control as an integral part of the development process.
 
 
 ## Quick Start
@@ -48,30 +43,63 @@ template : route : my-index.html   : /
 template : route : other-page.html : /other-url/
 ```
 
-Then generate the website, to the `out/` directory by default:
+Create a stylesheet into `res/css/style.css` for example, and process it like this:
+
+```
+resource : copy : css/ : css/
+```
+
+Generate the website, from the templates and the resources.
 
 ```sh
-./webera -tr
+$ ./webera -tr
+
+```
+
+It gets saved into the `out/` directory by default:
+```
+$ find out/
+
+  out/
+  out/index.html
+  out/other-url/index.html
+  out/res/css/style.css
 ```
 
 ## Examples
 
-You can find several [rendered examples here](https://andamira.github.io/webera/examples/)
-and their original source in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory.
+You can find several example's source in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory, rendered by webera in the [docs/](https://github.com/andamira/webera/tree/master/docs) directory and visible as a website in the [github page of the project](https://andamira.github.io/webera/examples/).
+
+### Config
+
+This is an example of a project's configuration file.
+
+```bash
+# Customize Settings
+config : WEB_BROWSER_BIN : chromium-browser
+config : DIR_OUTPUT      : /home/$USER/my-website
+
+# Define Custom Commands
+command : sass2css : sass {ORIGIN} {TARGET}
+
+# Process Resources
+resource : sass2css : scss/styles.scss : css/main.css
+
+# Process Templates to URL Endpoints
+template : route : index.html     : /
+template : route : about.html     : /about/
+template : route : about-me.html  : /about/me/
+template : route : about-you.html : /about/you.html
+```
+
+See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for more configuration possibilities.
 
 
 ### Usage
 
-<table>
-<thead>
+These are several examples on running the script. The characters in bold indicate a mnemonic relationship between the name of the action triggered and the flag used.
 
-<tr>
-  <th>example</th>
-  <th>what it does</th>
-</tr>
-
-</thead>
-<tbody>
+<table><tbody>
 
 <tr>
   <td><code>./webera -t -cL2</code></td>
@@ -91,13 +119,13 @@ and their original source in the [examples/](https://github.com/andamira/webera/
   <td><code>./webera -r -R resB/ -O outB/</code></td>
 
   <td>Process resources from a custom <strong>R</strong>esources
-  directory, and also to a custom <strong>O</strong>utput directory</td>
+  directory and to a custom <strong>O</strong>utput directory</td>
 </tr>
 
 <tr>
   <td><code>./webera -nC conf/webera.conf</code></td>
 
-  <td>Generate a <strong>n</strong>ew configuration, to a custom
+  <td>Generate a <strong>n</strong>ew configuration to a custom
     <strong>C</strong>onfig file</td>
 </tr>
 
@@ -105,29 +133,14 @@ and their original source in the [examples/](https://github.com/andamira/webera/
 
 Run `./webera -h` for more usage flags.
 
-### Config
 
-```bash
-# Customize Settings
-config : WEB_BROWSER_BIN : google-chrome
-config : DIR_OUTPUT      : /home/$USER/my-website
+## Reason
 
-# Define Custom commands
-command : sass2css : sass {ORIGIN} {TARGET}
+The script was originally inspired by [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e), [suckless philosophy](http://suckless.org/philosophy) and [Unix philosophy](), 
 
-# Process resources
-resource : sass2css : scss/styles.scss : css/main.css
-
-# Process templates to URL endpoints
-template : route : index.html     : /
-template : route : about.html     : /about/
-template : route : about-me.html  : /about/me/
-template : route : about-you.html : /about/you.html
-```
-
-See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for more config options.
+The intention is to see how far the original idea can be taken, given the limits of a shell script, and to try to achive a good balance between features, reliability, simplicity and handiness.
 
 
-## Here Be Dragons
+## Status
 
 This project is not stable yet. Anything can change at any moment.
