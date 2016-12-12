@@ -19,8 +19,8 @@
 
 		<article class="markdown readme">
 			<h1 id="webera-version-0.1.x-language-bash-license-mit-build-status-code-climate">webera <a href="#status"><embed src="https://img.shields.io/badge/version-0.1.X-yellow.svg?style=flat-square" /></a> <a href=""><embed src="https://img.shields.io/badge/language-bash-blue.svg?style=flat-square" /></a> <a href="https://github.com/andamira/webera/blob/master/LICENSE.md"><embed src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" /></a> <a href="https://travis-ci.org/andamira/webera"><embed src="https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square" /></a> <a href="https://codeclimate.com/github/andamira/webera"><embed src="https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square" /></a></h1>
-<p>Is a handy, reliable and versatile script that generates static websites.</p>
-<p>It relies on common utilities (grep, sed, awk, coreutils) to do its job.</p>
+<p>Is a very handy bash script to generate static websites.</p>
+<p>It relies on basic unix tools (grep, sed, awk, coreutils) to do its job.</p>
 <hr />
 <p><strong>Index</strong></p>
 <ul>
@@ -35,19 +35,20 @@
 <hr />
 <h2 id="features">Features</h2>
 <ul>
-<li>A flexible configurable system to process content templates and static resources, allowing for custom commands and workflows.<br /></li>
-<li>Content template directives for: template nesting, variable setting, command output, among others.<br /></li>
-<li>Logging system and browser preview.<br /></li>
-<li>Unit testing and code quality control as an integral part of the development process.</li>
+<li>A configurable system for processing content templates and<br /> static resources, allowing custom commands and workflows.<br /></li>
+<li>Content template directives allowing nesting templates,<br /> setting variables, displaying the output of commands...<br /></li>
+<li>Unit testing and code quality control checking.<br /></li>
+<li>A versatile logging system.<br /></li>
+<li>Website preview.</li>
 </ul>
 <h2 id="quick-start">Quick Start</h2>
-<p>The simplest way to start is to download the <a href="https://raw.githubusercontent.com/andamira/webera/master/webera">script</a> and make it executable.</p>
+<p>The simplest way to start is to download the<br /><a href="https://raw.githubusercontent.com/andamira/webera/master/webera">script</a><br />and make it executable.</p>
 <pre class="sh"><code>wget raw.githubusercontent.com/andamira/webera/master/webera &amp;&amp; chmod +x webera</code></pre>
-<p>You can generate a new config file (<code>webera -n</code>) or <a href="https://raw.githubusercontent.com/andamira/webera/master/.weberarc">download</a> the one in the repo.</p>
-<p>Place your templates in the <code>tem/</code> directory, and configure the corresponding routes in the <code>.weberarc</code> config file, like this:</p>
+<p>You can generate a new config file (<code>webera -n</code>) or<br /><a href="https://raw.githubusercontent.com/andamira/webera/master/.weberarc">download</a><br />the one in the repo.</p>
+<p>Place your templates in the <code>tem/</code> directory, and configure the<br />corresponding routes in the <code>.weberarc</code> config file, like this:</p>
 <pre><code>template : route : my-index.html   : /
 template : route : other-page.html : /other-url/</code></pre>
-<p>Create a stylesheet into <code>res/css/style.css</code> for example, and process it like this:</p>
+<p>Create a stylesheet into <code>res/css/style.css</code> for example,<br />and process it like this:</p>
 <pre><code>resource : copy : css/ : css/</code></pre>
 <p>Generate the website, from the templates and the resources.</p>
 <pre class="sh"><code>$ ./webera -tr
@@ -80,35 +81,37 @@ template : route : other-page.html : /other-url/</code></pre>
 <span class="kw">template</span> : route : about-you.html : /about/you.html</code></pre>
 <p>See <a href="https://github.com/andamira/webera/blob/master/.weberarc"><code>.weberarc</code></a> for more configuration possibilities.</p>
 <h3 id="usage">Usage</h3>
-<p>These are several examples on running the script. The characters in bold indicate a mnemonic relationship between the name of the action triggered and the flag used.</p>
+<p>These are several examples on how to run the script.<br />The characters in <strong>b</strong>old indicate a mnemonic relationship<br />between the name of the action and the corresponding flag.</p>
 <table><tbody>
 
 <tr>
   <td><code>./webera -t -cL2</code></td>
 
-  <td>Process <strong>t</strong>emplates and write a level 2
-  <strong>L</strong>ogfile, clearing any previous logfile first</td>
+  <td>Process <b>t</b>emplates and write a level 2
+  <b>L</b>ogfile, clearing any previous logfile first</td>
 </tr>
 
 <tr>
   <td><code>./webera -trw -W vivaldi</code></td>
 
   <td>Process templates and resources; and preview using
-  another bro<strong>W</strong>ser</td>
+  another bro<b>W</b>ser</td>
 </tr>
 
 <tr>
   <td><code>./webera -r -R resB/ -O outB/</code></td>
 
-  <td>Process resources from a custom <strong>R</strong>esources
-  directory and to a custom <strong>O</strong>utput directory</td>
+  <td>Process resources from a custom <b>R</b>esources directory
+  and to a custom <b>O</b>utput directory</td>
 </tr>
 
 <tr>
-  <td><code>./webera -nC conf/webera.conf</code></td>
+  <td><code>./webera -nC conf/webera.conf -S php -P 8080</code></td>
 
-  <td>Generate a <strong>n</strong>ew configuration to a custom
-    <strong>C</strong>onfig file</td>
+  <td>Generate a <b>n</b>ew configuration to a custom
+    <b>C</b>onfig file, and save there the new preferences
+    for <b>S</b>erver and <b>P</b>ort.
+  </td>
 </tr>
 
 </tbody></table>
@@ -116,8 +119,8 @@ template : route : other-page.html : /other-url/</code></pre>
 
 <p>Run <code>./webera -h</code> for more usage flags.</p>
 <h2 id="reason">Reason</h2>
-<p>The script was originally inspired by <a href="https://gist.github.com/plugnburn/c2f7cc3807e8934b179e">Statix</a>, <a href="http://suckless.org/philosophy">suckless philosophy</a> and <a href="">Unix philosophy</a>,</p>
-<p>The intention is to see how far the original idea can be taken, given the limits of a shell script, and to try to achive a good balance between features, reliability, simplicity and handiness.</p>
+<p>The script was originally inspired by<br /><a href="https://gist.github.com/plugnburn/c2f7cc3807e8934b179e">Statix</a>,<br />the <a href="https://en.wikipedia.org/wiki/Unix_philosophy">Unix philosophy</a><br />and the <a href="http://suckless.org/philosophy">suckless philosophy</a>,<br />without strictly adhering to any specific.</p>
+<p>The intention was to see how far this idea could be taken,<br />given the limits and constraints of shell script language,<br />and trying to achive a very good balance of features,<br />reliability, and handiness.</p>
 <h2 id="status">Status</h2>
 <p>This project is not stable yet. Anything can change at any moment.</p>
 		</article>

@@ -1,8 +1,8 @@
 # webera [![version: 0.1.X](https://img.shields.io/badge/version-0.1.X-yellow.svg?style=flat-square)](#status) [![language: bash](https://img.shields.io/badge/language-bash-blue.svg?style=flat-square)]() [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/andamira/webera/blob/master/LICENSE.md) [![Build Status](https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square)](https://travis-ci.org/andamira/webera) [![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square)](https://codeclimate.com/github/andamira/webera)
 
-Is a handy, reliable and versatile script that generates static websites.
+Is a very handy bash script to generate static websites.
 
-It relies on common utilities (grep, sed, awk, coreutils) to do its job.
+It relies on basic unix tools (grep, sed, awk, coreutils) to do its job.
 
 ---
 
@@ -20,30 +20,38 @@ It relies on common utilities (grep, sed, awk, coreutils) to do its job.
 
 ## Features
 
-- A flexible configurable system to process content templates and static resources, allowing for custom commands and workflows.
-- Content template directives for: template nesting, variable setting, command output, among others.
-- Logging system and browser preview.
-- Unit testing and code quality control as an integral part of the development process.
-
+- A configurable system for processing content templates and
+  static resources, allowing custom commands and workflows.
+- Content template directives allowing nesting templates,
+  setting variables, displaying the output of commands...
+- Unit testing and code quality control checking.
+- A versatile logging system.
+- Website preview.
 
 ## Quick Start
 
-The simplest way to start is to download the [script](https://raw.githubusercontent.com/andamira/webera/master/webera) and make it executable.
+The simplest way to start is to download the
+[script](https://raw.githubusercontent.com/andamira/webera/master/webera)
+and make it executable.
 
 ```sh
 wget raw.githubusercontent.com/andamira/webera/master/webera && chmod +x webera
 ```
 
-You can generate a new config file (`webera -n`) or [download](https://raw.githubusercontent.com/andamira/webera/master/.weberarc) the one in the repo.
+You can generate a new config file (`webera -n`) or
+[download](https://raw.githubusercontent.com/andamira/webera/master/.weberarc)
+the one in the repo.
 
-Place your templates in the `tem/` directory, and configure the corresponding routes in the `.weberarc` config file, like this:
+Place your templates in the `tem/` directory, and configure the
+corresponding routes in the `.weberarc` config file, like this:
 
 ```
 template : route : my-index.html   : /
 template : route : other-page.html : /other-url/
 ```
 
-Create a stylesheet into `res/css/style.css` for example, and process it like this:
+Create a stylesheet into `res/css/style.css` for example,
+and process it like this:
 
 ```
 resource : copy : css/ : css/
@@ -97,36 +105,40 @@ See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for 
 
 ### Usage
 
-These are several examples on running the script. The characters in bold indicate a mnemonic relationship between the name of the action triggered and the flag used.
+These are several examples on how to run the script.
+The characters in **b**old indicate a mnemonic relationship
+between the name of the action and the corresponding flag.
 
 <table><tbody>
 
 <tr>
   <td><code>./webera -t -cL2</code></td>
 
-  <td>Process <strong>t</strong>emplates and write a level 2
-  <strong>L</strong>ogfile, clearing any previous logfile first</td>
+  <td>Process <b>t</b>emplates and write a level 2
+  <b>L</b>ogfile, clearing any previous logfile first</td>
 </tr>
 
 <tr>
   <td><code>./webera -trw -W vivaldi</code></td>
 
   <td>Process templates and resources; and preview using
-  another bro<strong>W</strong>ser</td>
+  another bro<b>W</b>ser</td>
 </tr>
 
 <tr>
   <td><code>./webera -r -R resB/ -O outB/</code></td>
 
-  <td>Process resources from a custom <strong>R</strong>esources
-  directory and to a custom <strong>O</strong>utput directory</td>
+  <td>Process resources from a custom <b>R</b>esources directory
+  and to a custom <b>O</b>utput directory</td>
 </tr>
 
 <tr>
-  <td><code>./webera -nC conf/webera.conf</code></td>
+  <td><code>./webera -nC conf/webera.conf -S php -P 8080</code></td>
 
-  <td>Generate a <strong>n</strong>ew configuration to a custom
-    <strong>C</strong>onfig file</td>
+  <td>Generate a <b>n</b>ew configuration to a custom
+    <b>C</b>onfig file, and save there the new preferences
+    for <b>S</b>erver and <b>P</b>ort.
+  </td>
 </tr>
 
 </tbody></table>
@@ -136,9 +148,16 @@ Run `./webera -h` for more usage flags.
 
 ## Reason
 
-The script was originally inspired by [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e), [suckless philosophy](http://suckless.org/philosophy) and [Unix philosophy](), 
+The script was originally inspired by
+[Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e),
+the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
+and the [suckless philosophy](http://suckless.org/philosophy),
+without strictly adhering to any specific.
 
-The intention is to see how far the original idea can be taken, given the limits of a shell script, and to try to achive a good balance between features, reliability, simplicity and handiness.
+The intention was to see how far this idea could be taken,
+given the limits and constraints of shell script language,
+and trying to achive a very good balance of features,
+reliability, and handiness.
 
 
 ## Status
