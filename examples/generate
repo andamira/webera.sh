@@ -5,7 +5,8 @@ main() {
 	local OPTION_LOG_CLEAR=''
 	local OPTION_LOAD_IN_WEB_BROWSER=false;
 
-	local DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+	local DIR
+	DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 	local WEBERA="$DIR/../webera"
 	local LOGFILE="$DIR/examples.log"
 	local OUTPUT="$DIR/../docs"
@@ -50,24 +51,25 @@ parseArguments() {
 
 generateExamples() {
 
-	cd "$DIR"
+	cd "$DIR" || exit
 
 	[[ "$OPTION_LOG_CLEAR" == true ]] && rm "$LOGFILE"
 
-	local EXAMPLES=$(find . -maxdepth 1 -type d \
+	local EXAMPLES
+	EXAMPLES=$(find . -maxdepth 1 -type d \
 		| cut -d'/' -f2 \
 		| grep -v '^\.\+$' \
 		| sort | tac | \
 		tr '\n' ' ')
 
 	for E in $EXAMPLES; do
-		cd "$E";
+		cd "$E" || exit
 
 		printf 'generating '%s'. . . \n' "$E"
 
 		"$WEBERA" -rt -L"${OPTION_LOG_LEVEL}" -G "$LOGFILE"
 
-		cd "$DIR"
+		cd "$DIR" || exit
 	done
 }
 

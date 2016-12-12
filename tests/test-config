@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091
 
 cd "${BASH_SOURCE%/*}" || exit 1
 source helper
@@ -169,14 +170,17 @@ config : DIR_OUTPUT : o3
 config : DIR_RESOURCES : r2
 config : DIR_TEMPLATES : t1"
 
-#
 	# read
+#
 	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "t1"
+#
 	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_RESOURCES')
 	assert "echo $newval" "r2"
+#
 	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_OUTPUT')
 	assert "echo $newval" "o3"
+#
 	newval=$(weberaVarValue "$(webera -_)" 'file' 'DIR_BUILD')
 	assert "echo $newval" "b4"
 

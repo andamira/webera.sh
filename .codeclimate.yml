@@ -7,3 +7,5 @@ ratings:
   - "tests/helper"
   - "tests/test-*"
   - "examples/generate"
+exclude_paths:
+  - "**/extern/"
