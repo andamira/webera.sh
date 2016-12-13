@@ -58,10 +58,10 @@ helper_usage() {
 	Runs all the examples.
 	Also, it must be imported by each example.
 
-	Usage: ./helper -r
+	Usage: ./helper -a
 
-	  -r              run every test
-	  -h              displays this help
+	  -a              all tests
+	  -h              this help
 	ENDUSAGE
 	exit
 
@@ -72,9 +72,9 @@ helper_arguments() {
 	[[ -z "$@" ]] && helper_usage
 
 	local OPTIND OPTION
-	while getopts 'rh' OPTION; do
+	while getopts 'ah' OPTION; do
 		case "$OPTION" in
-			r) helper_run_all_tests; ;;
+			a) helper_run_all_tests; ;;
 			h) helper_usage ;;
 			*)
 				printf 'Error: "%s" is not a valid argument' "$OPTION" >&2
@@ -93,7 +93,7 @@ helper_run_all_tests() {
 	testFiles+=('test-arguments')
 	testFiles+=('test-config')
 	#testFiles+=('test-log')
-	testFiles+=('test-templates')
+	#testFiles+=('test-templates')
 	#testFiles+=('test-resources')
 
 	printf '%s\n' "Running tests from ${#testFiles[@]} test files. . ."
@@ -333,7 +333,7 @@ weberaVarValue() {
 	local varName="$3"
 
 	shopt -s extglob
-	local varTypesAllowed='@(vdef|file|args)'
+	local varTypesAllowed='@(vdef|file|args|strn)'
 
 	case "$varType" in
 		$varTypesAllowed) ;;

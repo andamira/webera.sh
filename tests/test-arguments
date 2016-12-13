@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 
+## Include
+
 cd -- "${BASH_SOURCE%/*}" || exit 1
 # shellcheck disable=SC1091
 source ./helper
+
+
+## Test
 
 test_arguments() {
 	declare default newval
@@ -54,11 +59,23 @@ test_arguments() {
 		'args' '_DO_GENERATE_CONFIG_FILE')
 	assert "echo $newval" "true"
 
-	
-	test_h2 "File Paths"
+
+	test_h2 "Config as string"
 	# =====
 
 #
+	default=$(weberaVarValue "$defaults" 'vdef' '_CONFIG_STRING')
+	assert "echo $default"
+#
+	newval=$(weberaVarValue "$(webera -_C "config:DIR_TEMPLATES:tem5")" \
+		'strn' 'DIR_TEMPLATES')
+	assert "echo $newval" "tem5"
+
+
+	test_h2 "File Paths"
+	# =====
+
+#   # config file
 	default=$(weberaVarValue "$defaults" 'vdef' '_CONFIG_FILE')
 	assert "echo $default" ".weberarc"
 #
@@ -149,8 +166,9 @@ test_arguments() {
 	# =====
 
 #
-	# default=$(weberaVarValue "$defaults" 'vdef' 'WEB_BROWSER')
-	# assert "echo $default" "firefox"
+    # SEMIBUG_20161212: this one makes kcov fail
+	default=$(weberaVarValue "$defaults" 'vdef' 'WEB_BROWSER')
+	assert "echo $default" "firefox"
 #
 	newval=$(weberaVarValue "$(webera -_W test_browser)" \
 		'args' 'WEB_BROWSER')

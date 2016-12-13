@@ -150,7 +150,7 @@ the name of the action and the corresponding set flag.)
   <td><code>./webera -nF conf/webera.conf -S php -P 8080</code></td>
 
   <td>Generate a <b>n</b>ew configuration to the config
-    <b>F</b>file, and write there the new preferences
+    <b>F</b>ile, and write there the new preferences
     for the <b>S</b>erver and the <b>P</b>ort.
   </td>
 </tr>

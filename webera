@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.52
+# Version: 0.1.53
 # License: MIT
 #
 # Dependencies:
@@ -16,7 +16,7 @@
 #   main()
 #
 # Arguments:
-#   $@ - all arguments passed to the script
+#   $@ - all the arguments passed to the script
 #-------------------------------------------------------------------------------
 main() {
 	__setupDebugging
@@ -58,6 +58,9 @@ main() {
 	local OPTION_DELETE_DIR_OUTPUT=true
 	local OPTION_DELETE_DIR_BUILD=true
 
+	# Misc
+	local -i NESTING_MAX=8
+
 
 	## INTERNAL SETTINGS
 	#
@@ -72,7 +75,6 @@ main() {
 	local _DO_GENERATE_CONFIG_FILE=false # has it been requested to generate? (-n)
 	local _CONFIG_FILE_EXPLICIT=false # has it been explicitly indicated?  (-C)
 
-	local -ri _NESTING_MAX=8
 	local -i _NESTING_LEVEL=0
 
 	local _CONFIG_JOINT="" # where to save all the configurations
@@ -191,7 +193,7 @@ usage() {
 #   Function is called by main().
 #
 # Arguments:
-#   $@ - all the arguments
+#   $@ - all the arguments passed to the script
 # Returns:
 #    1 - (exit via usage) when the argument is unknown
 #-------------------------------------------------------------------------------
@@ -795,8 +797,8 @@ templateParseIncludes() {
 	declare templateContent D directives_include incFileName incFileContent
 
 	((_NESTING_LEVEL++))
-	if [[ "$_NESTING_LEVEL" -gt "$_NESTING_MAX" ]]; then
-		log 1 error "${_IN}ERROR: max nesting level ($_NESTING_MAX)" \
+	if [[ "$_NESTING_LEVEL" -gt "$NESTING_MAX" ]]; then
+		log 1 error "${_IN}ERROR: max nesting level ($NESTING_MAX)" \
 			"reached for template $templateFileName"
 		exit 3
 	fi

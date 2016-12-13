@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+cd -- "${BASH_SOURCE%/*}" || exit 1
+# shellcheck disable=SC1091
+source ./helper
+
+test_templates() {
+	test_setup
+
+	local newval
+
+	test_h1 "Templates"
+	# ===================
+
+	test_h2 "1"
+	# ======
+	#newval=$(weberaVarValue "$(webera -_)" 'args' '_DO_PROCESS_TEMPLATES')
+	#assert "echo $newval" "true"
+
+	cat <<- EOF > .test_weberarc
+	These contents will be written to the file.
+	EOF
+
+	test_teardown
+}
+test_templates
+test_summary "templates"
