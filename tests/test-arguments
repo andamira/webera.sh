@@ -31,7 +31,7 @@ test_arguments() {
 #
 	# Check expected format, and the minimum number of arguments
 	newval=$(echo "$defaults" | grep -c '^\[[a-z]\+\]:.\+=')
-	assert_raises "[[ $newval -ge 35 ]]"
+	assert_raises "[[ $newval -ge 30 ]]" # give a safe margin
 
 
 	test_h2 "Main Flags"

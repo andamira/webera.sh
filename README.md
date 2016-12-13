@@ -38,7 +38,7 @@ and make it executable.
 wget raw.githubusercontent.com/andamira/webera/master/webera && chmod +x webera
 ```
 
-You can generate a new config file (`webera -n`) or
+Then you can generate a new config file (`webera -n`) or
 [download](https://raw.githubusercontent.com/andamira/webera/master/.weberarc)
 the one in the repo.
 
@@ -50,7 +50,7 @@ template : route : my-index.html   : /
 template : route : other-page.html : /other-url/
 ```
 
-Create a stylesheet into `res/css/style.css` for example,
+Create a stylesheet into `res/css/style.css`, for example,
 and process it like this:
 
 ```
@@ -152,14 +152,27 @@ The script was originally inspired by
 [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e),
 the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
 and the [suckless philosophy](http://suckless.org/philosophy),
-without strictly adhering to any specific.
+without strictly adhering to any.
 
-The intention was to see how far this idea could be taken,
-given the limits and constraints of shell script language,
-and trying to achive a very good balance of features,
-reliability, and handiness.
+The intention is to see how far this idea can be taken,
+given the limits and constraints of the shell language,
+and to try to achive an ideal balance of features,
+reliability, simplicity and handiness.
 
+The script should be versatile enough to acommodate most
+needs, and fit both personal and professional projects.
+
+### FAQ
+
+#### Why in Bash and not in *$any_other_language* ?
+
+Because it's so much more fun! Yeah. ;)
+
+Also, Bash and the Unix tools are stable like dinosaurs, and
+they are usually installed by default in most systems.
+
+#### ...
 
 ## Status
 
-This project is not stable yet. Anything can change at any moment.
+This project is not stable yet. You are warned.
