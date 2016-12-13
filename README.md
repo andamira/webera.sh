@@ -9,14 +9,16 @@ It relies on basic unix tools (grep, sed, awk, coreutils) to do its job.
 **Index**
 
 - [Features](#features)
+- [Dependencies](#dependencies)
 - [Quick Start](#quick-start)
 - [Examples](#examples)
   - [Usage](#usage)
   - [Config](#config)
-- [Reason](#reason)
+- [Reasons](#reasons)
 - [Status](#status)
 
 ---
+
 
 ## Features
 
@@ -27,6 +29,14 @@ It relies on basic unix tools (grep, sed, awk, coreutils) to do its job.
 - Unit testing and code quality control checking.
 - A versatile logging system.
 - Website preview.
+
+
+## Dependencies
+
+Bash >=4, coreutils, sed, awk, grep...
+
+See a complete [list of dependencies in the wiki](https://github.com/andamira/webera/wiki/Dependencies).
+
 
 ## Quick Start
 
@@ -43,9 +53,9 @@ Then you can generate a new config file (`webera -n`) or
 the one in the repo.
 
 Place your templates in the `tem/` directory, and configure the
-corresponding routes in the `.weberarc` config file, like this:
+corresponding routes in the new config file, like this:
 
-```
+```sh
 template : route : my-index.html   : /
 template : route : other-page.html : /other-url/
 ```
@@ -53,7 +63,7 @@ template : route : other-page.html : /other-url/
 Create a stylesheet into `res/css/style.css`, for example,
 and process it like this:
 
-```
+```sh
 resource : copy : css/ : css/
 ```
 
@@ -65,7 +75,8 @@ $ ./webera -tr
 ```
 
 It gets saved into the `out/` directory by default:
-```
+
+```sh
 $ find out/
 
   out/
@@ -74,15 +85,17 @@ $ find out/
   out/res/css/style.css
 ```
 
+
 ## Examples
 
-You can find several example's source in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory, rendered by webera in the [docs/](https://github.com/andamira/webera/tree/master/docs) directory and visible as a website in the [github page of the project](https://andamira.github.io/webera/examples/).
+You can find several example's source in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory, rendered in the [docs/](https://github.com/andamira/webera/tree/master/docs) directory and visible as a website in the [github page of the project](https://andamira.github.io/webera/examples/).
+
 
 ### Config
 
 This is an example of a project's configuration file.
 
-```bash
+```sh
 # Customize Settings
 config : WEB_BROWSER_BIN : chromium-browser
 config : DIR_OUTPUT      : /home/$USER/my-website
@@ -105,9 +118,10 @@ See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for 
 
 ### Usage
 
-These are several examples on how to run the script.
-The characters in **b**old indicate a mnemonic relationship
-between the name of the action and the corresponding flag.
+Below are shown several examples on how to run the script.
+
+(The characters in **b**old indicate a mnemonic between
+the name of the action and the corresponding set flag.)
 
 <table><tbody>
 
@@ -146,7 +160,7 @@ between the name of the action and the corresponding flag.
 Run `./webera -h` for more usage flags.
 
 
-## Reason
+## Reasons
 
 The script was originally inspired by
 [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e),
@@ -162,17 +176,9 @@ reliability, simplicity and handiness.
 The script should be versatile enough to acommodate most
 needs, and fit both personal and professional projects.
 
-### FAQ
+[See the FAQ](https://github.com/andamira/webera/wiki/FAQ).
 
-#### Why in Bash and not in *$any_other_language* ?
-
-Because it's so much more fun! Yeah. ;)
-
-Also, Bash and the Unix tools are stable like dinosaurs, and
-they are usually installed by default in most systems.
-
-#### ...
 
 ## Status
 
-This project is not stable yet. You are warned.
+This project is not stable yet.

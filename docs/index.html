@@ -18,48 +18,41 @@
 		<h2>README.md</h2>
 
 		<article class="markdown readme">
-			<h1 id="webera-version-0.1.x-language-bash-license-mit-build-status-code-climate">webera <a href="#status"><img src="https://img.shields.io/badge/version-0.1.X-yellow.svg?style=flat-square" alt="version: 0.1.X" /></a> <a href=""><img src="https://img.shields.io/badge/language-bash-blue.svg?style=flat-square" alt="language: bash" /></a> <a href="https://github.com/andamira/webera/blob/master/LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="license: MIT" /></a> <a href="https://travis-ci.org/andamira/webera"><img src="https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square" alt="Build Status" /></a> <a href="https://codeclimate.com/github/andamira/webera"><img src="https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square" alt="Code Climate" /></a></h1>
+			<h1 id="webera-version-0.1.x-language-bash-license-mit-build-status-code-climate">webera <a href="#status"><embed src="https://img.shields.io/badge/version-0.1.X-yellow.svg?style=flat-square" /></a> <a href=""><embed src="https://img.shields.io/badge/language-bash-blue.svg?style=flat-square" /></a> <a href="https://github.com/andamira/webera/blob/master/LICENSE.md"><embed src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" /></a> <a href="https://travis-ci.org/andamira/webera"><embed src="https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square" /></a> <a href="https://codeclimate.com/github/andamira/webera"><embed src="https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square" /></a></h1>
 <p>Is a very handy bash script to generate static websites.</p>
 <p>It relies on basic unix tools (grep, sed, awk, coreutils) to do its job.</p>
 <hr />
 <p><strong>Index</strong></p>
 <ul>
-<li><a href="#features">Features</a></li>
-<li><a href="#quick-start">Quick Start</a></li>
-<li><a href="#examples">Examples</a></li>
-<li><a href="#usage">Usage</a></li>
-<li><a href="#config">Config</a></li>
-<li><a href="#reason">Reason</a></li>
+<li><a href="#features">Features</a><br /></li>
+<li><a href="#quick-start">Quick Start</a><br /></li>
+<li><a href="#examples">Examples</a><br /></li>
+<li><a href="#usage">Usage</a><br /></li>
+<li><a href="#config">Config</a><br /></li>
+<li><a href="#reasons">Reasons</a><br /></li>
 <li><a href="#status">Status</a></li>
 </ul>
 <hr />
 <h2 id="features">Features</h2>
 <ul>
-<li>A configurable system for processing content templates and<br />
-static resources, allowing custom commands and workflows.</li>
-<li>Content template directives allowing nesting templates,<br />
-setting variables, displaying the output of commands...</li>
-<li>Unit testing and code quality control checking.</li>
-<li>A versatile logging system.</li>
+<li>A configurable system for processing content templates and<br /> static resources, allowing custom commands and workflows.<br /></li>
+<li>Content template directives allowing nesting templates,<br /> setting variables, displaying the output of commands...<br /></li>
+<li>Unit testing and code quality control checking.<br /></li>
+<li>A versatile logging system.<br /></li>
 <li>Website preview.</li>
 </ul>
 <h2 id="quick-start">Quick Start</h2>
-<p>The simplest way to start is to download the<br />
-<a href="https://raw.githubusercontent.com/andamira/webera/master/webera">script</a><br />
-and make it executable.</p>
-<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">wget</span> raw.githubusercontent.com/andamira/webera/master/webera <span class="kw">&amp;&amp;</span> <span class="fu">chmod</span> +x webera</code></pre></div>
-<p>Then you can generate a new config file (<code>webera -n</code>) or<br />
-<a href="https://raw.githubusercontent.com/andamira/webera/master/.weberarc">download</a><br />
-the one in the repo.</p>
-<p>Place your templates in the <code>tem/</code> directory, and configure the<br />
-corresponding routes in the <code>.weberarc</code> config file, like this:</p>
+<p>The simplest way to start is to download the<br /><a href="https://raw.githubusercontent.com/andamira/webera/master/webera">script</a><br />and make it executable.</p>
+<pre class="sh"><code>wget raw.githubusercontent.com/andamira/webera/master/webera &amp;&amp; chmod +x webera</code></pre>
+<p>Then you can generate a new config file (<code>webera -n</code>) or<br /><a href="https://raw.githubusercontent.com/andamira/webera/master/.weberarc">download</a><br />the one in the repo.</p>
+<p>Place your templates in the <code>tem/</code> directory, and configure the<br />corresponding routes in the <code>.weberarc</code> config file, like this:</p>
 <pre><code>template : route : my-index.html   : /
 template : route : other-page.html : /other-url/</code></pre>
-<p>Create a stylesheet into <code>res/css/style.css</code>, for example,<br />
-and process it like this:</p>
+<p>Create a stylesheet into <code>res/css/style.css</code>, for example,<br />and process it like this:</p>
 <pre><code>resource : copy : css/ : css/</code></pre>
 <p>Generate the website, from the templates and the resources.</p>
-<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">$ <span class="ex">./webera</span> -tr</code></pre></div>
+<pre class="sh"><code>$ ./webera -tr
+</code></pre>
 <p>It gets saved into the <code>out/</code> directory by default:</p>
 <pre><code>$ find out/
 
@@ -71,26 +64,24 @@ and process it like this:</p>
 <p>You can find several example's source in the <a href="https://github.com/andamira/webera/tree/master/examples">examples/</a> directory, rendered by webera in the <a href="https://github.com/andamira/webera/tree/master/docs">docs/</a> directory and visible as a website in the <a href="https://andamira.github.io/webera/examples/">github page of the project</a>.</p>
 <h3 id="config">Config</h3>
 <p>This is an example of a project's configuration file.</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Customize Settings</span>
-<span class="ex">config</span> : WEB_BROWSER_BIN : chromium-browser
-<span class="ex">config</span> : DIR_OUTPUT      : /home/<span class="va">$USER</span>/my-website
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Customize Settings</span>
+<span class="kw">config</span> : WEB_BROWSER_BIN : chromium-browser
+<span class="kw">config</span> : DIR_OUTPUT      : /home/<span class="ot">$USER</span>/my-website
 
 <span class="co"># Define Custom Commands</span>
-<span class="bu">command</span> : sass2css : sass <span class="dt">{ORIGIN}</span> <span class="dt">{TARGET}</span>
+<span class="kw">command</span> : sass2css : sass <span class="dt">{ORIGIN}</span> <span class="dt">{TARGET}</span>
 
 <span class="co"># Process Resources</span>
-<span class="ex">resource</span> : sass2css : scss/styles.scss : css/main.css
+<span class="kw">resource</span> : sass2css : scss/styles.scss : css/main.css
 
 <span class="co"># Process Templates to URL Endpoints</span>
-<span class="ex">template</span> : route : index.html     : /
-<span class="ex">template</span> : route : about.html     : /about/
-<span class="ex">template</span> : route : about-me.html  : /about/me/
-<span class="ex">template</span> : route : about-you.html : /about/you.html</code></pre></div>
+<span class="kw">template</span> : route : index.html     : /
+<span class="kw">template</span> : route : about.html     : /about/
+<span class="kw">template</span> : route : about-me.html  : /about/me/
+<span class="kw">template</span> : route : about-you.html : /about/you.html</code></pre>
 <p>See <a href="https://github.com/andamira/webera/blob/master/.weberarc"><code>.weberarc</code></a> for more configuration possibilities.</p>
 <h3 id="usage">Usage</h3>
-<p>These are several examples on how to run the script.<br />
-The characters in <strong>b</strong>old indicate a mnemonic relationship<br />
-between the name of the action and the corresponding flag.</p>
+<p>These are several examples on how to run the script.<br />The characters in <strong>b</strong>old indicate a mnemonic relationship<br />between the name of the action and the corresponding flag.</p>
 <table><tbody>
 
 <tr>
@@ -124,27 +115,16 @@ between the name of the action and the corresponding flag.</p>
 </tr>
 
 </tbody></table>
+
+
 <p>Run <code>./webera -h</code> for more usage flags.</p>
-<h2 id="reason">Reason</h2>
-<p>The script was originally inspired by<br />
-<a href="https://gist.github.com/plugnburn/c2f7cc3807e8934b179e">Statix</a>,<br />
-the <a href="https://en.wikipedia.org/wiki/Unix_philosophy">Unix philosophy</a><br />
-and the <a href="http://suckless.org/philosophy">suckless philosophy</a>,<br />
-without strictly adhering to any.</p>
-<p>The intention is to see how far this idea can be taken,<br />
-given the limits and constraints of the shell language,<br />
-and to try to achive an ideal balance of features,<br />
-reliability, simplicity and handiness.</p>
-<p>The script should be versatile enough to acommodate most<br />
-needs, and fit both personal and professional projects.</p>
-<h3 id="faq">FAQ</h3>
-<h4 id="why-in-bash-and-not-in-any_other_language">Why in Bash and not in <em>$any_other_language</em> ?</h4>
-<p>Because it's so much more fun! Yeah. ;)</p>
-<p>Also, Bash and the Unix tools are stable like dinosaurs, and<br />
-they are usually installed by default in most systems.</p>
-<h4 id="section">...</h4>
+<h2 id="reasons">Reasons</h2>
+<p>The script was originally inspired by<br /><a href="https://gist.github.com/plugnburn/c2f7cc3807e8934b179e">Statix</a>,<br />the <a href="https://en.wikipedia.org/wiki/Unix_philosophy">Unix philosophy</a><br />and the <a href="http://suckless.org/philosophy">suckless philosophy</a>,<br />without strictly adhering to any.</p>
+<p>The intention is to see how far this idea can be taken,<br />given the limits and constraints of the shell language,<br />and to try to achive an ideal balance of features,<br />reliability, simplicity and handiness.</p>
+<p>The script should be versatile enough to acommodate most<br />needs, and fit both personal and professional projects.</p>
+<p><a href="https://github.com/andamira/webera/wiki/FAQ">See the FAQ</a>.</p>
 <h2 id="status">Status</h2>
-<p>This project is not stable yet. You are warned.</p>
+<p>This project is not stable yet.</p>
 		</article>
 
 		</main>
