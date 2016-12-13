@@ -147,11 +147,11 @@ the name of the action and the corresponding set flag.)
 </tr>
 
 <tr>
-  <td><code>./webera -nC conf/webera.conf -S php -P 8080</code></td>
+  <td><code>./webera -nF conf/webera.conf -S php -P 8080</code></td>
 
-  <td>Generate a <b>n</b>ew configuration to a custom
-    <b>C</b>onfig file, and save there the new preferences
-    for <b>S</b>erver and <b>P</b>ort.
+  <td>Generate a <b>n</b>ew configuration to the config
+    <b>F</b>file, and write there the new preferences
+    for the <b>S</b>erver and the <b>P</b>ort.
   </td>
 </tr>
 
@@ -176,7 +176,7 @@ reliability, simplicity and handiness.
 The script should be versatile enough to acommodate most
 needs, and fit both personal and professional projects.
 
-[See the FAQ](https://github.com/andamira/webera/wiki/FAQ).
+[See the FAQ page in the wiki](https://github.com/andamira/webera/wiki/FAQ).
 
 
 ## Status

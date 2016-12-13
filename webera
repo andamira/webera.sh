@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.51
+# Version: 0.1.52
 # License: MIT
 #
 # Dependencies:
@@ -30,14 +30,16 @@ main() {
 
 	## CONFIGURABLE SETTINGS
 	#
-	# Note: Variables starting with underscore can't be configured from file
+	# NOTE: Variables starting with an underscore can't be configured
+	# from a file, but they can be configured using script arguments.
 
 	# Paths
 	local DIR_TEMPLATES=tem
 	local DIR_RESOURCES=res
 	local DIR_BUILD=build
 	local DIR_OUTPUT=out
-	local _FILE_CONFIG=.weberarc
+	local _CONFIG_FILE=.weberarc
+	local _CONFIG_STRING=""
 
 	# Web Browser
 	local WEB_BROWSER="firefox"
@@ -48,7 +50,7 @@ main() {
 	local SERVER_STOP=""
 
 	# Log
-	local FILE_LOG=log.txt
+	local LOG_FILE=log.txt
 	local OPTION_LOG_CLEAR=false
 	local -i OPTION_LOG_LEVEL=0 # 0 = no log | 1 | 2 | 3
 
@@ -58,6 +60,8 @@ main() {
 
 
 	## INTERNAL SETTINGS
+	#
+	# NOTE: The following variables can't be externally configured
 
 	local _OPERATIONAL=false
 
@@ -65,12 +69,13 @@ main() {
 	local _DO_PROCESS_RESOURCES=false
 	local _DO_PREVIEW_IN_BROWSER=false
 
-	local _DO_GENERATE_FILE_CONFIG=false # has it been requested to generate? (-n)
-	local _FILE_CONFIG_EXPLICIT=false # has it been explicitly indicated?  (-C)
+	local _DO_GENERATE_CONFIG_FILE=false # has it been requested to generate? (-n)
+	local _CONFIG_FILE_EXPLICIT=false # has it been explicitly indicated?  (-C)
 
 	local -ri _NESTING_MAX=8
 	local -i _NESTING_LEVEL=0
 
+	local _CONFIG_JOINT="" # where to save all the configurations
 	local _PRELOG="" # where log is saved before there's a logfile
 
 
@@ -107,13 +112,16 @@ main() {
 
 	parseArguments "$@"
 
-	[[ "$_FILE_CONFIG" != "/etc/weberarc" ]] && readConfig "/etc/weberarc"
-	[[ "$_FILE_CONFIG" != "$HOME/.weberarc" ]] && readConfig "$HOME/.weberarc"
-	readConfig "$_FILE_CONFIG"
+	[[ "$_CONFIG_FILE" != "/etc/weberarc" ]] && \
+		readConfig file "/etc/weberarc"
+	[[ "$_CONFIG_FILE" != "$HOME/.weberarc" ]] && \
+		readConfig file "$HOME/.weberarc"
+	readConfig file "$_CONFIG_FILE"
+	readConfig string '_CONFIG_STRING'
 
 	configureSettings
 
-	if [[ "$__DO_PRINT_VARS" == true ]]; then __printVars; return $?; fi
+	if [[ "$__DO_PRINT_VARS" == true ]]; then __varsPrint; return "$?"; fi
 
 	setupLog
 
@@ -123,7 +131,6 @@ main() {
 
 	[[ "$_DO_PROCESS_RESOURCES" == true ]] && processResources
 	[[ "$_DO_PROCESS_TEMPLATES" == true ]] && processTemplates
-
 	[[ "$_DO_PREVIEW_IN_BROWSER" == true ]] && previewWebsite
 
 	exit 0
@@ -137,7 +144,7 @@ main() {
 # Arguments:
 #   $1 - (optional) error code
 # Returns:
-#   $1 - received error code
+#   $1 - (exit) the received error code
 #-------------------------------------------------------------------------------
 usage() {
 	cat -- <<-ENDUSAGE
@@ -153,7 +160,8 @@ usage() {
 
 	OPTIONAL          ... (DEFAULT)
 
-	  -C <FILE>       indicate the configuration file ($_FILE_CONFIG)
+	  -F <FILE>       indicate the configuration file ($_CONFIG_FILE)
+	  -C <STRING>     pass the configuration as a string ($_CONFIG_STRING)
 
 	  -T <DIR>        indicate the templates directory ($DIR_TEMPLATES)
 	  -R <DIR>        indicate the resources directory ($DIR_RESOURCES)
@@ -164,7 +172,7 @@ usage() {
 	  -c              switch clearing the log file (clear=$OPTION_LOG_CLEAR)
 
 	  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
-	  -G <FILE>       log file ($FILE_LOG)
+	  -G <FILE>       log file ($LOG_FILE)
 
 	  -W <BIN>        web browser binary ($WEB_BROWSER)
 	  -S <TYPE>       server type [none|php|python|custom] ($SERVER_TYPE)
@@ -190,21 +198,22 @@ usage() {
 parseArguments() {
 	local OPTIND option
 
-	while getopts ':trwnC:T:R:O:B:dcL:G:W:S:H:P:_h:' option; do
+	while getopts ':trwnF:C:T:R:O:B:dcL:G:W:S:H:P:_h:' option; do
 		case "$option" in
 			t) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PROCESS_TEMPLATES]=true ;;
 			r) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true ;;
 			w) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PREVIEW_IN_BROWSER]=true ;;
 
-			n) _OPERATIONAL=true; _DO_GENERATE_FILE_CONFIG=true;
-				_ARG_OPTIONS[_DO_GENERATE_FILE_CONFIG]=true ;;
+			n) _OPERATIONAL=true; _DO_GENERATE_CONFIG_FILE=true;
+				_ARG_OPTIONS[_DO_GENERATE_CONFIG_FILE]=true ;;
 
-			C) _FILE_CONFIG="$OPTARG"
-				_ARG_OPTIONS[_FILE_CONFIG]="$OPTARG"
-				_FILE_CONFIG_EXPLICIT=true;
+			F) _CONFIG_FILE="$OPTARG"
+				_ARG_OPTIONS[_CONFIG_FILE]="$OPTARG"
+				_CONFIG_FILE_EXPLICIT=true;
 				;;
+			C) _CONFIG_STRING="$OPTARG" ;;
 
-			# The following options can also be defined in $_FILE_CONFIG, but
+			# The following options can also be defined in $_CONFIG_FILE, but
 			# passing them as arguments to the script has a higher priority.
 
 			T) _ARG_OPTIONS[DIR_TEMPLATES]="$OPTARG" ;;
@@ -228,7 +237,7 @@ parseArguments() {
 				;;
 
 			L) _ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
-			G) _ARG_OPTIONS[FILE_LOG]="$OPTARG" ;;
+			G) _ARG_OPTIONS[LOG_FILE]="$OPTARG" ;;
 
 			W) _ARG_OPTIONS[WEB_BROWSER]="$OPTARG" ;;
 			S) _ARG_OPTIONS[SERVER_TYPE]="$OPTARG" ;;
@@ -256,8 +265,8 @@ setupLog() {
 	local parsedPrelog
 
 	if [[ "$OPTION_LOG_CLEAR" == true ]]; then
-		log 3 warn "\nWarning: deleting previous log file '$FILE_LOG'"
-		rm "$FILE_LOG" 2>/dev/null;
+		log 3 warn "\nWarning: deleting previous log file '$LOG_FILE'"
+		rm "$LOG_FILE" 2>/dev/null;
 	fi
 
 	# Write the pre-saved log to the file
@@ -328,7 +337,7 @@ log() {
 
 	if [[ "$_PRELOG" == false ]]; then
 		if [[ "$LOG_LEVEL" -le "$OPTION_LOG_LEVEL" ]]; then
-			printf '%s\n' "$logMessage" >> "$FILE_LOG"
+			printf '%s\n' "$logMessage" >> "$LOG_FILE"
 		fi
 	else
 		# Pre-save this log message as a single line
@@ -419,69 +428,73 @@ deleteDirectories() {
 #-------------------------------------------------------------------------------
 #   readConfig()
 #
-#   Reads a config file and appends its contents to the common configuration.
+#   Reads some configuration from a file or a string,
+#   and joins it together to a common source.
 #
 #   Function is called by main().
 #
 # Arguments:
-#   $1 - configFile
+#   $1 - $configType [file|string]
+#   $2 - $configPointer can be either the file name or the variable name
 # Returns:
-#    2 - (exit) configuration file not found, being explicitly asked for
+#    2 - (exit) explicitly indicated configuration file not found
+#   10 - (exit) unknown config type
 #-------------------------------------------------------------------------------
 readConfig() {
-	declare configFile="$1" # string
+	declare configType="$1" configPointer="$2"
 	declare readConfig configLine
 
-	if [[ -f "$configFile" ]]; then # if the config file exists
-
-		log 3 "Reading settings from '$configFile'"
-
-		if [[ "$_DO_GENERATE_FILE_CONFIG" == true ]] \
-			&& [[ "$configFile" == "$_FILE_CONFIG" ]]; then
-			log 2 warn "Warning: automatic override of an existing " \
-				"local config file ('$configFile') is not permitted."
+	if [[ "$configType" == "string" ]]; then
+		if [[ -n "${!configPointer}" ]]; then # string is not empty
+			log 3 "Reading settings passed as an argument."
+			readConfig="$(printf '%s' "${!configPointer}" \
+				| sed -e "$_SED_TRIM_WS" \
+				| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
+				| sed -e "$_SED_JOIN_SPLITLINES" \
+			)"$'\n'
+			_CONFIG_JOINT+="$readConfig"
+			__varsPush strn "" "$readConfig"
 		fi
 
-		# read new config file
-		readConfig="$(sed -e "$_SED_TRIM_WS" "$configFile" \
-			| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
-			| sed -e "$_SED_JOIN_SPLITLINES" \
-		)"$'\n'
-		CONFIG+="$readConfig" # append to previously read configuration
+	elif [[ "$configType" == "file" ]]; then
+		if [[ -f "$configPointer" ]]; then # file exists
 
-		local IFSbkp="$IFS"; IFS=$'\n'
-		for configLine in $(printf '%s' "$readConfig" \
-			| grep '^config' \
-			| cut -d ':' -f2- \
-			| sed "s/$_WS*:$_WS*/=/" \
-			| sed "$_SED_TRIM_WS" \
-			); do
-			if [[ "$configLine" != _* ]]; then # only read public variables
-				printf -v __VARS_WEBERA '%s' \
-				"$__VARS_WEBERA"$'\n'"[file]:$configFile:$configLine"
-			fi
-		done
-		IFS="$IFSbkp"
-
-	else # if the config file doesn't exist
-		# and it's the config file of the project
-		if [[ "$configFile" == "$_FILE_CONFIG" ]]; then
-			[[ "$__DO_PRINT_VARS" == true ]] && return 0 # printing debug info
-
-			if [[ "$_DO_GENERATE_FILE_CONFIG" == true ]]; then
-				generateConfig
+			if [[ "$_DO_GENERATE_CONFIG_FILE" == true ]]; then
+				log 2 warn "Warning: automatic override of an existing " \
+					"local config file ('$configPointer') is not permitted."
 			else
-				if [[ "$_FILE_CONFIG_EXPLICIT" == true ]]; then
-					printf "ERROR: Configuration file '%s' doesn't exist.\n" \
-						"$_FILE_CONFIG"
-					exit 2
+				log 3 "Reading settings from file '$configPointer'."
+				readConfig="$(sed -e "$_SED_TRIM_WS" "$configPointer" \
+					| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
+					| sed -e "$_SED_JOIN_SPLITLINES" \
+				)"$'\n'
+				_CONFIG_JOINT+="$readConfig" # append
+				__varsPush file "$configPointer" "$readConfig"
+			fi
+
+		else # config file doesn't exist
+			# it's the config file of the project
+			if [[ "$configPointer" == "$_CONFIG_FILE" ]]; then
+				 # stop if printing debug info
+				[[ "$__DO_PRINT_VARS" == true ]] && return 0
+
+				if [[ "$_DO_GENERATE_CONFIG_FILE" == true ]]; then
+					generateConfig
 				else
-					log 3 warn \
-						"Warning: project's config file " \
-						"'$_FILE_CONFIG' doesn't exist."
+					if [[ "$_CONFIG_FILE_EXPLICIT" == true ]]; then
+						log error "Error: configuration file" \
+							"'$_CONFIG_FILE' doesn't exist."
+						exit 2
+					else
+						log 3 warn "Warning: project's config file " \
+							"'$_CONFIG_FILE' doesn't exist."
+					fi
 				fi
 			fi
 		fi
+	else
+		log error "Error: unknown config type"
+		exit 10
 	fi
 
 } #readConfig()
@@ -489,7 +502,8 @@ readConfig() {
 #-------------------------------------------------------------------------------
 #   configureSettings
 #
-#   Parses the configuration settings and overrides them with passed arguments.
+#   Parses the configuration settings and overrides them with:
+#   1) the joint configuration 2) the passed arguments.
 #
 #   Function is called by main().
 #
@@ -499,7 +513,7 @@ readConfig() {
 configureSettings() {
 	declare settingsList S O settingName settingValue settingPrevious
 
-	settingsList="$(printf '%s' "$CONFIG" | grep "^$_WS*config$_WS*:" )"
+	settingsList="$(printf '%s' "$_CONFIG_JOINT" | grep "^$_WS*config$_WS*:" )"
 
 	if [[ -n "$settingsList" ]]; then
 		log 1 "\nConfiguring settings...\n$_HEADING"
@@ -552,9 +566,9 @@ generateConfig() {
 			configLines+=("config : $opt : ${_ARG_OPTIONS[$opt]}")
 	done
 
-	touch "$_FILE_CONFIG"
+	touch "$_CONFIG_FILE"
 	for line in "${configLines[@]}"; do
-		printf '%s\n' "$line" >> "$_FILE_CONFIG"
+		printf '%s\n' "$line" >> "$_CONFIG_FILE"
 	done
 
 } #generateConfig()
@@ -569,7 +583,7 @@ generateConfig() {
 readConfigCommands() {
 	declare commandList C commandNum commandName commandAction
 
-	commandList="$(printf '%s' "$CONFIG" | grep "^$_WS*command$_WS*:" )"
+	commandList="$(printf '%s' "$_CONFIG_JOINT" | grep "^$_WS*command$_WS*:" )"
 
 	if [[ -n "$commandList" ]]; then
 		commandNum=$(printf '%s\n' "$commandList" | wc -l )
@@ -613,7 +627,7 @@ processResources() {
 		return 8
 	fi
 
-	resourceOpList="$(printf '%s' "$CONFIG" \
+	resourceOpList="$(printf '%s' "$_CONFIG_JOINT" \
 		| grep "^$_WS*resource$_WS*:" )"
 	resourceOpNum=$(printf '%s\n' "$resourceOpList" \
 		| sed "$_SED_DEL_EMPTYLINES" | wc -l )
@@ -694,7 +708,7 @@ processTemplates() {
 		return 9
 	fi
 
-	templateOpList="$(printf '%s' "$CONFIG" \
+	templateOpList="$(printf '%s' "$_CONFIG_JOINT" \
 		| grep "^$_WS*template$_WS*:" )"
 
 	templateOpNum=$(printf '%s\n' "$templateOpList" \
@@ -981,10 +995,42 @@ __setupDebugging() {
 }
 
 #-------------------------------------------------------------------------------
-#   __printVars
+#   __varsPrint
 #
 #   Prints all the script "global" settings and data, public and private.
 #-------------------------------------------------------------------------------
-__printVars() { printf '%s\n' "$__VARS_WEBERA"; }
+__varsPrint() { printf '%s\n' "$__VARS_WEBERA"; }
+
+#-------------------------------------------------------------------------------
+#   __varsPush
+#
+#   Parses configuration, extracts the config variables and appends them
+#   to __VARS_WEBERA in the correct format, using the provided arguments.
+#
+#   Function called by ().
+#
+# Arguments:
+#  $1 - varOrigin [vdef|args|file|strn]
+#  $2 - varPath (for files)
+#  $3 - configuration
+#-------------------------------------------------------------------------------
+__varsPush() {
+	declare varOrigin="$1" varPath="$2" configuration="$3"
+	declare configLine
+
+	local IFSbkp="$IFS"; IFS=$'\n'
+	for configLine in $(printf '%s' "$configuration" \
+		| grep '^config' \
+		| cut -d ':' -f2- \
+		| sed "s/$_WS*:$_WS*/=/" \
+		| sed "$_SED_TRIM_WS" \
+		); do
+		if [[ "$configLine" != _* ]]; then # only read public variables
+			printf -v __VARS_WEBERA '%s' \
+			"$__VARS_WEBERA"$'\n'"[$varOrigin]:$varPath:$configLine"
+		fi
+	done
+	IFS="$IFSbkp"
+} # __varsPush()
 
 [[ "$0" == "$BASH_SOURCE" ]] && main "$@" # Run if not sourced

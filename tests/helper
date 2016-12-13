@@ -93,7 +93,7 @@ helper_run_all_tests() {
 	testFiles+=('test-arguments')
 	testFiles+=('test-config')
 	#testFiles+=('test-log')
-	#testFiles+=('test-templates')
+	testFiles+=('test-templates')
 	#testFiles+=('test-resources')
 
 	printf '%s\n' "Running tests from ${#testFiles[@]} test files. . ."

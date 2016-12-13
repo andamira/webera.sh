@@ -51,7 +51,7 @@ test_arguments() {
 	assert "echo $newval" "true"
 #
 	newval=$(weberaVarValue "$(webera -_n)" \
-		'args' '_DO_GENERATE_FILE_CONFIG')
+		'args' '_DO_GENERATE_CONFIG_FILE')
 	assert "echo $newval" "true"
 
 	
@@ -59,11 +59,11 @@ test_arguments() {
 	# =====
 
 #
-	default=$(weberaVarValue "$defaults" 'vdef' '_FILE_CONFIG')
+	default=$(weberaVarValue "$defaults" 'vdef' '_CONFIG_FILE')
 	assert "echo $default" ".weberarc"
 #
-	newval=$(weberaVarValue "$(webera -_C test_weberarc)" \
-		'args' '_FILE_CONFIG')
+	newval=$(weberaVarValue "$(webera -_F test_weberarc)" \
+		'args' '_CONFIG_FILE')
 	assert "echo $newval" "test_weberarc"
 
 
@@ -137,11 +137,11 @@ test_arguments() {
 	assert "echo $newval" "3"
 
 #
-	default=$(weberaVarValue "$defaults" 'vdef' 'FILE_LOG')
+	default=$(weberaVarValue "$defaults" 'vdef' 'LOG_FILE')
 	assert "echo $default" "log.txt"
 #
 	newval=$(weberaVarValue "$(webera -_G test_logfile)" \
-		'args' 'FILE_LOG')
+		'args' 'LOG_FILE')
 	assert "echo $newval" "test_logfile"
 
 
