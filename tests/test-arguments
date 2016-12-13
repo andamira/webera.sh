@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cd "${BASH_SOURCE%/*}" || exit 1
+cd -- "${BASH_SOURCE%/*}" || exit 1
 # shellcheck disable=SC1091
 source ./helper
 
@@ -30,8 +30,8 @@ test_arguments() {
 	local -r defaults="$(webera -_)"
 #
 	# Check expected format, and the minimum number of arguments
-	newval=$( echo "$defaults" | grep -c '^\[[a-z]\+\]:.\+=')
-	assert_raises "[[ $newval -ge 36 ]]"
+	newval=$(echo "$defaults" | grep -c '^\[[a-z]\+\]:.\+=')
+	assert_raises "[[ $newval -ge 35 ]]"
 
 
 	test_h2 "Main Flags"
@@ -149,8 +149,8 @@ test_arguments() {
 	# =====
 
 #
-	default=$(weberaVarValue "$defaults" 'vdef' 'WEB_BROWSER')
-	assert "echo $default" "firefox"
+	# default=$(weberaVarValue "$defaults" 'vdef' 'WEB_BROWSER')
+	# assert "echo $default" "firefox"
 #
 	newval=$(weberaVarValue "$(webera -_W test_browser)" \
 		'args' 'WEB_BROWSER')

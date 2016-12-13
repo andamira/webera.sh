@@ -14,7 +14,7 @@ helper_init_common() {
 
 	__check_compatibility
 
-	DIR_TESTS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+	DIR_TESTS="$( cd -- "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 	DIR_WEBERA="$DIR_TESTS/.."
 
 	TEMPLATE_TEMP_NAME='webera-test-XXXXXXXXX'
@@ -29,17 +29,17 @@ helper_init_common() {
 	if [[ -z "$TOTAL_TEST_NUM" ]]; then
 		export TOTAL_TEST_NUM
 		TOTAL_TEST_NUM="$(mktemp "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
-		echo "0" > "$TOTAL_TEST_NUM"
+		printf '0' > "$TOTAL_TEST_NUM"
 	fi
 	if [[ -z "$TOTAL_TEST_TIME" ]]; then
 		export TOTAL_TEST_TIME
 		TOTAL_TEST_TIME="$(mktemp "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
-		echo "0" > "$TOTAL_TEST_TIME"
+		printf '0' > "$TOTAL_TEST_TIME"
 	fi
 	if [[ -z "$TOTAL_TEST_ERROR_NUM" ]]; then
 		export TOTAL_TEST_ERROR_NUM
 		TOTAL_TEST_ERROR_NUM="$(mktemp "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
-		echo "0" > "$TOTAL_TEST_ERROR_NUM"
+		printf '0' > "$TOTAL_TEST_ERROR_NUM"
 	fi
 
 	# Imports
@@ -53,7 +53,7 @@ helper_init_common() {
 } # helper_init_common()
 
 helper_usage() {
-	cat <<- ENDUSAGE
+	cat -- <<- ENDUSAGE
 
 	Runs all the examples.
 	Also, it must be imported by each example.
@@ -167,7 +167,7 @@ test_teardown() {
 
 	if [[ -d "$DIR_WORKDIR" ]]; then
 		test_clean
-	   	rmdir "$DIR_WORKDIR"
+	   	rmdir -- "$DIR_WORKDIR"
 	fi
 
 } # test_teardown()
@@ -176,7 +176,7 @@ test_teardown() {
 test_clean() {
 	if [[ -d "$DIR_WORKDIR" ]]; then
 		pushd "$DIR_WORKDIR" >/dev/null 2>&1
-		rm -rf .[^.] .??* ./*
+		rm -rf -- .[^.] .??* ./*
 		popd >/dev/null 2>&1
 	else
 		printf '%s\n' \
@@ -215,11 +215,11 @@ test_summary() {
 	printf '\n  %s' "$(test_separator)"
 
 	# No tests failed
-	if [[ "$(echo "$testReport" | cut -d' ' -f1)" == "all" ]]; then
+	if [[ "$(printf '%s' "$testReport" | cut -d' ' -f1)" == "all" ]]; then
 		printf '\n  %s\n' "$testReport"
 
 		# get the number of passed tests
-		testNum="$(echo "$testReport" \
+		testNum="$(printf '%s' "$testReport" \
 			| grep -o '^all [0-9]\+' | cut -d' ' -f2 )"
 
 	# Some tests failed
@@ -234,34 +234,34 @@ test_summary() {
 
 		# Update the number of failed tests
 		if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
-			testErrNum="$(echo "$errorReport" | cut -d' ' -f1 )"
-			previousTotalErrNum="$(cat "$TOTAL_TEST_ERROR_NUM")"
+			testErrNum="$(printf '%s' "$errorReport" | cut -d' ' -f1 )"
+			previousTotalErrNum="$(cat -- "$TOTAL_TEST_ERROR_NUM")"
 			newTotalErrNum="$(awk \
 				"BEGIN {print $testErrNum+$previousTotalErrNum; exit}")"
 
-			echo "$newTotalErrNum" > "$TOTAL_TEST_ERROR_NUM"
+			printf '%s' "$newTotalErrNum" > "$TOTAL_TEST_ERROR_NUM"
 			TESTS_FAILED="$newTotalErrNum"
 		fi
 
 		# get the number of passed tests
-		testNum="$(echo "$errorReport" | cut -d' ' -f3 )"
+		testNum="$(printf '%s' "$errorReport" | cut -d' ' -f3 )"
 	fi
 
 	# Update the number of passed tests
 	if [[ -f "$TOTAL_TEST_NUM" ]]; then
-		previousTotalNum="$(cat "$TOTAL_TEST_NUM")"
+		previousTotalNum="$(cat -- "$TOTAL_TEST_NUM")"
 		newTotalNum="$(awk \
 			"BEGIN {print $testNum+$previousTotalNum; exit}")"
 
-		echo "$newTotalNum" > "$TOTAL_TEST_NUM"
+		printf '%s' "$newTotalNum" > "$TOTAL_TEST_NUM"
 	fi
 
 	# Total time spent
 	if [[ -z "$INVARIANT"  && -f "$TOTAL_TEST_TIME" ]]; then
-		testTime="$(echo "$testReport" | grep -o '[0-9]\+.[0-9]\+s.' | cut -d's' -f1 )"
-		previousTotalTime="$(cat "$TOTAL_TEST_TIME")"
+		testTime="$(printf '%s' "$testReport" | grep -o '[0-9]\+.[0-9]\+s.' | cut -d's' -f1 )"
+		previousTotalTime="$(cat -- "$TOTAL_TEST_TIME")"
 		newTotalTime="$(awk "BEGIN {print $testTime+$previousTotalTime; exit}")"
-		echo "$newTotalTime" > "$TOTAL_TEST_TIME"
+		printf '%s' "$newTotalTime" > "$TOTAL_TEST_TIME"
 	fi
 
 	[[ "$TESTS_FAILED" -eq 0 ]]
@@ -272,8 +272,8 @@ test_final_summary() {
 	local -i testTotal
 	local -i testFailed
 
-	testTotal="$(cat "$TOTAL_TEST_NUM")"
-	testFailed="$(cat "$TOTAL_TEST_ERROR_NUM")"
+	testTotal="$(cat -- "$TOTAL_TEST_NUM")"
+	testFailed="$(cat -- "$TOTAL_TEST_ERROR_NUM")"
 	local -i testPassed="$((testTotal-testFailed))"
 
 	printf '\n\n%s\n%s\n' "SUMMARY:" "$(test_separator)"
@@ -284,7 +284,7 @@ test_final_summary() {
 
 	if [[ -z "$INVARIANT" ]]; then
 		LC_NUMERIC=C LC_COLLATE=C
-		printf '%s %16.2fs\n' "Time spent:" "$(cat "$TOTAL_TEST_TIME")"
+		printf '%s %16.2fs\n' "Time spent:" "$(cat -- "$TOTAL_TEST_TIME")"
 	fi
 
 	printf '%s\n' "$(test_separator)"
@@ -294,12 +294,12 @@ test_final_summary() {
 } # test_final_summary()
 
 test_final_cleanup() {
-	[[ -f "$TOTAL_TEST_NUM" ]] && rm -f "$TOTAL_TEST_NUM"
-	[[ -f "$TOTAL_TEST_TIME" ]] && rm -f "$TOTAL_TEST_TIME"
+	[[ -f "$TOTAL_TEST_NUM" ]] && rm -f -- "$TOTAL_TEST_NUM"
+	[[ -f "$TOTAL_TEST_TIME" ]] && rm -f -- "$TOTAL_TEST_TIME"
 
 	if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
-		TESTS_FAILED="$(cat "$TOTAL_TEST_ERROR_NUM")"
-		rm -f "$TOTAL_TEST_ERROR_NUM"
+		TESTS_FAILED="$(cat -- "$TOTAL_TEST_ERROR_NUM")"
+		rm -f -- "$TOTAL_TEST_ERROR_NUM"
 	fi
 
 	test_teardown
@@ -351,7 +351,7 @@ weberaVarValue() {
 __check_compatibility() {
 
 	# mktemp
-	if [[ "$(mktemp -qu --tmpdir TXXX >/dev/null 2>&1; echo $?)" -eq 0 ]]; then
+	if [[ "$(mktemp -qu --tmpdir TXXX >/dev/null 2>&1; printf '%s' "$?")" -eq 0 ]]; then
 		MKTEMP_ARGS="--tmpdir" # new syntax
 	else
 		MKTEMP_ARGS="-t" # obsolete syntax
