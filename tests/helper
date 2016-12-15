@@ -124,13 +124,13 @@ test_h1() {
 
 test_h2() {
 	if [[ "$DEBUG" -gt 0 ]]; then
-		printf '\n  test: %s ' "$@"
+		printf '\n  + %s:' "$@"
 	fi
 }
 
 test_h3() {
 	if [[ "$DEBUG" -gt 0 ]]; then
-		printf '\n    test: %s ' "$@"
+		printf '\n    - %s:' "$@"
 	fi
 }
 

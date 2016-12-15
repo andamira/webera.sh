@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.53
+# Version: 0.1.54
 # License: MIT
 #
 # Dependencies:
@@ -13,16 +13,19 @@
 ##
 
 #-------------------------------------------------------------------------------
-#   main()
+#   main
 #
 # Arguments:
 #   $@ - all the arguments passed to the script
-#-------------------------------------------------------------------------------
+#
 main() {
-	__setupDebugging
-	__checkCompatibility
 
 	## INTERNAL DATA (A)
+
+	__checkCompatibility
+	local -ir __WEBERA_TIME_STAMP="$(date '+%s%3N')" # [INC02]
+	__setupDebugging
+
 	declare __VARS_WEBERA __VARS_BEFORE __VARS_AFTER
 	__VARS_WEBERA="" # = will contain a list of all the settings (-_)
 	__VARS_BEFORE=$(set -o posix ; set | awk -F= '{print $1"="}' )
@@ -73,20 +76,19 @@ main() {
 	local _DO_PREVIEW_IN_BROWSER=false
 
 	local _DO_GENERATE_CONFIG_FILE=false # has it been requested to generate? (-n)
-	local _CONFIG_FILE_EXPLICIT=false # has it been explicitly indicated?  (-C)
 
 	local -i _NESTING_LEVEL=0
 
 	local _CONFIG_JOINT="" # where to save all the configurations
 	local _PRELOG="" # where log is saved before there's a logfile
 
+	declare -A _ARG_OPTIONS
+	declare -A _DEFINED_CMD_MAP
 
 	## INTERNAL DATA (B)
 
-	local -r _DATE="$(date '+%Y-%m-%d %H:%M:%S')"
-
-	declare -A _ARG_OPTIONS
-	declare -A _DEFINED_CMD_MAP
+	local -r _DATE="$(date '+%Y-%m-%d %H:%M:%S' \
+		-d @"${__WEBERA_TIME_STAMP:0:10}")" # [INC03]
 
 	# log indentation and formatting
 	declare -r _IN="  " _IN2="    " _IN3="      "
@@ -133,13 +135,17 @@ main() {
 
 	[[ "$_DO_PROCESS_RESOURCES" == true ]] && processResources
 	[[ "$_DO_PROCESS_TEMPLATES" == true ]] && processTemplates
-	[[ "$_DO_PREVIEW_IN_BROWSER" == true ]] && previewWebsite
 
+	log "Elapsed time: $(printf '%16s' "$(__timeElapsed true)")"
+
+	[[ "$_DO_PREVIEW_IN_BROWSER" == true ]] && previewWebsite
 	exit 0
+
 } #main()
 
+
 #-------------------------------------------------------------------------------
-#   usage()
+#   usage
 #
 #   Displays Usage information.
 #
@@ -147,7 +153,10 @@ main() {
 #   $1 - (optional) error code
 # Returns:
 #   $1 - (exit) the received error code
-#-------------------------------------------------------------------------------
+# Called by:
+#   parseArguments()
+#   configureSettings()
+#
 usage() {
 	cat -- <<-ENDUSAGE
 	Usage: ./webera -[trwn] [optional flags]
@@ -185,18 +194,20 @@ usage() {
 
 } #usage()
 
+
 #-------------------------------------------------------------------------------
-#   parseArguments()
+#   parseArguments
 #
 #   Parses the arguments received by the script and sets the pertinent options.
-#
-#   Function is called by main().
 #
 # Arguments:
 #   $@ - all the arguments passed to the script
 # Returns:
 #    1 - (exit via usage) when the argument is unknown
-#-------------------------------------------------------------------------------
+#
+# Called by:
+#   main()
+#
 parseArguments() {
 	local OPTIND option
 
@@ -206,8 +217,8 @@ parseArguments() {
 			r) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true ;;
 			w) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PREVIEW_IN_BROWSER]=true ;;
 
-			n) _OPERATIONAL=true; _DO_GENERATE_CONFIG_FILE=true;
-				_ARG_OPTIONS[_DO_GENERATE_CONFIG_FILE]=true ;;
+			n) _ARG_OPTIONS[_DO_GENERATE_CONFIG_FILE]=true
+				_OPERATIONAL=true; _DO_GENERATE_CONFIG_FILE=true; ;;
 
 			F) _CONFIG_FILE="$OPTARG"
 				_ARG_OPTIONS[_CONFIG_FILE]="$OPTARG"
@@ -256,19 +267,21 @@ parseArguments() {
 
 } #parseArguments()
 
+
 #-------------------------------------------------------------------------------
-#   setupLog()
+#   setupLog
 #
 #   Prepares the log file and writes all the logs previously saved in _PRELOG.
 #
-#   Function is called by main().
-#-------------------------------------------------------------------------------
+# Called by:
+#   main()
+#
 setupLog() {
 	local parsedPrelog
 
 	if [[ "$OPTION_LOG_CLEAR" == true ]]; then
 		log 3 warn "\nWarning: deleting previous log file '$LOG_FILE'"
-		rm "$LOG_FILE" 2>/dev/null;
+		rm -- "$LOG_FILE" 2>/dev/null;
 	fi
 
 	# Write the pre-saved log to the file
@@ -283,16 +296,17 @@ setupLog() {
 		| awk -v logLevel=$OPTION_LOG_LEVEL -F '|' '$1<=logLevel' \
 		| cut -d'|' -f3- \
 		| tr '\a' '\n' \
-		| sed "s/====@$/====$OPTION_LOG_LEVEL/" )
-
+		| sed "s/====@$/====$OPTION_LOG_LEVEL/" \
+	)
 	_PRELOG=false
 
 	[[ -n "$parsedPrelog" ]] && log "$parsedPrelog"
 
 } #setupLog()
 
+
 #-------------------------------------------------------------------------------
-#   log()
+#   log
 #
 #   prints a message to the log file. Errors and warnings also to STDERR.
 #
@@ -300,12 +314,13 @@ setupLog() {
 #   $1  - (optional) logLevelNeeded
 #   $2  - (optional) logType [warn|error]
 #   $3+ - log message
-#-------------------------------------------------------------------------------
+#
 # shellcheck disable=SC2059
 log() {
 	local logLevelNeeded="$1" # First (optional) parameter...
-
 	declare -ir logLevelMin=1 logLevelMax=3
+
+	declare logMessage msg1line
 
 	# must be an integer number
 	if [[ "$logLevelNeeded" =~ ^[0-9]+$ ]]; then
@@ -334,7 +349,7 @@ log() {
 	esac
 
 	local IFSbkp="$IFS"; IFS=$''
-	local logMessage="$*" # The rest of parameters must be the log message
+	logMessage="$*" # The rest of parameters must be the log message
 	IFS="$IFSbkp"
 
 	if [[ "$_PRELOG" == false ]]; then
@@ -357,27 +372,29 @@ log() {
 
 } # log()
 
+
 #-------------------------------------------------------------------------------
-#   previewWebsite()
+#   previewWebsite
 #
 #   Prepares the server commands, for previewing in the browser.
 #
-#   Function is called by main() when the script received the `-r` flag.
-#
 # Returns:
 #   5 - (exit) Server type not recognized
-#-------------------------------------------------------------------------------
+# Called by:
+#   main() - when the script received the `-r` flag
+#
 previewWebsite() {
 	local cmdBrowser
 
+	# shellcheck disable=SC2016
 	case "$SERVER_TYPE" in
 		python)
-			SERVER_START="pushd \"$DIR_OUTPUT\"; python -m SimpleHTTPServer $SERVER_PORT"
-			SERVER_STOP="kill \$(pgrep -f \"python -m SimpleHTTPServer\")"
+			SERVER_START='pushd "$DIR_OUTPUT"; python -m SimpleHTTPServer $SERVER_PORT'
+			SERVER_STOP='kill $(pgrep -f "python -m SimpleHTTPServer")'
 			;;
 		php)
-			SERVER_START="php -S localhost:$SERVER_PORT -t \"$DIR_OUTPUT\""
-			SERVER_STOP="kill \$(pgrep -f \"php -S localhost\")"
+			SERVER_START='php -S "$SERVER_HOST:$SERVER_PORT" -t "$DIR_OUTPUT"'
+			SERVER_STOP='kill $(pgrep -f "php -S $SERVER_HOST")'
 			;;
 		none) # useful when not using `dir/index.html` structure
 			SERVER_START=""
@@ -409,39 +426,41 @@ previewWebsite() {
 
 } #previewWebsite()
 
+
 #-------------------------------------------------------------------------------
 #   deleteDirectories
 #
 #   Deletes the build/ and output directories if there's going to be operations.
 #
-#   Function is called by main().
-#-------------------------------------------------------------------------------
+# Called by:
+#   main()
+#
 deleteDirectories() {
-	[[ "$OPTION_DELETE_DIR_BUILD" == true ]] && rm -rf "$DIR_BUILD" 2>/dev/null
+	[[ "$OPTION_DELETE_DIR_BUILD" == true ]] && rm -rf -- "$DIR_BUILD" 2>/dev/null
 
 	if [[ "$OPTION_DELETE_DIR_OUTPUT" == true ]] && \
 		[[ $_DO_PROCESS_RESOURCES == true \
 		|| $_DO_PROCESS_TEMPLATES == true ]]; then
-		rm -rf "$DIR_OUTPUT" 2>/dev/null
+		rm -rf -- "$DIR_OUTPUT" 2>/dev/null
 	fi
 
 } #deleteDirectories()
 
+
 #-------------------------------------------------------------------------------
-#   readConfig()
+#   readConfig
 #
 #   Reads some configuration from a file or a string,
 #   and joins it together to a common source.
-#
-#   Function is called by main().
 #
 # Arguments:
 #   $1 - $configType [file|string]
 #   $2 - $configPointer can be either the file name or the variable name
 # Returns:
-#    2 - (exit) explicitly indicated configuration file not found
 #   10 - (exit) unknown config type
-#-------------------------------------------------------------------------------
+# Called by:
+#   main()
+#
 readConfig() {
 	declare configType="$1" configPointer="$2"
 	declare readConfig configLine
@@ -465,7 +484,7 @@ readConfig() {
 				log 2 warn "Warning: automatic override of an existing " \
 					"local config file ('$configPointer') is not permitted."
 			else
-				log 3 "Reading settings from file '$configPointer'."
+				log 3 "Reading settings from file '$configPointer'"
 				readConfig="$(sed -e "$_SED_TRIM_WS" "$configPointer" \
 					| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
 					| sed -e "$_SED_JOIN_SPLITLINES" \
@@ -483,14 +502,8 @@ readConfig() {
 				if [[ "$_DO_GENERATE_CONFIG_FILE" == true ]]; then
 					generateConfig
 				else
-					if [[ "$_CONFIG_FILE_EXPLICIT" == true ]]; then
-						log error "Error: configuration file" \
-							"'$_CONFIG_FILE' doesn't exist."
-						exit 2
-					else
-						log 3 warn "Warning: project's config file " \
-							"'$_CONFIG_FILE' doesn't exist."
-					fi
+					log 3 warn "Warning: project's config file " \
+						"'$_CONFIG_FILE' doesn't exist."
 				fi
 			fi
 		fi
@@ -501,19 +514,20 @@ readConfig() {
 
 } #readConfig()
 
+
 #-------------------------------------------------------------------------------
 #   configureSettings
 #
 #   Parses the configuration settings and overrides them with:
 #   1) the joint configuration 2) the passed arguments.
 #
-#   Function is called by main().
-#
 # Returns:
 #    1 - (exit via usage) no main operatives flags used
-#-------------------------------------------------------------------------------
+# Called by:
+#   main()
+#
 configureSettings() {
-	declare settingsList S O settingName settingValue settingPrevious
+	declare settingsList setting arg settingName settingValue settingPrevious
 
 	settingsList="$(printf '%s' "$_CONFIG_JOINT" | grep "^$_WS*config$_WS*:" )"
 
@@ -521,10 +535,10 @@ configureSettings() {
 		log 1 "\nConfiguring settings...\n$_HEADING"
 
 		local IFSbkp="$IFS"; IFS=$'\n'
-		for S in $settingsList; do
-			settingName=$(printf '%s' "$S" | cut -d':' -f2 \
+		for setting in $settingsList; do
+			settingName=$(printf '%s' "$setting" | cut -d':' -f2 \
 				| sed -e "$_SED_TRIM_WS")
-			settingValue=$(printf '%s' "$S" | cut -d':' -f3- \
+			settingValue=$(printf '%s' "$setting" | cut -d':' -f3- \
 				| sed -e "$_SED_TRIM_WS")
 
 			[[ -n "${!settingName}" ]] &&
@@ -532,17 +546,17 @@ configureSettings() {
 			log 1 "${_IN}setting: $settingName=$settingValue " \
 				"$settingPrevious"
 
-			[[ "$S" != _* ]] && # read (only public) settings from file
+			[[ "$setting" != _* ]] && # read (only public) settings from file
 				printf -v "$settingName" '%s' "$settingValue"
 		done
 		IFS="$IFSbkp"
 	fi
 
 	# Override the settings with the parsed arguments
-	for O in "${!_ARG_OPTIONS[@]}"; do
-		printf -v "$O" '%s' "${_ARG_OPTIONS[$O]}"
+	for arg in "${!_ARG_OPTIONS[@]}"; do
+		printf -v "$arg" '%s' "${_ARG_OPTIONS[$arg]}"
 		printf -v __VARS_WEBERA '%s' \
-			"$__VARS_WEBERA"$'\n'"[args]::$O=${_ARG_OPTIONS[$O]}"
+			"$__VARS_WEBERA"$'\n'"[args]::$arg=${_ARG_OPTIONS[$arg]}"
 	done
 
 	if [[ "$_OPERATIONAL" == false ]]; then
@@ -552,13 +566,15 @@ configureSettings() {
 
 } #configureSettings()
 
+
 #-------------------------------------------------------------------------------
 #   generateConfig
 #
 #   Generates a config file, writing down the settings modified via arguments.
 #
-#   Function is called by main() when the script received the `-n` flag.
-#-------------------------------------------------------------------------------
+# Called by:
+#   main() - when the script received the `-n` flag
+#
 generateConfig() {
 	local configLines=()
 	declare opt line
@@ -575,13 +591,15 @@ generateConfig() {
 
 } #generateConfig()
 
+
 #-------------------------------------------------------------------------------
 #   readConfigCommands
 #
 #   Reads the configuration commands for processing templates and resources.
 #
-#   Function is called by main().
-#-------------------------------------------------------------------------------
+# Called by:
+#   main()
+#
 readConfigCommands() {
 	declare commandList C commandNum commandName commandAction
 
@@ -608,16 +626,17 @@ readConfigCommands() {
 
 } #readConfigCommands()
 
+
 #-------------------------------------------------------------------------------
 #   processResources
 #
 #   Parses the configuration and executes the resource operations.
 #
-#   Function is called by main() when the script received the `-r` flag.
-#
 # Returns:
-#  8 - no resources directory found
-#-------------------------------------------------------------------------------
+#   8 - no resources directory found
+# Called by:
+#   main() - when the script received the `-r` flag
+#
 processResources() {
 	declare resourceOpList resourceOpNum resourceOp
 	declare operation fileOrigin fileTarget command
@@ -689,16 +708,17 @@ processResources() {
 
 } #processResources()
 
+
 #-------------------------------------------------------------------------------
 #   processTemplates
 #
 #   Parses the configuration and executes the template operations.
 #
-#   Function is called by main() when the script received the `-t` flag.
-#
 # Returns:
 #  9 - no templates directory found
-#-------------------------------------------------------------------------------
+# Called by:
+#   main() - when the script received the `-t` flag
+#
 processTemplates() {
 	declare templateOpList templateOpNum templateOp
 	declare operation fileOrigin fileTarget command
@@ -778,23 +798,24 @@ processTemplates() {
 
 } #processTemplates()
 
+
 #-------------------------------------------------------------------------------
 #   templateParseIncludes
 #
 #   Recursively parses a template for include directives, and then
 #   joins all the parts together in a single template.
 #
-#   Function is called by templateRender().
-#
 # Arguments:
 #  $1 - templateFileName
 # Returns:
 #   3 - (exit) Maximum nesting level overflow
 #   7 - No template found
-#-------------------------------------------------------------------------------
+# Called by:
+#   templateRender()
+#
 templateParseIncludes() {
 	declare templateFileName=$1
-	declare templateContent D directives_include incFileName incFileContent
+	declare templateContent directive directives_include incFileName incFileContent
 
 	((_NESTING_LEVEL++))
 	if [[ "$_NESTING_LEVEL" -gt "$NESTING_MAX" ]]; then
@@ -812,7 +833,7 @@ templateParseIncludes() {
 		return 7
 	fi
 	directives_include=$(grep -Po "<!--$_WS*%include$_WS*:.*?-->" \
-		"$templateFile")
+		"$templateFile") # [INC01]
 
 	local IFSbkp="$IFS"; IFS=$'\n'
 
@@ -821,8 +842,8 @@ templateParseIncludes() {
 		directives_include=$(printf '%s' "$directives_include" | uniq)
 	fi
 
-	for D in $directives_include; do
-		incFileName=$(printf '%s' "$D" \
+	for directive in $directives_include; do
+		incFileName=$(printf '%s' "$directive" \
 			| sed -n -e "s/<\!--$_WS*%include$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" \
 			| sed -e "s/$_WS*$//" )
 		log 2 "${_IN2}include: '$incFileName'"
@@ -831,7 +852,7 @@ templateParseIncludes() {
 		incFileContent="$(templateParseIncludes "${incFileName}")"
 
 		# Mass-replace directive with template contents
-		templateContent="${templateContent//$D/$incFileContent}"
+		templateContent="${templateContent//$directive/$incFileContent}"
 	done
 	IFS="$IFSbkp"
 
@@ -841,21 +862,22 @@ templateParseIncludes() {
 
 } #templateParseIncludes()
 
+
 #-------------------------------------------------------------------------------
 #   templateRender
 #
 #   Parses the template, processes the directives and renders the html file.
 #
-#   Function is called by processTemplates() when parsing the 'route' command.
-#
 # Arguments:
 #   $1 - templateFileName
-#-------------------------------------------------------------------------------
+# Called by:
+#   processTemplates() - when parsing the 'route' command
+#
 templateRender() {
 	declare templateFileName=$1
 
-	declare templateText D directives_set directives_cmd directives_setcmd
-	declare directive setVar setValue cmd cmdOutput
+	declare templateText directives_set directives_cmd directives_setcmd
+	declare directive setVarVal setVar setValue cmd cmdOutput
 	declare setCmdVar setCmdValue setCmd setCmdOutput
 	declare -i cmdOutputLength maxOutputLength=50 # in characters
 
@@ -863,11 +885,11 @@ templateRender() {
 
 	# Template tags must be one-liners
 	directives_set=$(printf '%s' "$templateText" \
-		| grep -Po "<!--$_WS*%set$_WS*:.*?-->")
+		| grep -Po "<!--$_WS*%set$_WS*:.*?-->") # [INC01]
 	directives_cmd=$(printf '%s' "$templateText" \
-		| grep -Po "<!--$_WS*%cmd$_WS*:.*?-->")
+		| grep -Po "<!--$_WS*%cmd$_WS*:.*?-->") # [INC01]
 	directives_setcmd=$(printf '%s' "$templateText" \
-		| grep -Po "<!--$_WS*%setcmd$_WS*:.*?-->")
+		| grep -Po "<!--$_WS*%setcmd$_WS*:.*?-->") # [INC01]
 
 	# text comments
 	#
@@ -883,18 +905,18 @@ templateRender() {
 	# <!-- %set : VARIABLE=something -->
 	# <!-- @VARIABLE -->
 	#
-	for D in $directives_set; do
-		directive=$(printf '%s' "$D" \
+	for directive in $directives_set; do
+		setVarVal=$(printf '%s' "$directive" \
 			| sed -n -e "s/<\!--$_WS*%set$_WS*:$_WS*\(.*\)$_WS*-->/\1/p"\
 			| sed -e "s/$_WS*$//")
-		setVar="${directive%%=*}"
-		setValue="${directive#*=}"
+		setVar="${setVarVal%%=*}"
+		setValue="${setVarVal#*=}"
 		log 3 "${_IN3}set: $setVar = $setValue"
 
 		# Cross-platform syntax to replace including newlines
 		# http://stackoverflow.com/a/1252191
 		templateText=$(printf '%s' "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$D\n\?//g")
+			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$directive\n\?//g")
 		templateText=$(printf '%s' "$templateText" \
 			| sed -e ":a" -e "N" -e "\$!ba" \
 			-e "s/<!--$_WS*@$setVar$_WS*-->\n\?/$setValue/g")
@@ -904,8 +926,8 @@ templateRender() {
 	#
 	# <!-- %cmd : ls -l -->
 	#
-	for D in $directives_cmd ; do
-		cmd=$(printf '%s' "$D" \
+	for directive in $directives_cmd ; do
+		cmd=$(printf '%s' "$directive" \
 			| sed -n -e "s/^.*<\!--$_WS*%cmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" \
 			| sed -e "s/$_WS*$//")
 		cmdOutput=$(eval "$cmd")
@@ -928,7 +950,7 @@ templateRender() {
 			}
 			n = index($0, a) {
 				$0 = substr($0, 1, n-1) repl substr($0, n+length(a))
-			} 1' <(printf '%s\n' "$D") <(printf '%s' "$templateText")
+			} 1' <(printf '%s\n' "$directive") <(printf '%s' "$templateText")
 		)
 	done
 
@@ -937,8 +959,8 @@ templateRender() {
 	# <!-- %setcmd : VARIABLE=ls -l -->
 	# <!-- @VARIABLE -->
 	#
-	for D in $directives_setcmd; do
-		setCmd=$(printf '%s' "$D" \
+	for directive in $directives_setcmd; do
+		setCmd=$(printf '%s' "$directive" \
 			| sed -n -e "s/^.*<\!--$_WS*%setcmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" \
 			| sed -e "s/$_WS*$//")
 		setCmdVar="${setCmd%%=*}"
@@ -952,7 +974,7 @@ templateRender() {
 			}
 			n = index($0, a) {
 				$0 = substr($0, 1, n-1) substr($0, n+length(a))
-			} 1' <(printf '%s\n' "$D") <(printf '%s' "$templateText")
+			} 1' <(printf '%s\n' "$directive") <(printf '%s' "$templateText")
 		)
 		# Replace all the set variables with the command output
 		templateText=$(printf '%s' "$templateText" \
@@ -968,6 +990,7 @@ templateRender() {
 
 } #templateRender()
 
+
 #-------------------------------------------------------------------------------
 #   __checkCompatibility
 #
@@ -975,7 +998,9 @@ templateRender() {
 #
 # Returns:
 #   6 - (exit) Bash version is too old
-#-------------------------------------------------------------------------------
+# Called by:
+#   main()
+#
 __checkCompatibility() {
 	local bashBigVersion
 
@@ -986,22 +1011,33 @@ __checkCompatibility() {
 	fi
 }
 
+
 #-------------------------------------------------------------------------------
 #   __setupDebugging
 #
 #   Enables xtrace if WEBERA_DEBUG has been defined, and sets a nice formatting.
-#-------------------------------------------------------------------------------
+#
+# Called by:
+#   main()
+#
+# shellcheck disable=SC2016
 __setupDebugging() {
+	local ps4_date='[$(($(date "+%s%3N")-__WEBERA_TIME_STAMP))ms]' # [INC02]
+	local ps4_line='L$LINENO'
+	local ps4_func='${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
 	[[ -n "$WEBERA_DEBUG" ]] && set -o xtrace && \
-	export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+		export PS4="+ $ps4_date $ps4_line $ps4_func"
 }
+
 
 #-------------------------------------------------------------------------------
 #   __varsPrint
 #
 #   Prints all the script "global" settings and data, public and private.
-#-------------------------------------------------------------------------------
+#
 __varsPrint() { printf '%s\n' "$__VARS_WEBERA"; }
+
 
 #-------------------------------------------------------------------------------
 #   __varsPush
@@ -1015,7 +1051,9 @@ __varsPrint() { printf '%s\n' "$__VARS_WEBERA"; }
 #  $1 - varOrigin [vdef|args|file|strn]
 #  $2 - varPath (for files)
 #  $3 - configuration
-#-------------------------------------------------------------------------------
+# Called by:
+#   readConfig()
+#
 __varsPush() {
 	declare varOrigin="$1" varPath="$2" configuration="$3"
 	declare configLine
@@ -1034,5 +1072,50 @@ __varsPush() {
 	done
 	IFS="$IFSbkp"
 } # __varsPush()
+
+
+#-------------------------------------------------------------------------------
+#   __timeReport
+#
+#   Prints the spent time on the script, in milliseconds.
+#
+# Arguments:
+#  $1 - if true, prints the time beautified
+#
+__timeElapsed() {
+	local beautiful="$1"
+	local -i timeStampFinal="$(date '+%s%3N')" || true
+	local -i timeElapsed="$((timeStampFinal-__WEBERA_TIME_STAMP))"
+	if [[ "$beautiful" == true ]]; then
+		printf "$(__timeBeautify "$timeElapsed")"
+	else
+		printf "$timeElapsed"
+	fi
+}
+
+
+#-------------------------------------------------------------------------------
+#   __timeBeautify
+#
+#   Formats a ms time into a string showing days, hours, minutes and or seconds
+#
+# Arguments:
+#  $1 - time in milliseconds
+#
+__timeBeautify() {
+	local -i ms="$1"
+	declare timeStr timeOn
+
+	local -i s="$((ms/1000%60))"
+	local -i m="$((ms/60000%60))"
+	local -i h="$((ms/3600000%24))"
+	local -i d="$((ms/86400000))"
+	[[ "$d" -gt 0 ]] && timeStr+="${d}d " && timeOn=true
+	[[ "$h" -gt 0 || -n "$timeOn" ]] && timeStr+="${h}h " && timeOn=true
+	[[ "$m" -gt 0 || -n "$timeOn" ]] && timeStr+="${m}m " && timeOn=true
+	[[ -n "$timeOn" ]] && timeStr+="${s}s " # shows seconds if time > 1m
+	[[ "$m" -lt 1 && -z "$timeOn" ]] && timeStr+="${ms}ms "
+	printf '%s' "${timeStr}"
+}
 
 [[ "$0" == "$BASH_SOURCE" ]] && main "$@" # Run if not sourced

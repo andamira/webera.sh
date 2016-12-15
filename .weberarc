@@ -83,8 +83,8 @@
 #
 
 # Copy commands to/from the build directory
-command : copy_res2build    : mkdir -p $(dirname {ORIGIN}); cp -r {ORIGIN} {BUILD}
-command : copy_build2target : mkdir -p $(dirname {BUILD});  cp -r {BUILD} {TARGET}
+command : copy_res2build    : mkdir -p -- $(dirname {ORIGIN}); cp -r -- {ORIGIN} {BUILD}
+command : copy_build2target : mkdir -p -- $(dirname {BUILD});  cp -r -- {BUILD} {TARGET}
 
 # Sass compilation
 command : sass : sass -t compact {ORIGIN} {TARGET}
@@ -126,5 +126,6 @@ command : sass : sass -t compact {ORIGIN} {TARGET}
 #
 # You can require other config files, relative to this one
 #
+
 # require : .weberarc-dependencies
 # include : .weberarc-optional-pages
