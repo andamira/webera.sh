@@ -5,7 +5,7 @@
 #
 # Repository: https://github.com/andamira/webera
 # Author: José Luis Cruz
-# Version: 0.1.54
+# Version: 0.1.55
 # License: MIT
 #
 # Dependencies:
@@ -136,7 +136,7 @@ main() {
 	[[ "$_DO_PROCESS_RESOURCES" == true ]] && processResources
 	[[ "$_DO_PROCESS_TEMPLATES" == true ]] && processTemplates
 
-	log "Elapsed time: $(printf '%16s' "$(__timeElapsed true)")"
+	log "Total elapsed time: $(__timeElapsed true)"
 
 	[[ "$_DO_PREVIEW_IN_BROWSER" == true ]] && previewWebsite
 	exit 0
@@ -317,7 +317,7 @@ setupLog() {
 #
 # shellcheck disable=SC2059
 log() {
-	local logLevelNeeded="$1" # First (optional) parameter...
+	local logLevelNeeded="$1" # First (optional) parameter
 	declare -ir logLevelMin=1 logLevelMax=3
 
 	declare logMessage msg1line
@@ -338,7 +338,7 @@ log() {
 		LOG_LEVEL="$logLevelNeeded"
 	fi
 
-	local logType="$1" # Second (optional) parameter...
+	local logType="$1" # Second (optional) parameter
 
 	# must be the type
 	case "$logType" in
@@ -349,12 +349,12 @@ log() {
 	esac
 
 	local IFSbkp="$IFS"; IFS=$''
-	logMessage="$*" # The rest of parameters must be the log message
+	logMessage="$*" # All that remains is the log message
 	IFS="$IFSbkp"
 
 	if [[ "$_PRELOG" == false ]]; then
 		if [[ "$LOG_LEVEL" -le "$OPTION_LOG_LEVEL" ]]; then
-			printf '%s\n' "$logMessage" >> "$LOG_FILE"
+			printf "$logMessage\n" >> "$LOG_FILE"
 		fi
 	else
 		# Pre-save this log message as a single line
@@ -367,7 +367,7 @@ log() {
 
 	# Print errors and warnings to stderr
 	if [[ "$logType" == "error" || "$logType" == "warn" ]]; then
-		printf "$logMessage" | tr -d '\n' | awk '{ print }' - >&2
+		printf "$logMessage" | tr -d '\n' | awk '{ print }' - >&2 # [OPTIMIZE]
 	fi
 
 } # log()
@@ -536,9 +536,11 @@ configureSettings() {
 
 		local IFSbkp="$IFS"; IFS=$'\n'
 		for setting in $settingsList; do
-			settingName=$(printf '%s' "$setting" | cut -d':' -f2 \
+			settingName=$(printf '%s' "$setting" \
+				| cut -d':' -f2 \
 				| sed -e "$_SED_TRIM_WS")
-			settingValue=$(printf '%s' "$setting" | cut -d':' -f3- \
+			settingValue=$(printf '%s' "$setting" \
+				| cut -d':' -f3- \
 				| sed -e "$_SED_TRIM_WS")
 
 			[[ -n "${!settingName}" ]] &&
@@ -601,7 +603,7 @@ generateConfig() {
 #   main()
 #
 readConfigCommands() {
-	declare commandList C commandNum commandName commandAction
+	declare commandList cmd commandNum commandName commandAction
 
 	commandList="$(printf '%s' "$_CONFIG_JOINT" | grep "^$_WS*command$_WS*:" )"
 
@@ -612,10 +614,12 @@ readConfigCommands() {
 	else return 0; fi
 
 	local IFSbkp="$IFS"; IFS=$'\n'
-	for C in $commandList; do
-		commandName=$(printf '%s' "$C" | cut -d':' -f2 \
+	for cmd in $commandList; do # [OPTIMIZE]
+		commandName=$(printf '%s' "$cmd" \
+			| cut -d':' -f2 \
 			| sed -e "$_SED_TRIM_WS" )
-		commandAction=$(printf '%s' "$C" | cut -d':' -f3- \
+		commandAction=$(printf '%s' "$cmd" \
+			| cut -d':' -f3- \
 			| sed -e "$_SED_TRIM_WS" )
 
 		_DEFINED_CMD_MAP["$commandName"]="$commandAction"
@@ -651,17 +655,20 @@ processResources() {
 	resourceOpList="$(printf '%s' "$_CONFIG_JOINT" \
 		| grep "^$_WS*resource$_WS*:" )"
 	resourceOpNum=$(printf '%s\n' "$resourceOpList" \
-		| sed "$_SED_DEL_EMPTYLINES" | wc -l )
+		| sed "$_SED_DEL_EMPTYLINES" \
+		| wc -l )
 	log 1 "${_IN}Found $resourceOpNum operations on resources:"
 
 	local IFSbkp="$IFS"; IFS=$'\n'
-	for resourceOp in $resourceOpList; do
-
-		operation=$(printf '%s' "$resourceOp" | cut -d':' -f2 \
+	for resourceOp in $resourceOpList; do # [OPTIMIZE]
+		operation=$(printf '%s' "$resourceOp" \
+			| cut -d':' -f2 \
 			| sed -e "$_SED_TRIM_WS" )
-		fileOrigin=$(printf '%s' "$resourceOp" | cut -d':' -f3 \
+		fileOrigin=$(printf '%s' "$resourceOp" \
+			| cut -d':' -f3 \
 			| sed -e "$_SED_TRIM_WS" )
-		fileTarget=$(printf '%s' "$resourceOp" | cut -d':' -f4 \
+		fileTarget=$(printf '%s' "$resourceOp" \
+			| cut -d':' -f4 \
 			| sed -e "$_SED_TRIM_WS" )
 
 		log 1 "${_IN}$operation: $fileOrigin > $fileTarget"
@@ -734,16 +741,20 @@ processTemplates() {
 		| grep "^$_WS*template$_WS*:" )"
 
 	templateOpNum=$(printf '%s\n' "$templateOpList" \
-		| sed "$_SED_DEL_EMPTYLINES" | wc -l )
+		| sed "$_SED_DEL_EMPTYLINES" \
+		| wc -l )
 	log 1 "${_IN}Found $templateOpNum operations on templates:"
 
 	local IFSbkp="$IFS"; IFS=$'\n'
 	for templateOp in $templateOpList; do
-		operation=$(printf '%s' "$templateOp" | cut -d':' -f2 \
+		operation=$(printf '%s' "$templateOp" \
+			| cut -d':' -f2 \
 			| sed -e "$_SED_TRIM_WS" )
-		fileOrigin=$(printf '%s'  "$templateOp" | cut -d':' -f3 \
+		fileOrigin=$(printf '%s'  "$templateOp" \
+			| cut -d':' -f3 \
 			| sed -e "$_SED_TRIM_WS" )
-		fileTarget=$(printf '%s' "$templateOp" | cut -d':' -f4 \
+		fileTarget=$(printf '%s' "$templateOp" \
+			| cut -d':' -f4 \
 			| sed -e "$_SED_TRIM_WS" )
 
 		log 1 "${_IN}$operation: $fileOrigin > $fileTarget"
@@ -938,7 +949,8 @@ templateRender() {
 		if [[ "$cmdOutputLength" -le "$maxOutputLength" ]]; then
 			log 3 "${_IN3}=: $cmdOutput"
 		else
-			log 3 "${_IN3}=: $(printf '%s' "$cmdOutput" | tr '\n' ' ' \
+			log 3 "${_IN3}=: $(printf '%s' "$cmdOutput" \
+				| tr '\n' ' ' \
 				| head -c$maxOutputLength) (...) +" \
 				"$((cmdOutputLength-maxOutputLength)) chars"
 		fi
@@ -1087,9 +1099,9 @@ __timeElapsed() {
 	local -i timeStampFinal="$(date '+%s%3N')" || true
 	local -i timeElapsed="$((timeStampFinal-__WEBERA_TIME_STAMP))"
 	if [[ "$beautiful" == true ]]; then
-		printf "$(__timeBeautify "$timeElapsed")"
+		printf '%s' "$(__timeBeautify "$timeElapsed")"
 	else
-		printf "$timeElapsed"
+		printf '%s' "$timeElapsed"
 	fi
 }
 
@@ -1104,18 +1116,20 @@ __timeElapsed() {
 #
 __timeBeautify() {
 	local -i ms="$1"
-	declare timeStr timeOn
-
 	local -i s="$((ms/1000%60))"
 	local -i m="$((ms/60000%60))"
 	local -i h="$((ms/3600000%24))"
 	local -i d="$((ms/86400000))"
-	[[ "$d" -gt 0 ]] && timeStr+="${d}d " && timeOn=true
-	[[ "$h" -gt 0 || -n "$timeOn" ]] && timeStr+="${h}h " && timeOn=true
-	[[ "$m" -gt 0 || -n "$timeOn" ]] && timeStr+="${m}m " && timeOn=true
-	[[ -n "$timeOn" ]] && timeStr+="${s}s " # shows seconds if time > 1m
-	[[ "$m" -lt 1 && -z "$timeOn" ]] && timeStr+="${ms}ms "
-	printf '%s' "${timeStr}"
+
+	declare timeString didTime
+
+	[[ "$d" -gt 0 ]] && timeString+="${d}d " && didTime=true
+	[[ "$h" -gt 0 || -n "$didTime" ]] && timeString+="${h}h " && didTime=true
+	[[ "$m" -gt 0 || -n "$didTime" ]] && timeString+="${m}m " && didTime=true
+	[[ -n "$didTime" ]] && timeString+="${s}s " # shows seconds if time > 1m
+	[[ "$m" -lt 1 && -z "$didTime" ]] && timeString+="${ms}ms "
+
+	printf '%s' "${timeString}"
 }
 
 [[ "$0" == "$BASH_SOURCE" ]] && main "$@" # Run if not sourced
