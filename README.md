@@ -1,12 +1,14 @@
-# webera [![version: 0.1.X](https://img.shields.io/badge/version-0.1.X-yellow.svg?style=flat-square)](#status) [![language: bash](https://img.shields.io/badge/language-bash-blue.svg?style=flat-square)]() [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/andamira/webera/blob/master/LICENSE.md) [![Build Status](https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square)](https://travis-ci.org/andamira/webera) [![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square)](https://codeclimate.com/github/andamira/webera)
+# webera
 
-Is a very handy bash script to generate static websites.
+is a very handy shell script for generating static websites.
 
-It relies on basic unix tools (grep, sed, awk, coreutils) to do its job.
+[![version: 0.1.X](https://img.shields.io/badge/version-0.1.X-yellow.svg?style=flat-square)](#status)
+[![language: bash](https://img.shields.io/badge/language-bash-blue.svg?style=flat-square)]()
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/andamira/webera/blob/master/LICENSE.md)
+[![Build Status](https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square)](https://travis-ci.org/andamira/webera)
+[![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square)](https://codeclimate.com/github/andamira/webera)
 
 ---
-
-**Index**
 
 - [Features](#features)
 - [Dependencies](#dependencies)
@@ -35,7 +37,7 @@ It relies on basic unix tools (grep, sed, awk, coreutils) to do its job.
 
 Bash >=4, coreutils, sed, awk, grep...
 
-See a complete [list of dependencies in the wiki](https://github.com/andamira/webera/wiki/Dependencies).
+See the detailed [list of dependencies in the wiki](https://github.com/andamira/webera/wiki/Dependencies).
 
 
 ## Quick Start
@@ -48,11 +50,11 @@ and make it executable.
 wget raw.githubusercontent.com/andamira/webera/master/webera && chmod +x webera
 ```
 
-Then you can generate a new config file (`webera -n`) or
+1) You can generate a new config file (`webera -n`) or
 [download](https://raw.githubusercontent.com/andamira/webera/master/.weberarc)
-the one in the repo.
+the model from the repo.
 
-Place your templates in the `tem/` directory, and configure the
+2) Place your HTML templates in the `tem/` directory, and configure the
 corresponding routes in the new config file, like this:
 
 ```sh
@@ -60,21 +62,20 @@ template : route : my-index.html   : /
 template : route : other-page.html : /other-url/
 ```
 
-Create a stylesheet into `res/css/style.css`, for example,
-and process it like this:
+3) Put your stylesheets under `res/css/` and process them like this:
 
 ```sh
 resource : copy : css/ : css/
 ```
 
-Generate the website, from the templates and the resources.
+4) Finally, generate the website by processing the templates and resources.
 
 ```sh
 $ ./webera -tr
 
 ```
 
-It gets saved into the `out/` directory by default:
+The website will get generated in the `out/` directory by default:
 
 ```sh
 $ find out/
@@ -162,19 +163,19 @@ Run `./webera -h` for more usage flags.
 
 ## Reasons
 
-The script was originally inspired by
+This script was originally inspired by
 [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e),
 the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
-and the [suckless philosophy](http://suckless.org/philosophy),
-without strictly adhering to any.
+and [suckless philosophy](http://suckless.org/philosophy),
+but it follows its own path.
 
 The intention is to see how far this idea can be taken,
 given the limits and constraints of the shell language,
 and to try to achive an ideal balance of features,
 reliability, simplicity and handiness.
 
-The script should be versatile enough to acommodate most
-needs, and fit both personal and professional projects.
+The script should be versatile enough to fit the needs
+of both personal and professional projects.
 
 [See the FAQ page in the wiki](https://github.com/andamira/webera/wiki/FAQ).
 

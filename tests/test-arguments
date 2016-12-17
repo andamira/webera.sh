@@ -36,25 +36,25 @@ test_arguments() {
 #
 	# Check expected format, and the minimum number of arguments
 	newval=$(echo "$defaults" | grep -c '^\[[a-z]\+\]:.\+=')
-	assert_raises "[[ $newval -ge 30 ]]" # give a safe margin
+	assert_raises "[[ $newval -ge 25 ]]" # give a safe margin
 
 
 	test_h2 "Main Flags"
 	# =====
 
-#
+#    -t process templates
 	newval=$(weberaVarValue "$(webera -_t)" \
 		'args' '_DO_PROCESS_TEMPLATES')
 	assert "echo $newval" "true"
-#
+#    -r process resources
 	newval=$(weberaVarValue "$(webera -_r)" \
 		'args' '_DO_PROCESS_RESOURCES')
 	assert "echo $newval" "true"
-#
+#    -w preview
 	newval=$(weberaVarValue "$(webera -_w)" \
 		'args' '_DO_PREVIEW_IN_BROWSER')
 	assert "echo $newval" "true"
-#
+#    -n generate a new config file
 	newval=$(weberaVarValue "$(webera -_n)" \
 		'args' '_DO_GENERATE_CONFIG_FILE')
 	assert "echo $newval" "true"
@@ -63,7 +63,7 @@ test_arguments() {
 	test_h2 "Config as string"
 	# =====
 
-#
+#    -C config string
 	default=$(weberaVarValue "$defaults" 'vdef' '_CONFIG_STRING')
 	assert "echo $default"
 #
@@ -75,7 +75,7 @@ test_arguments() {
 	test_h2 "File Paths"
 	# =====
 
-#   # config file
+#   # -F config file
 	default=$(weberaVarValue "$defaults" 'vdef' '_CONFIG_FILE')
 	assert "echo $default" ".weberarc"
 #
@@ -87,7 +87,7 @@ test_arguments() {
 	test_h2 "Dir Paths"
 	# =====
 
-#
+#    -T templates dir
 	default=$(weberaVarValue "$defaults" 'vdef' 'DIR_TEMPLATES')
 	assert "echo $default" "tem"
 #
@@ -95,7 +95,7 @@ test_arguments() {
 		'args' 'DIR_TEMPLATES')
 	assert "echo $newval" "test_tem"
 
-#
+#    -R resources dir
 	default=$(weberaVarValue "$defaults" 'vdef' 'DIR_RESOURCES')
 	assert "echo $default" "res"
 #
@@ -103,7 +103,7 @@ test_arguments() {
 		'args' 'DIR_RESOURCES')
 	assert "echo $newval" "test_res"
 
-#
+#   -O output dir
 	default=$(weberaVarValue "$defaults" 'vdef' 'DIR_OUTPUT')
 	assert "echo $default" "out"
 #
@@ -111,7 +111,7 @@ test_arguments() {
 		'args' 'DIR_OUTPUT')
 	assert "echo $newval" "test_out"
 
-#
+#    -B build dir
 	default=$(weberaVarValue "$defaults" 'vdef' 'DIR_BUILD')
 	assert "echo $default" "build"
 #
@@ -123,29 +123,29 @@ test_arguments() {
 	test_h2 "Switch Flags"
 	# =====
 
-#
+#    -d delete output dir
 	default=$(weberaVarValue "$defaults" \
-		'vdef' 'OPTION_DELETE_DIR_OUTPUT')
+		'vdef' '_OPTION_DELETE_DIR_OUTPUT')
 	assert "echo $default" "true"
 #
 	newval=$(weberaVarValue "$(webera -_d)" \
-		'args' 'OPTION_DELETE_DIR_OUTPUT')
+		'args' '_OPTION_DELETE_DIR_OUTPUT')
 	assert "echo $newval" "false"
 
-#
+#    -c clear log file
 	default=$(weberaVarValue "$defaults" \
-		'vdef' 'OPTION_LOG_CLEAR')
+		'vdef' '_OPTION_LOG_CLEAR')
 	assert "echo $default" "false"
 #
 	newval=$(weberaVarValue "$(webera -_c)" \
-		'args' 'OPTION_LOG_CLEAR')
+		'args' '_OPTION_LOG_CLEAR')
 	assert "echo $newval" "true"
 
 
 	test_h2 "Log"
 	# =====
 
-#
+#    -L log level
 	default=$(weberaVarValue "$defaults" 'vdef' 'OPTION_LOG_LEVEL')
 	assert "echo $default" "0"
 #
@@ -153,7 +153,7 @@ test_arguments() {
 		'args' 'OPTION_LOG_LEVEL')
 	assert "echo $newval" "3"
 
-#
+#    -G log file
 	default=$(weberaVarValue "$defaults" 'vdef' 'LOG_FILE')
 	assert "echo $default" "log.txt"
 #
@@ -165,7 +165,7 @@ test_arguments() {
 	test_h2 "Website Preview"
 	# =====
 
-#
+#    -W web browser
     # SEMIBUG_20161212: this one makes kcov fail
 	default=$(weberaVarValue "$defaults" 'vdef' 'WEB_BROWSER')
 	assert "echo $default" "firefox"
@@ -174,7 +174,7 @@ test_arguments() {
 		'args' 'WEB_BROWSER')
 	assert "echo $newval" "test_browser"
 
-#
+#    -S server type
 	default=$(weberaVarValue "$defaults" 'vdef' 'SERVER_TYPE')
 	assert "echo $default" "python"
 #
@@ -182,7 +182,7 @@ test_arguments() {
 		'args' 'SERVER_TYPE')
 	assert "echo $newval" "test_custom"
 
-#
+#    -H host
 	default=$(weberaVarValue "$defaults" 'vdef' 'SERVER_HOST')
 	assert "echo $default" "localhost"
 #
@@ -190,7 +190,7 @@ test_arguments() {
 		'args' 'SERVER_HOST')
 	assert "echo $newval" "test_host"
 
-#
+#    -P port
 	default=$(weberaVarValue "$defaults" 'vdef' 'SERVER_PORT')
 	assert "echo $default" "8192"
 #
@@ -198,7 +198,17 @@ test_arguments() {
 		'args' 'SERVER_PORT')
 	assert "echo $newval" "9000"
 
-} #test_arguments() 
+
+	test_h2 "Misc."
+	# =====
+
+#    using -h still parses the rest of the arguments
+	newval=$(weberaVarValue "$(webera -_hP 7000)" \
+		'args' 'SERVER_PORT')
+	assert "echo $newval" "7000"
+
+
+} #test_arguments()
 
 test_arguments
 test_summary 'arguments'
