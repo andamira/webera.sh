@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 #
 # webera
-# a handy shellscript for static website generation
+# a handy static website generator
 #
-# Repository: https://github.com/andamira/webera
-# Author: José Luis Cruz
-# Version: 0.1.56
-# License: MIT
-#
-# Dependencies:
-#     bash 4, grep -P, sed, awk, coreutils
+# Version      : 0.1.57
+# Repository   : https://github.com/andamira/webera
+# Author       : José Luis Cruz © 2016
+# License      : MIT
+# Dependencies : bash 4, grep -P, sed, awk, coreutils
 ##
 
 #-------------------------------------------------------------------------------
@@ -320,7 +318,7 @@ log() {
 	local logLevelNeeded="$1" # First (optional) parameter
 	declare -ir logLevelMin=1 logLevelMax=3
 
-	declare logMessage msg1line
+	declare logMessage msg_1line
 
 	# must be an integer number
 	if [[ "$logLevelNeeded" =~ ^[0-9]+$ ]]; then
@@ -1091,8 +1089,8 @@ __varsPush() {
 #
 __timeElapsed() {
 	local beautiful="$1"
-	local -i timeStampFinal="$(date '+%s%3N')" || true
-	local -i timeElapsed="$((timeStampFinal-__WEBERA_TIME_STAMP))"
+	local -ir timeStampFinal="$(date '+%s%3N')"
+	local -ir timeElapsed="$((timeStampFinal-__WEBERA_TIME_STAMP))"
 	if [[ "$beautiful" == true ]]; then
 		printf '%s' "$(__timeBeautify "$timeElapsed")"
 	else
@@ -1110,11 +1108,11 @@ __timeElapsed() {
 #  $1 - time in milliseconds
 #
 __timeBeautify() {
-	local -i ms="$1"
-	local -i s="$((ms/1000%60))"
-	local -i m="$((ms/60000%60))"
-	local -i h="$((ms/3600000%24))"
-	local -i d="$((ms/86400000))"
+	local -ir ms="$1"
+	local -ir s="$((ms/1000%60))"
+	local -ir m="$((ms/60000%60))"
+	local -ir h="$((ms/3600000%24))"
+	local -ir d="$((ms/86400000))"
 
 	declare timeString didTime
 

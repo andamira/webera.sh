@@ -1,46 +1,47 @@
 # webera
 
-is a very handy shell script for generating static websites.
+a handy shell script for the generation of static websites.
 
-[![version: 0.1.X](https://img.shields.io/badge/version-0.1.X-yellow.svg?style=flat-square)](#status)
-[![language: bash](https://img.shields.io/badge/language-bash-blue.svg?style=flat-square)]()
-[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/andamira/webera/blob/master/LICENSE.md)
-[![Build Status](https://img.shields.io/travis/andamira/webera/master.svg?style=flat-square)](https://travis-ci.org/andamira/webera)
-[![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg?style=flat-square)](https://codeclimate.com/github/andamira/webera)
-
----
-
-- [Features](#features)
-- [Dependencies](#dependencies)
-- [Quick Start](#quick-start)
-- [Examples](#examples)
-  - [Usage](#usage)
-  - [Config](#config)
-- [Reasons](#reasons)
-- [Status](#status)
+[![version: 0.1.X](https://img.shields.io/badge/version-0.1.X-d8ad4c.svg?style=flat-square)](#status)
+[![language: bash](https://img.shields.io/badge/language-bash-447799.svg?style=flat-square)](https://github.com/andamira/webera/wiki/FAQ#why-bash-and-not-other_language--)
+[![Build Status](https://img.shields.io/travis/andamira/webera/master.svg)](https://travis-ci.org/andamira/webera)
+[![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg)](https://codeclimate.com/github/andamira/webera)
 
 ---
 
+### Table of Contents
 
-## Features
+- [Features](#features-)
+- [Dependencies](#dependencies-)
+- [Quick Start](#quick-start-)
+- [Documentation](#documentation-)
+  - [Usage](#usage-)
+  - [Config](#config-)
+- [Reasons](#reasons-)
+- [Status](#status-)
+
+---
+
+
+## Features [▴](#table-of-contents "Back to TOC")
 
 - A configurable system for processing content templates and
   static resources, allowing custom commands and workflows.
 - Content template directives allowing nesting templates,
   setting variables, displaying the output of commands...
-- Unit testing and code quality control checking.
+- Unit testing and code quality control.
 - A versatile logging system.
 - Website preview.
 
 
-## Dependencies
+## Dependencies [▴](#table-of-contents "Back to TOC")
 
 Bash >=4, coreutils, sed, awk, grep...
 
 See the detailed [list of dependencies in the wiki](https://github.com/andamira/webera/wiki/Dependencies).
 
 
-## Quick Start
+## Quick Start [▴](#table-of-contents "Back to TOC")
 
 The simplest way to start is to download the
 [script](https://raw.githubusercontent.com/andamira/webera/master/webera)
@@ -87,12 +88,14 @@ $ find out/
 ```
 
 
-## Examples
+## Documentation [▴](#table-of-contents "Back to TOC")
+
+The Wiki is the documentation reference.
 
 You can find several example's source in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory, rendered in the [docs/](https://github.com/andamira/webera/tree/master/docs) directory and visible as a website in the [github page of the project](https://andamira.github.io/webera/examples/).
 
 
-### Config
+### Config [▴](#table-of-contents "Back to TOC")
 
 This is an example of a project's configuration file.
 
@@ -117,7 +120,7 @@ template : route : about-you.html : /about/you.html
 See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for more configuration possibilities.
 
 
-### Usage
+### Usage [▴](#table-of-contents "Back to TOC")
 
 Below are shown several examples on how to run the script.
 
@@ -161,13 +164,13 @@ the name of the action and the corresponding set flag.)
 Run `./webera -h` for more usage flags.
 
 
-## Reasons
+## Reasons [▴](#table-of-contents "Back to TOC")
 
 This script was originally inspired by
 [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e),
 the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
 and [suckless philosophy](http://suckless.org/philosophy),
-but it follows its own path.
+in its own way.
 
 The intention is to see how far this idea can be taken,
 given the limits and constraints of the shell language,
@@ -180,6 +183,6 @@ of both personal and professional projects.
 [See the FAQ page in the wiki](https://github.com/andamira/webera/wiki/FAQ).
 
 
-## Status
+## Status [▴](#table-of-contents "Back to TOC")
 
 This project is not stable yet.
