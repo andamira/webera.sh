@@ -43,7 +43,7 @@ helper_init_common() {
 	fi
 
 	# Imports
-	source "$DIR_TESTS/extern/assert.sh" -v
+	source "$DIR_TESTS/extern/aserta" -v
 	source "$DIR_WEBERA/webera"
 
 	# set up exit traps

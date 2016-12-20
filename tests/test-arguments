@@ -30,13 +30,13 @@ test_arguments() {
 	# =====
 
 #
-	assert_raises "webera -_" "0"
+	assert_success  "webera -_"
 
 	local -r defaults="$(webera -_)"
 #
 	# Check expected format, and the minimum number of arguments
 	newval=$(echo "$defaults" | grep -c '^\[[a-z]\+\]:.\+=')
-	assert_raises "[[ $newval -ge 25 ]]" # give a safe margin
+	assert_success "[[ $newval -ge 25 ]]" # give a safe margin
 
 
 	test_h2 "Main Flags"

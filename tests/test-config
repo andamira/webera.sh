@@ -90,13 +90,13 @@ test_templates() {
 	# (-n) Generate with default name
 	assert "webera -n"
 #
-	assert_raises "[[ -f .weberarc ]]"
+	assert_success "[[ -f .weberarc ]]"
 
 #
 	# (-nC) Generate with a custom name
 	assert "webera -nC .test_weberarc"
 #
-	assert_raises "[[ .test_weberarc ]]"
+	assert_success "[[ .test_weberarc ]]"
 #
 	# _FILE_CONFIG shouldn't be written to config file
 	assert "cat .test_weberarc"

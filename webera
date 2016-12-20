@@ -3,7 +3,7 @@
 # webera
 # a handy static website generator
 #
-# Version      : 0.1.57
+# Version      : 0.1.58
 # Repository   : https://github.com/andamira/webera
 # Author       : José Luis Cruz © 2016
 # License      : MIT
@@ -757,9 +757,9 @@ processTemplates() {
 				if [[ -n "$fileOrigin" && -n "$fileTarget" ]]; then
 					# A path ending in `/`, will be a dir_name/index.html
 					if [[ "$fileTarget" == */ ]]; then
-						mkdir -p -- "${DIR_OUTPUT}${fileTarget}"
+						mkdir -p -- "${DIR_OUTPUT}/${fileTarget}"
 						templateRender "$fileOrigin" > \
-							"${DIR_OUTPUT}${fileTarget}/index.html"
+							"${DIR_OUTPUT}/${fileTarget}/index.html"
 					else
 						mkdir -p -- "$(dirname "${DIR_OUTPUT}/${fileTarget}")"
 						templateRender "$fileOrigin" > \
