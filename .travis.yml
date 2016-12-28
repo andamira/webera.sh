@@ -21,4 +21,6 @@ matrix:
   allow_failures:
     - os: osx
 
-script: ./tests/helper -a
+script:
+  - ./tests/helper --install=aserta
+  - ./tests/helper --run-all

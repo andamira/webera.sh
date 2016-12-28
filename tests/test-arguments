@@ -277,7 +277,7 @@ test_arguments() {
 	assert_str_equals "$newval" "10000"
 
 
-	test_h2 "Misc."
+	test_h2 "Other"
 	# =====
 
 #    using -h still parses the rest of the arguments

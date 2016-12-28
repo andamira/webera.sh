@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# webera tests helper
+#
+# dependencies: grep, sed, awk, wget, coreutils
+#
+
 
 helper_main() {
 
@@ -8,6 +14,7 @@ helper_main() {
 	[[ "$NOT_SOURCED" ]] && helper_arguments "$@"
 
 } # helper_main()
+
 
 # shellcheck disable=SC1090
 helper_init_common() {
@@ -43,7 +50,7 @@ helper_init_common() {
 	fi
 
 	# Imports
-	source "$DIR_TESTS/extern/aserta" -v
+	source "$DIR_TESTS/aserta" -v
 	source "$DIR_WEBERA/webera"
 
 	# set up exit traps
@@ -52,37 +59,62 @@ helper_init_common() {
 
 } # helper_init_common()
 
+
 helper_usage() {
 	cat -- <<- ENDUSAGE
 
-	Runs all the examples.
-	Also, it must be imported by each example.
+	Runs all the tests
+	Also this file must be imported by each test file.
 
-	Usage: ./helper -a
+	Usage: ./helper [option]
 
-	  -a              all tests
-	  -h              this help
+	  -a, --run-all              run all the tests.
+
+	  -i, --install=<DEP>        download and install a supported dependency:
+	                             aserta, ...
+
+	  -h, --help                 display this help and exit.
 	ENDUSAGE
 	exit
 
 } # helper_usage()
 
+
 helper_arguments() {
 
 	[[ -z "$@" ]] && helper_usage
 
-	local OPTIND OPTION
-	while getopts 'ah' OPTION; do
-		case "$OPTION" in
-			a) helper_run_all_tests; ;;
+	local OPTIND option
+
+	while getopts ':ahi:-:' option; do
+
+		case "$option" in
+
+			# long options
+			-)
+				case "$OPTARG" in
+
+					run-all) helper_run_all_tests ;;
+					help) helper_usage ;;
+
+					install=*)
+						helper_install_dependency "${OPTARG#*=}"
+						;;
+				esac ;;
+
+			# short options
+			a) helper_run_all_tests ;;
+			i) helper_install_dependency "$OPTARG" ;;
+
 			h) helper_usage ;;
 			*)
-				printf 'Error: "%s" is not a valid argument' "$OPTION" >&2
+				printf 'Error: "%s" is not a valid argument' "$option" >&2
 				exit 1
 		esac
 	done
 
 } # helper_parseArguments()
+
 
 helper_run_all_tests() {
 
@@ -109,12 +141,16 @@ helper_run_all_tests() {
 } # helper_run_all_tests()
 
 
+
 # PRESENTATION
 # ############
+
 
 test_separator() {
 	printf '%s' '-----------------------------'
 }
+
+
 
 test_h1() {
 	if [[ "$DEBUG" -gt 0 ]]; then
@@ -122,11 +158,15 @@ test_h1() {
 	fi
 }
 
+
+
 test_h2() {
 	if [[ "$DEBUG" -gt 0 ]]; then
 		printf '\n  + %s:' "$@"
 	fi
 }
+
+
 
 test_h3() {
 	if [[ "$DEBUG" -gt 0 ]]; then
@@ -135,8 +175,10 @@ test_h3() {
 }
 
 
+
 # SETUP
 # #####
+
 
 # enters the working directory
 test_setup() {
@@ -159,7 +201,8 @@ test_setup() {
 
 } # test_setup()
 
-# returns from and delets the working directory
+
+# returns from and deletes the working directory
 test_teardown() {
 	if [[ "$(pwd)" == "$DIR_WORKDIR" ]]; then
 		popd >/dev/null 2>&1
@@ -171,6 +214,7 @@ test_teardown() {
 	fi
 
 } # test_teardown()
+
 
 # cleans the working directory
 test_clean() {
@@ -186,8 +230,10 @@ test_clean() {
 } # test_clean()
 
 
+
 # REPORT
 # ######
+
 
 # prints the report and saves the counts for the final summary
 test_summary() {
@@ -268,6 +314,7 @@ test_summary() {
 
 } # test_summary()
 
+
 test_final_summary() {
 	local -i testTotal
 	local -i testFailed
@@ -293,6 +340,7 @@ test_final_summary() {
 
 } # test_final_summary()
 
+
 test_final_cleanup() {
 	[[ -f "$TOTAL_TEST_NUM" ]] && rm -f -- "$TOTAL_TEST_NUM"
 	[[ -f "$TOTAL_TEST_TIME" ]] && rm -f -- "$TOTAL_TEST_TIME"
@@ -303,12 +351,15 @@ test_final_cleanup() {
 	fi
 
 	test_teardown
-}
+
+} # test_final_cleanup()
+
 
 # This function gets called on test error
 helper_cleanup_exit() {
 	test_teardown
 }
+
 
 # This function gets called on abrupt exit
 helper_cleanup_signal() {
@@ -316,11 +367,14 @@ helper_cleanup_signal() {
 }
 
 
+
 # WEBERA
 # ######
 
+
 # Binary wrapper
 webera() { "$DIR_WEBERA/webera" "$@" 2>/dev/null; }
+
 
 # Parse a list of variables in debug info format
 # and return the corresponding value.
@@ -348,6 +402,25 @@ weberaVarValue() {
 
 } # weberaVarValue()
 
+
+# downloads and installs a dependency
+#
+helper_install_dependency() {
+	declare dependency="$1"
+
+	case $dependency in
+		aserta) # v2.2.1
+			wget "https://raw.githubusercontent.com/andamira/aserta/c2712e80ae7e42030b4be5af66398769a15b53b1/aserta" -O "$DIR_TESTS/aserta"
+			chmod +x "$DIR_TESTS/aserta"
+			;;
+
+		*) printf "Error: Can't recognize dependency '%s'." "$dependency" >&2
+			exit 1 ;;
+
+	esac
+} # helper_install_dependency()
+
+
 __check_compatibility() {
 
 	# mktemp
@@ -360,6 +433,6 @@ __check_compatibility() {
 } # __check_compatibility()
 
 
-[[ "$0" == "$BASH_SOURCE" ]] && NOT_SOURCED=true
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && NOT_SOURCED=true
 
 helper_main "$@"

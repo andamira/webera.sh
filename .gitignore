@@ -3,6 +3,7 @@ log.txt
 
 out/
 build/
+tests/aserta
 
 .sass-cache/
 *.css.map
