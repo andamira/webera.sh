@@ -15,8 +15,8 @@ a handy shell script for the generation of static websites.
 - [Dependencies](#dependencies-)
 - [Quick Start](#quick-start-)
 - [Documentation](#documentation-)
-  - [Usage](#usage-)
   - [Config](#config-)
+  - [Usage](#usage-)
 - [Reasons](#reasons-)
 - [Status](#status-)
 
@@ -29,9 +29,8 @@ a handy shell script for the generation of static websites.
   static resources, allowing custom commands and workflows.
 - Content template directives allowing nesting templates,
   setting variables, displaying the output of commands...
-- Unit testing and code quality control.
-- A versatile logging system.
-- Website preview.
+- Includes a versatile logging system.
+- Supports automatic preview.
 
 
 ## Dependencies [▴](#table-of-contents "Back to TOC")
@@ -90,14 +89,26 @@ $ find out/
 
 ## Documentation [▴](#table-of-contents "Back to TOC")
 
-The Wiki is the documentation reference.
+The [webera Wiki](https://github.com/andamira/webera/wiki) is the documentation reference.
 
-You can find several example's source in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory, rendered in the [docs/](https://github.com/andamira/webera/tree/master/docs) directory and visible as a website in the [github page of the project](https://andamira.github.io/webera/examples/).
+This project includes several complete examples you can examine for ideas *(WIP)*:
+
+- The sources are in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory.
+- The generated output is under the [docs/](https://github.com/andamira/webera/tree/master/docs) directory.
+- The websites are displayed in the [github page of the project](https://andamira.github.io/webera/examples/).
 
 
 ### Config [▴](#table-of-contents "Back to TOC")
 
-This is an example of a project's configuration file.
+
+
+
+This is a brief but intense example of a project configuration file. It shows how to:
+
+- configure the options.
+- define commands for later use on the indicated resources (or templates).
+- process the resources using the previous custom command.
+- process the templates, defining the routes using both file and directory URL endpoints.
 
 ```sh
 # Customize Settings
@@ -122,55 +133,91 @@ See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for 
 
 ### Usage [▴](#table-of-contents "Back to TOC")
 
-Below are shown several examples on how to run the script.
+There are many ways to use the script, you can combine the flags
+with the configuration to achieve the behaviour you need.
 
-(The characters in **b**old indicate a mnemonic between
-the name of the action and the corresponding set flag.)
+In the table below you can see several examples comparing both the
+short and long flags.
 
 <table><tbody>
 
 <tr>
-  <td><code>./webera -t -cL2</code></td>
-
-  <td>Process <b>t</b>emplates and write a level 2
-  <b>L</b>ogfile, clearing any previous logfile first</td>
+  <th colspan="2">
+    Usage Examples
+  </th>
 </tr>
 
 <tr>
-  <td><code>./webera -trw -W vivaldi</code></td>
-
-  <td>Process templates and resources; and preview using
-  another bro<b>W</b>ser</td>
-</tr>
-
-<tr>
-  <td><code>./webera -r -R resB/ -O outB/</code></td>
-
-  <td>Process resources from a custom <b>R</b>esources directory
-  and to a custom <b>O</b>utput directory</td>
-</tr>
-
-<tr>
-  <td><code>./webera -nF conf/webera.conf -S php -P 8080</code></td>
-
-  <td>Generate a <b>n</b>ew configuration to the config
-    <b>F</b>ile, and write there the new preferences
-    for the <b>S</b>erver and the <b>P</b>ort.
+  <td colspan="2" align="left">
+    <b>1.</b> Process the templates, and write a level 2 logfile,
+    clearing any previous log:
   </td>
+</tr>
+<tr>
+  <td><code>
+    webera -t -cL2
+  </code></td>
+  <td><code>
+    webera --process-templates --clear-log --log-level=2
+  </code></td>
+</tr>
+
+<tr>
+  <td colspan="2" align="left">
+    <b>2.</b> Process templates and resources, and preview
+    using a custom browser:
+  </td>
+</tr>
+<tr>
+  <td><code>
+    webera -aw -W vivaldi
+  </code></td>
+  <td><code>
+    webera --process-all --preview --browser-bin=vivaldi
+  </code></td>
+</tr>
+
+<tr>
+  <td colspan="2" align="left">
+    <b>3.</b> Process resources <em>from</em> a custom resources directory
+    <em>to</em> a custom output directory, with spaces in the path:
+  </td>
+</tr>
+<tr>
+  <td><code>
+    webera -r -R resB/ -O "out B"
+  </code></td>
+  <td><code>
+    webera --process-resources --dir-resources=resB/ --dir-output="out B"
+  </code></td>
+</tr>
+
+<tr>
+  <td colspan="2" align="left">
+    <b>4.</b> Generate a new configuration file using the provided name,
+    and write there the provided settings for the server type and port.
+  </td>
+</tr>
+<tr>
+  <td><code>
+    webera -nF conf/webera.conf -S php -P 8080
+  </code></td>
+  <td><code>
+    webera --new-config --file-config=conf/webera.conf --server-type=php --server-port=8080
+  </code></td>
 </tr>
 
 </tbody></table>
 
-Run `./webera -h` for more usage flags.
+Run `./webera --help` to see the basic info on flags, or visit the complete [List of flags](https://github.com/andamira/webera/wiki/Script-Arguments#list-of-flags-) in the reference wiki.
 
 
 ## Reasons [▴](#table-of-contents "Back to TOC")
 
-This script was originally inspired by
+This script was originally inspired, in its own way, by
 [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e),
 the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
-and [suckless philosophy](http://suckless.org/philosophy),
-in its own way.
+and [suckless philosophy](http://suckless.org/philosophy).
 
 The intention is to see how far this idea can be taken,
 given the limits and constraints of the shell language,
@@ -185,4 +232,4 @@ of both personal and professional projects.
 
 ## Status [▴](#table-of-contents "Back to TOC")
 
-This project is not stable yet.
+This project is not stable yet. It is changing.

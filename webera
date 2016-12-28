@@ -3,7 +3,7 @@
 # webera
 # a handy static website generator
 #
-# Version      : 0.1.58
+# Version      : 0.1.59
 # Repository   : https://github.com/andamira/webera
 # Author       : José Luis Cruz © 2016
 # License      : MIT
@@ -11,10 +11,9 @@
 ##
 
 #-------------------------------------------------------------------------------
-#   main
+# main
 #
-# Arguments:
-#   $@ - all the arguments passed to the script
+# args: $@ : all the arguments passed to the script
 #
 main() {
 
@@ -40,7 +39,7 @@ main() {
 	local DIR_OUTPUT=out                  # (-O)
 	local DIR_BUILD=build                 # (-B)
 	local _CONFIG_FILE=.weberarc          # (-F)
-	local _CONFIG_STRING=""               # (-S)
+	local _CONFIG_STRING=''               # (-S)
 
 	# Web Browser
 	local WEB_BROWSER="firefox"           # (-W)
@@ -134,7 +133,6 @@ main() {
 	setupLog
 
 	if [[ "$_OPERATIONAL" == false ]]; then
-		log 1 error "You must use at least one MAIN FLAG!\n\n"
 		usage 1
 	fi
 
@@ -154,49 +152,55 @@ main() {
 
 
 #-------------------------------------------------------------------------------
-#   usage
+# usage
 #
 #   Displays Usage information.
 #
-# Arguments:
-#   $1 - (optional) error code
-# Returns:
-#   $1 - (exit) the received error code
-# Called by:
-#   parseArguments()
-#   configureSettings()
+# args: $1 : (optional) error code
+# exit: $1 : same received error code
+# from: parseArguments configureSettings
 #
 usage() {
 	cat -- <<-ENDUSAGE
-	Usage: ./webera -[trwn] [optional flags]
+	webera is a handy static website generator.
 
-	MAIN FLAGS
+	Usage: ./webera -[trawn] [options]
 
-	  -t              process the templates
-	  -r              process the resources
-	  -w              preview in web browser
+	At least one OPERATIVE FLAG is needed in order for the script to run.
+	Mandatory arguments to long options are mandatory for short options too.
 
-	  -n              generate a new configuration file
+	OPERATIVE FLAGS
 
-	OPTIONAL          ... (DEFAULT)
+	  -t, --process-templates    process the templates
+	  -r, --process-resources    process the resources
+	  -a, --process-all          process both the templates and the resources
+	  -w  --preview              preview website in the web browser
+	  -n  --new-config           generate a new configuration file
 
-	  -F <FILE>       indicate the configuration file ($_CONFIG_FILE)
-	  -C <STRING>     pass the configuration as a string
+	OPTION FLAGS                 ... (default value)
 
-	  -T <DIR>        indicate the templates directory ($DIR_TEMPLATES)
-	  -R <DIR>        indicate the resources directory ($DIR_RESOURCES)
-	  -O <DIR>        indicate the output directory ($DIR_OUTPUT)
-	  -B <DIR>        indicate the build directory ($DIR_BUILD)
-	  -d              don't delete the output dir ($_OPTION_DELETE_DIR_OUTPUT)
+	  -F, --file-config=FILE     indicate the configuration file ($_CONFIG_FILE)
+	  -C, --config=STRING        pass the configuration as a string ($_CONFIG_STRING)
 
-	  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
-	  -G <FILE>       log file ($LOG_FILE)
-	  -c              clear the previous log file ($_OPTION_LOG_CLEAR)
+	  -T, --dir-templates=DIR    indicate the templates directory ($DIR_TEMPLATES)
+	  -R, --dir-resources=DIR    indicate the resources directory ($DIR_RESOURCES)
+	  -O, --dir-output=DIR       indicate the output directory ($DIR_OUTPUT)
+	  -B, --dir-build=DIR        indicate the build directory ($DIR_BUILD)
+	  -d, --dont-delete-output   don't delete the output dir ($_OPTION_DELETE_DIR_OUTPUT)
 
-	  -W <BIN>        web browser binary ($WEB_BROWSER)
-	  -S <TYPE>       server type [none|php|python|custom] ($SERVER_TYPE)
-	  -H <DOMAIN>     server host ($SERVER_HOST)
-	  -P <NUMBER>     port number ($SERVER_PORT)
+	  -L, --log-level=LEVEL      log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
+	  -c, --clear-log            clear the previous log file ($_OPTION_LOG_CLEAR)
+	  -G, --logfile=FILE         log file ($LOG_FILE)
+
+	  -W, --browser-bin=BIN      web browser binary ($WEB_BROWSER)
+	  -S, --server-type=TYPE     server type [none|php|python|custom] ($SERVER_TYPE)
+	  -H, --server-host=HOST     server host ($SERVER_HOST)
+	  -P, --server-port=PORT     port number ($SERVER_PORT)
+
+	  -h, --help                 display this help and exit
+	      --version              output version information and exit
+
+	  Repository and documentation in <https://github.com/andamira/webera>
 	ENDUSAGE
 	[[ -n "$1" ]] && exit "$1"
 
@@ -204,75 +208,214 @@ usage() {
 
 
 #-------------------------------------------------------------------------------
-#   parseArguments
+# parseArguments
 #
-#   Parses the arguments received by the script and sets the pertinent options.
+#  Parses the arguments received by the script and sets/saves the options.
 #
-# Arguments:
-#   $@ - all the arguments passed to the script
-# Returns:
-#    1 - (exit via usage) when the argument is unknown
-#
-# Called by:
-#   main()
+# args:   $@ : all the arguments passed to the script
+# exit:  255 : when the argument is unknown
+# from: main
 #
 parseArguments() {
-	local OPTIND option
+	local OPTIND option value
+	local optspec=':trawnF:C:T:R:O:B:dcL:G:W:S:H:P:_h-:'
 
-	while getopts ':trwnF:C:T:R:O:B:dcL:G:W:S:H:P:_h' option; do
+	while getopts "$optspec" option; do
 		case "$option" in
-			t) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PROCESS_TEMPLATES]=true ;;
-			r) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true ;;
-			w) _OPERATIONAL=true; _ARG_OPTIONS[_DO_PREVIEW_IN_BROWSER]=true ;;
 
-			n) _ARG_OPTIONS[_DO_GENERATE_CONFIG_FILE]=true
-				_OPERATIONAL=true; _DO_GENERATE_CONFIG_FILE=true; ;;
+			# long options: http://stackoverflow.com/a/7680682/940200
+			-)
+				case "$OPTARG" in
 
-			F) _ARG_OPTIONS[_CONFIG_FILE]="$OPTARG"
-				_CONFIG_FILE="$OPTARG" ;;
+					process-templates) setArg process-templates ;;
+					process-resources) setArg process-resources ;;
+					process-all)       setArg process-all       ;;
+					preview)           setArg preview           ;;
+					new-config)        setArg new-config        ;;
 
-			C) _ARG_OPTIONS[_CONFIG_STRING]="$OPTARG"
-				_CONFIG_STRING="$OPTARG" ;;
+					file-config=*)    setArg file-config   "${OPTARG#*=}" ;;
+					config=*)         setArg config        "${OPTARG#*=}" ;;
+					dir-templates=*)  setArg dir-templates "${OPTARG#*=}" ;;
+					dir-resources=*)  setArg dir-resources "${OPTARG#*=}" ;;
+					dir-output=*)     setArg dir-output    "${OPTARG#*=}" ;;
+					dir-build=*)      setArg dir-build     "${OPTARG#*=}" ;;
 
-			# The following options can also be defined in $_CONFIG_FILE, but
-			# passing them as arguments to the script has a higher priority.
+					dont-delete-output) setArg dont-delete-output ;;
+					clear-log)          setArg clear-log          ;;
 
-			T) _ARG_OPTIONS[DIR_TEMPLATES]="$OPTARG" ;;
-			R) _ARG_OPTIONS[DIR_RESOURCES]="$OPTARG" ;;
-			O) _ARG_OPTIONS[DIR_OUTPUT]="$OPTARG" ;;
-			B) _ARG_OPTIONS[DIR_BUILD]="$OPTARG" ;;
+					log-level=*)   setArg log-level   "${OPTARG#*=}" ;;
+					log-file=*)    setArg log-file    "${OPTARG#*=}" ;;
 
-			d) _ARG_OPTIONS[_OPTION_DELETE_DIR_OUTPUT]=false ;;
-			c) _ARG_OPTIONS[_OPTION_LOG_CLEAR]=true ;;
+					browser-bin=*) setArg browser-bin "${OPTARG#*=}" ;;
+					server-type=*) setArg server-type "${OPTARG#*=}" ;;
+					server-host=*) setArg server-host "${OPTARG#*=}" ;;
+					server-port=*) setArg server-port "${OPTARG#*=}" ;;
 
-			L) _ARG_OPTIONS[OPTION_LOG_LEVEL]="$OPTARG" ;;
-			G) _ARG_OPTIONS[LOG_FILE]="$OPTARG" ;;
+					help) setArg help ;;
 
-			W) _ARG_OPTIONS[WEB_BROWSER]="$OPTARG" ;;
-			S) _ARG_OPTIONS[SERVER_TYPE]="$OPTARG" ;;
-			H) _ARG_OPTIONS[SERVER_HOST]="$OPTARG" ;;
-			P) _ARG_OPTIONS[SERVER_PORT]="$OPTARG" ;;
+					*)  # error
+						if [[ "$OPTERR" == 1 ]]; then
+							log error "ERROR: unknown argument '--$OPTARG'"
+							# TODO FIXME: clear error on non-option argument (without =*)
+							exit 255
+						fi ;;
+				esac ;;
 
-			_) __DO_PRINT_VARS=true ;; # hidden argument
+			# short flags
 
-			h) _DO_USAGE=true; _DO_EXIT=0 ;;
-			*) _DO_USAGE=true; _DO_EXIT=1
-				log error "Warning: unknown argument: '$OPTARG'."
-				;;
+			t) setArg process-templates       ;;
+			r) setArg process-resources       ;;
+			a) setArg process-all             ;;
+			w) setArg preview                 ;;
+			n) setArg new-config              ;;
+
+			F) setArg file-config   "$OPTARG" ;;
+			C) setArg config        "$OPTARG" ;;
+
+			T) setArg dir-templates "$OPTARG" ;;
+			R) setArg dir-resources "$OPTARG" ;;
+			O) setArg dir-output    "$OPTARG" ;;
+			B) setArg dir-build     "$OPTARG" ;;
+
+			d) setArg dont-delete-output      ;;
+			c) setArg clear-log               ;;
+
+			L) setArg log-level     "$OPTARG" ;;
+			G) setArg log-file      "$OPTARG" ;;
+
+			W) setArg browser-bin   "$OPTARG" ;;
+			S) setArg server-type   "$OPTARG" ;;
+			H) setArg server-host   "$OPTARG" ;;
+			P) setArg server-port   "$OPTARG" ;;
+
+			h) setArg help ;;
+
+			_) setArg _ ;;  # hidden debug argument (only short)
+
+			*) # error
+                if [[ "$OPTERR" != 1 || "${optspec:0:1}" == ":" ]]; then
+					log error "ERROR: unknown argument '-$OPTARG'"
+					exit 255
+                fi ;;
 		esac
 	done
 	shift $((OPTIND-1))
 
-} #parseArguments()
+} # parseArguments()
 
 
 #-------------------------------------------------------------------------------
-#   setupLog
+# setArg
+#
+#   Sets both short and long arguments, in a centralize manner.
+#
+# args: $1 : the common long name of the argument
+# args: $2 : (optional) the value of the argument
+# exit: 13 : unknown argument
+# from: parseArguments
+#
+setArg() {
+	declare argument="$1" value="$2"
+
+	case "$argument" in
+
+		# OPERATIONAL flags
+
+		process-templates)
+			_OPERATIONAL=true
+			_ARG_OPTIONS[_DO_PROCESS_TEMPLATES]=true ;;
+
+		process-resources)
+		   _OPERATIONAL=true
+		   _ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true ;;
+
+		process-all)
+			_OPERATIONAL=true
+			_ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true
+			_ARG_OPTIONS[_DO_PROCESS_TEMPLATES]=true ;;
+
+		preview)
+			_OPERATIONAL=true
+			_ARG_OPTIONS[_DO_PREVIEW_IN_BROWSER]=true ;;
+
+		new-config)
+			_OPERATIONAL=true
+			_DO_GENERATE_CONFIG_FILE=true
+			_ARG_OPTIONS[_DO_GENERATE_CONFIG_FILE]=true ;;
+
+
+		# OPTIONS flags
+
+		# The options starting starting with an underscore `_` can't be
+		# set in a configuration file, only passed as a script argument.
+
+		file-config)
+			_CONFIG_FILE="$value"
+			_ARG_OPTIONS[_CONFIG_FILE]="$value" ;;
+
+		config)
+			_CONFIG_STRING="$value"
+			_ARG_OPTIONS[_CONFIG_STRING]="$value" ;;
+
+		clear-log)
+			_ARG_OPTIONS[_OPTION_LOG_CLEAR]=true ;;
+
+		dont-delete-output)
+			_ARG_OPTIONS[_OPTION_DELETE_DIR_OUTPUT]=false ;;
+
+
+		# The next options can also be defined in configuration file, but
+		# passing them as an argument to the script has a higher priority.
+
+		dir-templates)
+			_ARG_OPTIONS[DIR_TEMPLATES]="$value" ;;
+
+		dir-resources)
+			_ARG_OPTIONS[DIR_RESOURCES]="$value" ;;
+
+		dir-output)
+			_ARG_OPTIONS[DIR_OUTPUT]="$value" ;;
+
+		dir-build)
+			_ARG_OPTIONS[DIR_BUILD]="$value" ;;
+
+		log-level)
+			_ARG_OPTIONS[OPTION_LOG_LEVEL]="$value" ;;
+
+		log-file)
+			_ARG_OPTIONS[LOG_FILE]="$value" ;;
+
+		browser-bin)
+			_ARG_OPTIONS[WEB_BROWSER]="$value" ;;
+
+		server-type)
+			_ARG_OPTIONS[SERVER_TYPE]="$value" ;;
+
+		server-host)
+			_ARG_OPTIONS[SERVER_HOST]="$value" ;;
+
+		server-port)
+			_ARG_OPTIONS[SERVER_PORT]="$value" ;;
+
+		help)
+			_DO_USAGE=true; _DO_EXIT=0 ;;
+
+		_)
+			__DO_PRINT_VARS=true ;;
+
+		*)
+			log error "ERROR: unknow argument '$argument'"
+			exit 13 ;;
+	esac
+
+} # setArg
+
+#-------------------------------------------------------------------------------
+# setupLog
 #
 #   Prepares the log file and writes all the logs previously saved in _PRELOG.
 #
-# Called by:
-#   main()
+# from: main
 #
 setupLog() {
 	local parsedPrelog
@@ -304,36 +447,35 @@ setupLog() {
 
 
 #-------------------------------------------------------------------------------
-#   log
+# log
 #
 #   prints a message to the log file. Errors and warnings also to STDERR.
 #
-# Arguments:
-#   $1  - (optional) logLevelNeeded
-#   $2  - (optional) logType [warn|error]
-#   $3+ - log message
+# args: $1  : (optional) logLevelNeeded
+# args: $2  : (optional) logType [warn|error]
+# args: $3+ : log message
 #
 # shellcheck disable=SC2059
 log() {
-	local logLevelNeeded="$1" # First (optional) parameter
+	declare logLevelNeeded="$1" # First (optional) parameter
 	declare -ir logLevelMin=1 logLevelMax=3
+	declare logLevel
 
 	declare logMessage msg_1line
 
 	# must be an integer number
 	if [[ "$logLevelNeeded" =~ ^[0-9]+$ ]]; then
 		if [[ "$logLevelNeeded" -lt "$logLevelMin" ]]; then
-			LOG_LEVEL="$logLevelMin"
+			logLevel="$logLevelMin"
 		elif [[ "$logLevelNeeded" -gt "$logLevelMax" ]]; then
-			LOG_LEVEL="$logLevelMax"
+			logLevel="$logLevelMax"
 		else
-			LOG_LEVEL="$logLevelNeeded"
+			logLevel="$logLevelNeeded"
 		fi
 		shift # prepare next positional parameter
 
 	else # if not a number, use defaults
-		logLevelNeeded="$logLevelMin"
-		LOG_LEVEL="$logLevelNeeded"
+		logLevel="$logLevelMin"
 	fi
 
 	local logType="$1" # Second (optional) parameter
@@ -351,7 +493,7 @@ log() {
 	IFS="$IFSbkp"
 
 	if [[ "$_PRELOG" == false ]]; then
-		if [[ "$LOG_LEVEL" -le "$OPTION_LOG_LEVEL" ]]; then
+		if [[ "$logLevel" -le "$OPTION_LOG_LEVEL" ]]; then
 			printf "$logMessage\n" >> "$LOG_FILE"
 		fi
 	else
@@ -360,7 +502,7 @@ log() {
 		# 1. replace the newlines with a BEL
 		# 2. put the log level and type at the beginning
 		msg_1line=$(printf "$logMessage" | tr '\n' '\a') || true
-		_PRELOG+="\n$logLevelNeeded|$logType|$msg_1line"
+		_PRELOG+="\n$logLevel|$logType|$msg_1line"
 	fi
 
 	# Print errors and warnings to stderr
@@ -372,14 +514,12 @@ log() {
 
 
 #-------------------------------------------------------------------------------
-#   previewWebsite
+# previewWebsite
 #
 #   Prepares the server commands, for previewing in the browser.
 #
-# Returns:
-#   5 - (exit) Server type not recognized
-# Called by:
-#   main() - when the script received the `-r` flag
+# exit: 5 : Server type not recognized
+# from: main : when the script received the `-r` flag
 #
 previewWebsite() {
 	local cmdBrowser
@@ -426,12 +566,11 @@ previewWebsite() {
 
 
 #-------------------------------------------------------------------------------
-#   deleteDirectories
+# deleteDirectories
 #
 #   Deletes the build/ and output directories if there's going to be operations.
 #
-# Called by:
-#   main()
+# from: main
 #
 deleteDirectories() {
 	[[ "$OPTION_DELETE_DIR_BUILD" == true ]] && rm -rf -- "$DIR_BUILD" 2>/dev/null
@@ -446,18 +585,15 @@ deleteDirectories() {
 
 
 #-------------------------------------------------------------------------------
-#   readConfig
+# readConfig
 #
 #   Reads some configuration from a file or a string,
 #   and joins it together to a common source.
 #
-# Arguments:
-#   $1 - $configType [file|string]
-#   $2 - $configPointer can be either the file name or the variable name
-# Returns:
-#   10 - (exit) unknown config type
-# Called by:
-#   main()
+# args: $1 : $configType [file|string]
+# args: $2 : $configPointer can be either the file name or the variable name
+# exit: 10 : unknown config type
+# from: main
 #
 readConfig() {
 	declare configType="$1" configPointer="$2"
@@ -514,15 +650,13 @@ readConfig() {
 
 
 #-------------------------------------------------------------------------------
-#   configureSettings
+# configureSettings
 #
 #   Parses the configuration settings and overrides them with:
 #   1) the joint configuration 2) the passed arguments.
 #
-# Returns:
-#    1 - (exit via usage) no main operatives flags used
-# Called by:
-#   main()
+# exit: 1 : (via usage) no main operatives flags used
+# from: main
 #
 configureSettings() {
 	declare settingsList setting arg settingName settingValue settingPrevious
@@ -563,12 +697,11 @@ configureSettings() {
 
 
 #-------------------------------------------------------------------------------
-#   generateConfig
+# generateConfig
 #
 #   Generates a config file, writing down the settings modified via arguments.
 #
-# Called by:
-#   main() - when the script received the `-n` flag
+# from: main : when the script received the `-n` flag
 #
 generateConfig() {
 	local configLines=()
@@ -588,12 +721,11 @@ generateConfig() {
 
 
 #-------------------------------------------------------------------------------
-#   readConfigCommands
+# readConfigCommands
 #
 #   Reads the configuration commands for processing templates and resources.
 #
-# Called by:
-#   main()
+# from: main
 #
 readConfigCommands() {
 	declare commandList cmd commandNum commandName commandAction
@@ -625,14 +757,12 @@ readConfigCommands() {
 
 
 #-------------------------------------------------------------------------------
-#   processResources
+# processResources
 #
 #   Parses the configuration and executes the resource operations.
 #
-# Returns:
-#   8 - no resources directory found
-# Called by:
-#   main() - when the script received the `-r` flag
+# retn:   8  : no resources directory found
+# from: main : when the script received the `-r` flag
 #
 processResources() {
 	declare resourceOpList resourceOpNum resourceOp
@@ -710,14 +840,12 @@ processResources() {
 
 
 #-------------------------------------------------------------------------------
-#   processTemplates
+# processTemplates
 #
 #   Parses the configuration and executes the template operations.
 #
-# Returns:
-#  9 - no templates directory found
-# Called by:
-#   main() - when the script received the `-t` flag
+# retn:   9  : no templates directory found
+# from: main : when the script received the `-t` flag
 #
 processTemplates() {
 	declare templateOpList templateOpNum templateOp
@@ -804,18 +932,15 @@ processTemplates() {
 
 
 #-------------------------------------------------------------------------------
-#   templateParseIncludes
+# templateParseIncludes
 #
 #   Recursively parses a template for include directives, and then
 #   joins all the parts together in a single template.
 #
-# Arguments:
-#  $1 - templateFileName
-# Returns:
-#   3 - (exit) Maximum nesting level overflow
-#   7 - No template found
-# Called by:
-#   templateRender()
+# args: $1 : templateFileName
+# exit:  3 : Maximum nesting level overflow
+# retn:  7 : No template found
+# from: templateRender
 #
 templateParseIncludes() {
 	declare templateFileName=$1
@@ -868,14 +993,12 @@ templateParseIncludes() {
 
 
 #-------------------------------------------------------------------------------
-#   templateRender
+# templateRender
 #
 #   Parses the template, processes the directives and renders the html file.
 #
-# Arguments:
-#   $1 - templateFileName
-# Called by:
-#   processTemplates() - when parsing the 'route' command
+# args  : $1 : templateFileName
+# from: processTemplates : when parsing the 'route' command
 #
 templateRender() {
 	declare templateFileName=$1
@@ -997,14 +1120,12 @@ templateRender() {
 
 
 #-------------------------------------------------------------------------------
-#   __checkCompatibility
+# __checkCompatibility
 #
 #   Checks for dependencies and displays pertinent information.
 #
-# Returns:
-#   6 - (exit) Bash version is too old
-# Called by:
-#   main()
+# exit: 6 : Bash version is too old
+# from: main
 #
 __checkCompatibility() {
 	local bashBigVersion
@@ -1018,12 +1139,11 @@ __checkCompatibility() {
 
 
 #-------------------------------------------------------------------------------
-#   __setupDebugging
+# __setupDebugging
 #
 #   Enables xtrace if WEBERA_DEBUG has been defined, and sets a nice formatting.
 #
-# Called by:
-#   main()
+# from: main
 #
 # shellcheck disable=SC2016
 __setupDebugging() {
@@ -1037,7 +1157,7 @@ __setupDebugging() {
 
 
 #-------------------------------------------------------------------------------
-#   __varsPrint
+# __varsPrint
 #
 #   Prints all the script "global" settings and data, public and private.
 #
@@ -1045,19 +1165,15 @@ __varsPrint() { printf '%s\n' "$__VARS_WEBERA"; }
 
 
 #-------------------------------------------------------------------------------
-#   __varsPush
+# __varsPush
 #
 #   Parses configuration, extracts the config variables and appends them
 #   to __VARS_WEBERA in the correct format, using the provided arguments.
 #
-#   Function called by ().
-#
-# Arguments:
-#  $1 - varOrigin [vdef|args|file|strn]
-#  $2 - varPath (for files)
-#  $3 - configuration
-# Called by:
-#   readConfig()
+# args: $1 : varOrigin [vdef|args|file|strn]
+# args: $2 : varPath (for files)
+# args: $3 : configuration
+# from: readConfig
 #
 __varsPush() {
 	declare varOrigin="$1" varPath="$2" configuration="$3"
@@ -1076,16 +1192,16 @@ __varsPush() {
 		fi
 	done
 	IFS="$IFSbkp"
+
 } # __varsPush()
 
 
 #-------------------------------------------------------------------------------
-#   __timeReport
+# __timeReport
 #
 #   Prints the spent time on the script, in milliseconds.
 #
-# Arguments:
-#  $1 - if true, prints the time beautified
+# args: $1 : when true, prints the time beautified
 #
 __timeElapsed() {
 	local beautiful="$1"
@@ -1096,16 +1212,17 @@ __timeElapsed() {
 	else
 		printf '%s' "$timeElapsed"
 	fi
-}
+
+} # __timeElapsed()
 
 
 #-------------------------------------------------------------------------------
-#   __timeBeautify
+# __timeBeautify
 #
-#   Formats a ms time into a string showing days, hours, minutes and or seconds
+#   Tries to format a time in milliseconds into a human readable text string
+#   showing the days, hours, minutes and/or seconds contained in that time.
 #
-# Arguments:
-#  $1 - time in milliseconds
+#  args: $1 : time in milliseconds
 #
 __timeBeautify() {
 	local -ir ms="$1"
@@ -1123,6 +1240,7 @@ __timeBeautify() {
 	[[ "$m" -lt 1 && -z "$didTime" ]] && timeString+="${ms}ms "
 
 	printf '%s' "${timeString}"
-}
 
-[[ "$0" == "$BASH_SOURCE" ]] && main "$@" # Run if not sourced
+} # __timeBeautify()
+
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && main "$@" # Run if not sourced
