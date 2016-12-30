@@ -3,7 +3,7 @@
 # webera
 # a handy static website generator
 #
-# Version      : 0.1.60
+# Version      : 0.1.61
 # Repository   : https://github.com/andamira/webera
 # Author       : José Luis Cruz © 2016
 # License      : MIT
@@ -13,7 +13,7 @@
 #-------------------------------------------------------------------------------
 # main
 #
-# args: $@ : all the arguments passed to the script
+# argument: $@ : all the arguments passed to the script
 #
 main() {
 
@@ -156,9 +156,9 @@ main() {
 #
 #   Displays Usage information.
 #
-# args: $1 : (optional) error code
-# exit: $1 : same received error code
-# from: parseArguments configureSettings
+# argument: $1 : (optional) error code
+#     exit: $1 : same received error code
+#   parent: parseArguments configureSettings
 #
 usage() {
 	cat -- <<-ENDUSAGE
@@ -169,7 +169,7 @@ usage() {
 	At least one OPERATIVE FLAG is needed in order for the script to run.
 	Mandatory arguments to long options are mandatory for short options too.
 
-	OPERATIVE FLAGS
+	OPERATIVE FLAGS              ...
 
 	  -t, --process-templates    process the templates
 	  -r, --process-resources    process the resources
@@ -212,9 +212,9 @@ usage() {
 #
 #  Parses the arguments received by the script and sets/saves the options.
 #
-# args:   $@ : all the arguments passed to the script
-# exit:  255 : when the argument is unknown
-# from: main
+# argument:   $@ : all the arguments passed to the script
+#     exit:  255 : when the argument is unknown
+#   parent: main
 #
 parseArguments() {
 	local OPTIND option value
@@ -309,10 +309,10 @@ parseArguments() {
 #
 #   Sets both short and long arguments, in a centralize manner.
 #
-# args: $1 : the common long name of the argument
-# args: $2 : (optional) the value of the argument
-# exit: 13 : unknown argument
-# from: parseArguments
+# argument: $1 : the common long name of the argument
+# argument: $2 : (optional) the value of the argument
+#     exit: 13 : unknown argument
+#   parent: parseArguments
 #
 setArg() {
 	declare argument="$1" value="$2"
@@ -320,24 +320,19 @@ setArg() {
 	case "$argument" in
 
 		# OPERATIONAL flags
-
 		process-templates)
 			_OPERATIONAL=true
 			_ARG_OPTIONS[_DO_PROCESS_TEMPLATES]=true ;;
-
 		process-resources)
 		   _OPERATIONAL=true
 		   _ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true ;;
-
 		process-all)
 			_OPERATIONAL=true
 			_ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true
 			_ARG_OPTIONS[_DO_PROCESS_TEMPLATES]=true ;;
-
 		preview)
 			_OPERATIONAL=true
 			_ARG_OPTIONS[_DO_PREVIEW_IN_BROWSER]=true ;;
-
 		new-config)
 			_OPERATIONAL=true
 			_DO_GENERATE_CONFIG_FILE=true
@@ -346,66 +341,50 @@ setArg() {
 
 		# OPTIONS flags
 
-		# The options starting starting with an underscore `_` can't be
-		# set in a configuration file, only passed as a script argument.
+		# The options whose name starts with an underscore `_` can only be
+		# set via script arguments; they are not read from any configuration.
 
 		file-config)
 			_CONFIG_FILE="$value"
 			_ARG_OPTIONS[_CONFIG_FILE]="$value" ;;
-
 		config)
 			_CONFIG_STRING="$value"
 			_ARG_OPTIONS[_CONFIG_STRING]="$value" ;;
-
 		clear-log)
 			_ARG_OPTIONS[_OPTION_LOG_CLEAR]=true ;;
-
 		dont-delete-output)
 			_ARG_OPTIONS[_OPTION_DELETE_DIR_OUTPUT]=false ;;
-
 
 		# The next options can also be defined in configuration file, but
 		# passing them as an argument to the script has a higher priority.
 
 		dir-templates)
 			_ARG_OPTIONS[DIR_TEMPLATES]="$value" ;;
-
 		dir-resources)
 			_ARG_OPTIONS[DIR_RESOURCES]="$value" ;;
-
 		dir-output)
 			_ARG_OPTIONS[DIR_OUTPUT]="$value" ;;
-
 		dir-build)
 			_ARG_OPTIONS[DIR_BUILD]="$value" ;;
-
 		log-level)
 			_ARG_OPTIONS[OPTION_LOG_LEVEL]="$value" ;;
-
 		log-file)
 			_ARG_OPTIONS[LOG_FILE]="$value" ;;
-
 		browser-bin)
 			_ARG_OPTIONS[WEB_BROWSER]="$value" ;;
-
 		server-type)
 			_ARG_OPTIONS[SERVER_TYPE]="$value" ;;
-
 		server-host)
 			_ARG_OPTIONS[SERVER_HOST]="$value" ;;
-
 		server-port)
 			_ARG_OPTIONS[SERVER_PORT]="$value" ;;
-
 		help)
 			_DO_USAGE=true; _DO_EXIT=0 ;;
-
 		_)
 			__DO_PRINT_VARS=true ;;
-
 		*)
 			log error "ERROR: unknow argument '$argument'"
-			exit 13 ;;
+			exit 13 ;; # TODO unify with previous...
 	esac
 
 } # setArg
@@ -415,7 +394,7 @@ setArg() {
 #
 #   Prepares the log file and writes all the logs previously saved in _PRELOG.
 #
-# from: main
+# parent: main
 #
 setupLog() {
 	local parsedPrelog
@@ -451,9 +430,10 @@ setupLog() {
 #
 #   prints a message to the log file. Errors and warnings also to STDERR.
 #
-# args: $1  : (optional) logLevelNeeded
-# args: $2  : (optional) logType [warn|error]
-# args: $3+ : log message
+# argument: $1  : (optional) logLevelNeeded
+# argument: $2  : (optional) logType [warn|error]
+# argument: $3+ : log message
+#   parent: <almost all functions>
 #
 # shellcheck disable=SC2059
 log() {
@@ -518,8 +498,8 @@ log() {
 #
 #   Prepares the server commands, for previewing in the browser.
 #
-# exit: 5 : Server type not recognized
-# from: main : when the script received the `-r` flag
+#   exit: 5 : Server type not recognized
+# parent: main : when the script received the `-r` flag
 #
 previewWebsite() {
 	local cmdBrowser
@@ -570,7 +550,7 @@ previewWebsite() {
 #
 #   Deletes the build/ and output directories if there's going to be operations.
 #
-# from: main
+# parent: main
 #
 deleteDirectories() {
 	[[ "$OPTION_DELETE_DIR_BUILD" == true ]] && rm -rf -- "$DIR_BUILD" 2>/dev/null
@@ -590,10 +570,10 @@ deleteDirectories() {
 #   Reads some configuration from a file or a string,
 #   and joins it together to a common source.
 #
-# args: $1 : $configType [file|string]
-# args: $2 : $configPointer can be either the file name or the variable name
-# exit: 10 : unknown config type
-# from: main
+# argument: $1 : $configType [file|string]
+# argument: $2 : $configPointer can be either the file name or the variable name
+#     exit: 10 : unknown config type
+#   parent: main
 #
 readConfig() {
 	declare configType="$1" configPointer="$2"
@@ -655,8 +635,8 @@ readConfig() {
 #   Parses the configuration settings and overrides them with:
 #   1) the joint configuration 2) the passed arguments.
 #
-# exit: 1 : (via usage) no main operatives flags used
-# from: main
+#   exit: 1 : (via usage) no main operatives flags used
+# parent: main
 #
 configureSettings() {
 	declare settingsList setting arg settingName settingValue settingPrevious
@@ -701,7 +681,7 @@ configureSettings() {
 #
 #   Generates a config file, writing down the settings modified via arguments.
 #
-# from: main : when the script received the `-n` flag
+# parent: main : when the script received the `-n` flag
 #
 generateConfig() {
 	local configLines=()
@@ -725,7 +705,7 @@ generateConfig() {
 #
 #   Reads the configuration commands for processing templates and resources.
 #
-# from: main
+# parent: main
 #
 readConfigCommands() {
 	declare commandList cmd commandNum commandName commandAction
@@ -761,8 +741,8 @@ readConfigCommands() {
 #
 #   Parses the configuration and executes the resource operations.
 #
-# retn:   8  : no resources directory found
-# from: main : when the script received the `-r` flag
+# return:    8 : no resources directory found
+# parent: main : when the script received the `-r` flag
 #
 processResources() {
 	declare resourceOpList resourceOpNum resourceOp
@@ -844,8 +824,8 @@ processResources() {
 #
 #   Parses the configuration and executes the template operations.
 #
-# retn:   9  : no templates directory found
-# from: main : when the script received the `-t` flag
+# return:    9 : no templates directory found
+# parent: main : when the script received the `-t` flag
 #
 processTemplates() {
 	declare templateOpList templateOpNum templateOp
@@ -937,10 +917,10 @@ processTemplates() {
 #   Recursively parses a template for include directives, and then
 #   joins all the parts together in a single template.
 #
-# args: $1 : templateFileName
-# exit:  3 : Maximum nesting level overflow
-# retn:  7 : No template found
-# from: templateRender
+# argument: $1 : templateFileName
+#   return:  7 : No template found
+#     exit:  3 : Maximum nesting level overflow
+#   parent: templateRender
 #
 templateParseIncludes() {
 	declare templateFileName=$1
@@ -997,8 +977,8 @@ templateParseIncludes() {
 #
 #   Parses the template, processes the directives and renders the html file.
 #
-# args  : $1 : templateFileName
-# from: processTemplates : when parsing the 'route' command
+# argument: $1 : templateFileName
+#   parent: processTemplates (when parsing the 'route' command)
 #
 templateRender() {
 	declare templateFileName=$1
@@ -1124,8 +1104,8 @@ templateRender() {
 #
 #   Checks for dependencies and displays pertinent information.
 #
-# exit: 6 : Bash version is too old
-# from: main
+#   exit: 6 : Bash version is too old
+# parent: main
 #
 __checkCompatibility() {
 	local bashBigVersion
@@ -1143,7 +1123,7 @@ __checkCompatibility() {
 #
 #   Enables xtrace if WEBERA_DEBUG has been defined, and sets a nice formatting.
 #
-# from: main
+# parent: main
 #
 # shellcheck disable=SC2016
 __setupDebugging() {
@@ -1170,10 +1150,10 @@ __varsPrint() { printf '%s\n' "$__VARS_WEBERA"; }
 #   Parses configuration, extracts the config variables and appends them
 #   to __VARS_WEBERA in the correct format, using the provided arguments.
 #
-# args: $1 : varOrigin [vdef|args|file|strn]
-# args: $2 : varPath (for files)
-# args: $3 : configuration
-# from: readConfig
+# argument: $1 : varOrigin [vdef|args|file|strn]
+# argument: $2 : varPath (for files)
+# argument: $3 : configuration
+#   parent: readConfig
 #
 __varsPush() {
 	declare varOrigin="$1" varPath="$2" configuration="$3"
@@ -1201,7 +1181,7 @@ __varsPush() {
 #
 #   Prints the spent time on the script, in milliseconds.
 #
-# args: $1 : when true, prints the time beautified
+# argument: $1 : when true, prints the time beautified
 #
 __timeElapsed() {
 	local beautiful="$1"
@@ -1222,7 +1202,7 @@ __timeElapsed() {
 #   Tries to format a time in milliseconds into a human readable text string
 #   showing the days, hours, minutes and/or seconds contained in that time.
 #
-#  args: $1 : time in milliseconds
+# argument: $1 : time in milliseconds
 #
 __timeBeautify() {
 	local -ir ms="$1"
@@ -1242,5 +1222,6 @@ __timeBeautify() {
 	printf '%s' "${timeString}"
 
 } # __timeBeautify()
+
 
 [[ "$0" == "${BASH_SOURCE[0]}" ]] && main "$@" # Run if not sourced

@@ -50,6 +50,7 @@ helper_init_common() {
 	fi
 
 	# Imports
+	[[ -f "$DIR_TESTS/aserta" ]] || helper_install_dependency aserta
 	source "$DIR_TESTS/aserta" -v
 	source "$DIR_WEBERA/webera"
 
@@ -131,7 +132,7 @@ helper_run_all_tests() {
 	printf '%s\n' "Running tests from ${#testFiles[@]} test files. . ."
 
 	for T in "${testFiles[@]}"; do
-		"$DIR_TESTS/$T"
+		bash "$DIR_TESTS/$T"
 	done
 
 	test_final_summary
@@ -408,10 +409,12 @@ weberaVarValue() {
 helper_install_dependency() {
 	declare dependency="$1"
 
+	printf 'Installing dependency: %s . . .\n' "$dependency"
+
 	case $dependency in
-		aserta) # v2.2.1
-			wget "https://raw.githubusercontent.com/andamira/aserta/c2712e80ae7e42030b4be5af66398769a15b53b1/aserta" -O "$DIR_TESTS/aserta"
-			chmod +x "$DIR_TESTS/aserta"
+		aserta)
+			wget --quiet "https://github.com/andamira/aserta/releases/download/v2.1.1/aserta" \
+				-O "$DIR_TESTS/aserta" && chmod +x "$DIR_TESTS/aserta"
 			;;
 
 		*) printf "Error: Can't recognize dependency '%s'." "$dependency" >&2

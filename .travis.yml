@@ -22,5 +22,4 @@ matrix:
     - os: osx
 
 script:
-  - ./tests/helper --install=aserta
   - ./tests/helper --run-all
