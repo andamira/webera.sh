@@ -3,7 +3,7 @@
 # webera
 # a handy static website generator
 #
-# Version      : 0.1.62
+# Version      : 0.1.63
 # Repository   : https://github.com/andamira/webera
 # Author       : José Luis Cruz © 2016
 # License      : MIT
@@ -70,8 +70,6 @@ main() {
 	local _DO_PROCESS_RESOURCES=false     # -ra
 	local _DO_PREVIEW_IN_BROWSER=false    # -w
 	local _DO_GENERATE_CONFIG_FILE=false  # -n
-	local _DO_USAGE=false                 # -_
-	local _DO_EXIT=false
 
 	# arrays
 	declare -A _ARG_OPTIONS
@@ -93,7 +91,7 @@ main() {
 		<(printf '%s' "$__VARS_BEFORE") <(printf '%s' "$__VARS_AFTER") \
 		| sed 's/^/[vdef]::/' )"
 	unset __VARS_BEFORE; unset __VARS_AFTER;
-	local __DO_PRINT_VARS=false
+	local __DO_PRINT_VARS=false           # -_
 
 
 	## STRING CONSTANTS
@@ -127,8 +125,7 @@ main() {
 	configureSettings
 
 	[[ "$_DO_USAGE" == true ]] && usage
-	[[ "$__DO_PRINT_VARS" == true ]] && __varsPrint && return "$?"
-	[[ "$_DO_EXIT" != "false" ]] && exit "$_DO_EXIT"
+	[[ "$__DO_PRINT_VARS" == true ]] && __varsPrint && exit "$?"
 
 	setupLog
 
@@ -379,7 +376,7 @@ setArg() {
 		server-port)
 			_ARG_OPTIONS[SERVER_PORT]="$value" ;;
 		help)
-			_DO_USAGE=true; _DO_EXIT=0 ;;
+			_DO_USAGE=true ;;
 		_)
 			__DO_PRINT_VARS=true ;;
 		*)

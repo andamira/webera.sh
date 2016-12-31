@@ -50,7 +50,6 @@ To install it globally:
 sudo sh -c "wget git.io/webera -O /usr/local/bin/webera && chmod +x /usr/local/bin/webera"
 ```
 
-
 ### For Mac OS X users
 
 > Warning: not yet working in Mac OS X. see [issue #14](https://github.com/andamira/webera/issues/14)
@@ -119,7 +118,7 @@ There are *(will be, this is WIP)* several more examples you can take a look int
 
 ### Config [△](#table-of-contents "Back to TOC")
 
-The following is a small configuration file that shows how to:
+The following configuration snippet shows how to:
 
 - configure the options.
 - define commands for later use on the indicated resources (or templates).
@@ -232,11 +231,11 @@ Run `./webera --help` to see the basic info on flags, or take a look to the comp
 
 ## Reasons [△](#table-of-contents "Back to TOC")
 
-This script was originally inspired by
+webera is loosely inspired by
 [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e),
-the [Unix](https://en.wikipedia.org/wiki/Unix_philosophy)
-and [suckless](http://suckless.org/philosophy) philosophies,
-and the Swiss army knife.
+the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy),
+the [suckless philosophy](http://suckless.org/philosophy)
+and the [Swiss Army knife](https://en.wikipedia.org/wiki/Swiss_Army_knife).
 
 The intention is to see how far this idea can be taken,
 and try to achive an ideal balance between

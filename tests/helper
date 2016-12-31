@@ -119,6 +119,9 @@ helper_arguments() {
 
 helper_run_all_tests() {
 
+	# First check the compatibility
+	__checkCompatibility
+
 	# Manual ordered list of test files
 	local testFiles=()
 
@@ -413,7 +416,8 @@ helper_install_dependency() {
 
 	case $dependency in
 		aserta)
-			wget --quiet "https://github.com/andamira/aserta/releases/download/v2.1.1/aserta" \
+			#wget --quiet "https://github.com/andamira/aserta/releases/download/v2.1.1/aserta" \
+			wget --quiet "git.io/aserta" \
 				-O "$DIR_TESTS/aserta" && chmod +x "$DIR_TESTS/aserta"
 			;;
 
