@@ -3,7 +3,7 @@
 # webera
 # a handy static website generator
 #
-# Version      : 0.1.61
+# Version      : 0.1.62
 # Repository   : https://github.com/andamira/webera
 # Author       : José Luis Cruz © 2016
 # License      : MIT
@@ -1108,11 +1108,15 @@ templateRender() {
 # parent: main
 #
 __checkCompatibility() {
-	local bashBigVersion
 
-	bashBigVersion=$(echo "$BASH_VERSION" | cut -d'.' -f1)
-	if [[ "$bashBigVersion" -lt 4 ]]; then
-		printf '%s\n' "Bash version 4 needed. Detected version is $BASH_VERSION"
+	# Bash version >= 4
+	if [[ "${BASH_VERSINFO[0]}" -lt 4 ]]; then
+		printf '%s\n' "Bash version >=4 needed. Current version is $BASH_VERSION"
+
+		if [[ "$(uname)" == 'Darwin' ]]; then
+			printf 'You can install it with Brew (http://brew.sh)\n like this:'
+			printf 'brew install bash\n'
+		fi
 		exit 6
 	fi
 }
