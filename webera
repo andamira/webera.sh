@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 #
-# webera
-# a handy static website generator
-#
-# Version      : 0.1.63
-# Repository   : https://github.com/andamira/webera
-# Author       : José Luis Cruz © 2016
-# License      : MIT
-# Dependencies : bash 4, grep -P, sed, awk, coreutils
-##
+#         name : webera
+#  description : a handy static website generator
+#   repository : https://github.com/andamira/webera
+#       author : José Luis Cruz © 2016-2017
+#      license : MIT
+_WEBERA_VERSION=0.1.64
+
 
 #-------------------------------------------------------------------------------
 # main
@@ -18,12 +17,17 @@
 main() {
 
 	## INNER SETUP-A
+
+	# Binaries found for Unix commands employed
+	declare __SED __AWK __GREP __DATE __READLINK
+
 	__checkCompatibility
-	local -ir __WEBERA_TIME_STAMP="$(date '+%s%3N')" # [INC02]
+	local -ir __WEBERA_TIME_STAMP="$($__DATE '+%s%3N')" # [INC02]
 	__setupDebugging
+
 	# prepare to save a list of the default settings
 	declare __VARS_WEBERA __VARS_BEFORE __VARS_AFTER
-	__VARS_BEFORE=$(set -o posix ; set | awk -F= '{print $1"="}' )
+	__VARS_BEFORE=$(set -o posix ; set | $__AWK -F= '{print $1"="}' )
 
 
 	## CONFIGURABLE SETTINGS
@@ -62,7 +66,7 @@ main() {
 	local -i NESTING_MAX=8
 
 
-	## INNER DATA
+	## NON-CONFIGURABLE DATA
 
 	# statuses
 	local _OPERATIONAL=false              # -trawn
@@ -80,16 +84,16 @@ main() {
 	local _CONFIG_JOINT="" # where to save all the configurations
 	local _PRELOG="" # where log is saved before there's a logfile
 
-	local -r _DATE_START="$(date '+%Y-%m-%d %H:%M:%S' \
+	local -r _DATE_START="$($__DATE '+%Y-%m-%d %H:%M:%S' \
 		-d @"${__WEBERA_TIME_STAMP:0:10}")" # [INC03]
 
 
 	## INNER SETUP-B
 	# save the list of the default settings
-	__VARS_AFTER="$(set -o posix ; set | sed '/^'\''/d' )"
-	printf -v __VARS_WEBERA '%s' "$(grep -vFf \
+	__VARS_AFTER="$(set -o posix ; set | $__SED '/^'\''/d' )"
+	printf -v __VARS_WEBERA '%s' "$($__GREP -vFf \
 		<(printf '%s' "$__VARS_BEFORE") <(printf '%s' "$__VARS_AFTER") \
-		| sed 's/^/[vdef]::/' )"
+		| $__SED 's/^/[vdef]::/' )"
 	unset __VARS_BEFORE; unset __VARS_AFTER;
 	local __DO_PRINT_VARS=false           # -_
 
@@ -161,7 +165,7 @@ usage() {
 	cat -- <<-ENDUSAGE
 	webera is a handy static website generator.
 
-	Usage: ./webera -[trawn] [options]
+	Usage: webera -[trawn] [options]
 
 	At least one OPERATIVE FLAG is needed in order for the script to run.
 	Mandatory arguments to long options are mandatory for short options too.
@@ -197,11 +201,35 @@ usage() {
 	  -h, --help                 display this help and exit
 	      --version              output version information and exit
 
-	  Repository and documentation in <https://github.com/andamira/webera>
 	ENDUSAGE
 	[[ -n "$1" ]] && exit "$1"
 
 } #usage()
+
+
+#-------------------------------------------------------------------------------
+# versionInfo
+#
+#   Displays version information and exits
+#
+# argument: $1 : (optional) error code
+#     exit: $1 : same received error code
+#   parent: parseArguments configureSettings
+#
+versionInfo() {
+	cat -- <<-ENDVERSION
+	webera $_WEBERA_VERSION
+	Copyright (C) 2016-2017 José Luis Cruz
+	License: MIT
+
+	<https://github.com/andamira/webera>
+
+	# Binaries found for the Unix commands employed
+	$__SED, $__AWK, $__GREP, $__DATE
+	ENDVERSION
+	exit 0
+
+} #versionInfo()
 
 
 #-------------------------------------------------------------------------------
@@ -249,6 +277,7 @@ parseArguments() {
 					server-port=*) setArg server-port "${OPTARG#*=}" ;;
 
 					help) setArg help ;;
+					version) setArg version ;;
 
 					*)  # error
 						if [[ "$OPTERR" == 1 ]]; then
@@ -298,7 +327,7 @@ parseArguments() {
 	done
 	shift $((OPTIND-1))
 
-} # parseArguments()
+} #parseArguments()
 
 
 #-------------------------------------------------------------------------------
@@ -377,6 +406,8 @@ setArg() {
 			_ARG_OPTIONS[SERVER_PORT]="$value" ;;
 		help)
 			_DO_USAGE=true ;;
+		version)
+			versionInfo ;;
 		_)
 			__DO_PRINT_VARS=true ;;
 		*)
@@ -384,7 +415,7 @@ setArg() {
 			exit 13 ;; # TODO unify with previous...
 	esac
 
-} # setArg
+} #setArg()
 
 #-------------------------------------------------------------------------------
 # setupLog
@@ -410,10 +441,10 @@ setupLog() {
 	#
 	# shellcheck disable=SC2059
 	parsedPrelog=$(printf "$_PRELOG" \
-		| awk -v logLevel=$OPTION_LOG_LEVEL -F '|' '$1<=logLevel' \
+		| $__AWK -v logLevel=$OPTION_LOG_LEVEL -F '|' '$1<=logLevel' \
 		| cut -d'|' -f3- \
 		| tr '\a' '\n' \
-		| sed "s/====@$/====$OPTION_LOG_LEVEL/" \
+		| $__SED "s/====@$/====$OPTION_LOG_LEVEL/" \
 	)
 	_PRELOG=false
 
@@ -484,10 +515,10 @@ log() {
 
 	# Print errors and warnings to stderr
 	if [[ "$logType" == "error" || "$logType" == "warn" ]]; then
-		printf "$logMessage" | tr -d '\n' | awk '{ print }' - >&2 # [OPTIMIZE]
+		printf "$logMessage" | tr -d '\n' | $__AWK '{ print }' - >&2 # [OPTIMIZE]
 	fi
 
-} # log()
+} #log()
 
 
 #-------------------------------------------------------------------------------
@@ -526,7 +557,7 @@ previewWebsite() {
 	printf 'Loading website in "%s"...\n' "$WEB_BROWSER"
 
 	if [[ "$SERVER_TYPE" == "none" ]]; then
-		cmdBrowser="$WEB_BROWSER file://$(readlink -f $DIR_OUTPUT) &"
+		cmdBrowser="$WEB_BROWSER file://$($__READLINK -f $DIR_OUTPUT) &"
 	else
 		cmdBrowser="$WEB_BROWSER http://$SERVER_HOST:$SERVER_PORT &"
 	fi
@@ -580,9 +611,9 @@ readConfig() {
 		if [[ -n "${!configPointer}" ]]; then # string is not empty
 			log 3 "Reading settings passed as an argument."
 			readConfig="$(printf '%s' "${!configPointer}" \
-				| sed -e "$_SED_TRIM_WS" \
-				| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
-				| sed -e "$_SED_JOIN_SPLITLINES" \
+				| $__SED -e "$_SED_TRIM_WS" \
+				| $__SED -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
+				| $__SED -e "$_SED_JOIN_SPLITLINES" \
 			)"$'\n'
 			_CONFIG_JOINT+="$readConfig"
 			__varsPush strn "" "$readConfig"
@@ -597,8 +628,8 @@ readConfig() {
 			else
 				log 3 "Reading settings from file '$configPointer'"
 				readConfig="$(sed -e "$_SED_TRIM_WS" "$configPointer" \
-					| sed -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
-					| sed -e "$_SED_JOIN_SPLITLINES" \
+					| $__SED -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
+					| $__SED -e "$_SED_JOIN_SPLITLINES" \
 				)"$'\n'
 				_CONFIG_JOINT+="$readConfig" # append
 				__varsPush file "$configPointer" "$readConfig"
@@ -638,7 +669,7 @@ readConfig() {
 configureSettings() {
 	declare settingsList setting arg settingName settingValue settingPrevious
 
-	settingsList="$(printf '%s' "$_CONFIG_JOINT" | grep "^$_WS*config$_WS*:" )"
+	settingsList="$(printf '%s' "$_CONFIG_JOINT" | $__GREP "^$_WS*config$_WS*:" )"
 
 	if [[ -n "$settingsList" ]]; then
 		log 1 "\nConfiguring settings...\n$_HEADING"
@@ -647,10 +678,10 @@ configureSettings() {
 		for setting in $settingsList; do
 			settingName=$(printf '%s' "$setting" \
 				| cut -d':' -f2 \
-				| sed -e "$_SED_TRIM_WS")
+				| $__SED -e "$_SED_TRIM_WS")
 			settingValue=$(printf '%s' "$setting" \
 				| cut -d':' -f3- \
-				| sed -e "$_SED_TRIM_WS")
+				| $__SED -e "$_SED_TRIM_WS")
 
 			[[ -n "${!settingName}" ]] &&
 				settingPrevious="(previous=${!settingName})"
@@ -707,7 +738,7 @@ generateConfig() {
 readConfigCommands() {
 	declare commandList cmd commandNum commandName commandAction
 
-	commandList="$(printf '%s' "$_CONFIG_JOINT" | grep "^$_WS*command$_WS*:" )"
+	commandList="$(printf '%s' "$_CONFIG_JOINT" | $__GREP "^$_WS*command$_WS*:" )"
 
 	if [[ -n "$commandList" ]]; then
 		commandNum=$(printf '%s\n' "$commandList" | wc -l )
@@ -719,10 +750,10 @@ readConfigCommands() {
 	for cmd in $commandList; do # [OPTIMIZE]
 		commandName=$(printf '%s' "$cmd" \
 			| cut -d':' -f2 \
-			| sed -e "$_SED_TRIM_WS" )
+			| $__SED -e "$_SED_TRIM_WS" )
 		commandAction=$(printf '%s' "$cmd" \
 			| cut -d':' -f3- \
-			| sed -e "$_SED_TRIM_WS" )
+			| $__SED -e "$_SED_TRIM_WS" )
 
 		_DEFINED_CMD_MAP["$commandName"]="$commandAction"
 
@@ -753,9 +784,9 @@ processResources() {
 	fi
 
 	resourceOpList="$(printf '%s' "$_CONFIG_JOINT" \
-		| grep "^$_WS*resource$_WS*:" )"
+		| $__GREP "^$_WS*resource$_WS*:" )"
 	resourceOpNum=$(printf '%s\n' "$resourceOpList" \
-		| sed "$_SED_DEL_EMPTYLINES" \
+		| $__SED "$_SED_DEL_EMPTYLINES" \
 		| wc -l )
 	log 1 "${_IN}Found $resourceOpNum operations on resources:"
 
@@ -763,13 +794,13 @@ processResources() {
 	for resourceOp in $resourceOpList; do # [OPTIMIZE]
 		operation=$(printf '%s' "$resourceOp" \
 			| cut -d':' -f2 \
-			| sed -e "$_SED_TRIM_WS" )
+			| $__SED -e "$_SED_TRIM_WS" )
 		fileOrigin=$(printf '%s' "$resourceOp" \
 			| cut -d':' -f3 \
-			| sed -e "$_SED_TRIM_WS" )
+			| $__SED -e "$_SED_TRIM_WS" )
 		fileTarget=$(printf '%s' "$resourceOp" \
 			| cut -d':' -f4 \
-			| sed -e "$_SED_TRIM_WS" )
+			| $__SED -e "$_SED_TRIM_WS" )
 
 		log 1 "${_IN}$operation: $fileOrigin > $fileTarget"
 
@@ -789,9 +820,9 @@ processResources() {
 				if [[ -n "${_DEFINED_CMD_MAP[$operation]}" ]]; then
 
 					command=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
-						| sed "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
-						| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
-						| sed "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g")
+						| $__SED "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
+						| $__SED "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
+						| $__SED "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g")
 
 					# Create target paths
 					if [[ "${_DEFINED_CMD_MAP[$operation]}" == *"{BUILD}"* ]]; then
@@ -836,10 +867,10 @@ processTemplates() {
 	fi
 
 	templateOpList="$(printf '%s' "$_CONFIG_JOINT" \
-		| grep "^$_WS*template$_WS*:" )"
+		| $__GREP "^$_WS*template$_WS*:" )"
 
 	templateOpNum=$(printf '%s\n' "$templateOpList" \
-		| sed "$_SED_DEL_EMPTYLINES" \
+		| $__SED "$_SED_DEL_EMPTYLINES" \
 		| wc -l )
 	log 1 "${_IN}Found $templateOpNum operations on templates:"
 
@@ -847,13 +878,13 @@ processTemplates() {
 	for templateOp in $templateOpList; do
 		operation=$(printf '%s' "$templateOp" \
 			| cut -d':' -f2 \
-			| sed -e "$_SED_TRIM_WS" )
+			| $__SED -e "$_SED_TRIM_WS" )
 		fileOrigin=$(printf '%s'  "$templateOp" \
 			| cut -d':' -f3 \
-			| sed -e "$_SED_TRIM_WS" )
+			| $__SED -e "$_SED_TRIM_WS" )
 		fileTarget=$(printf '%s' "$templateOp" \
 			| cut -d':' -f4 \
-			| sed -e "$_SED_TRIM_WS" )
+			| $__SED -e "$_SED_TRIM_WS" )
 
 		log 1 "${_IN}$operation: $fileOrigin > $fileTarget"
 
@@ -881,9 +912,9 @@ processTemplates() {
 				if [[ -n "${_DEFINED_CMD_MAP[$operation]}" ]]; then
 
 					command=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
-						| sed "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
-						| sed "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
-						| sed "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
+						| $__SED "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
+						| $__SED "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
+						| $__SED "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
 					)
 
 					# Create target paths
@@ -938,7 +969,7 @@ templateParseIncludes() {
 		log 1 error "${_IN}ERROR: No template found '$templateFile'"
 		return 7
 	fi
-	directives_include=$(grep -Po "<!--$_WS*%include$_WS*:.*?-->" \
+	directives_include=$($__GREP -Po "<!--$_WS*%include$_WS*:.*?-->" \
 		"$templateFile") # [INC01]
 
 	local IFSbkp="$IFS"; IFS=$'\n'
@@ -950,8 +981,8 @@ templateParseIncludes() {
 
 	for directive in $directives_include; do
 		incFileName=$(printf '%s' "$directive" \
-			| sed -n -e "s/<\!--$_WS*%include$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" \
-			| sed -e "s/$_WS*$//" )
+			| $__SED -n -e "s/<\!--$_WS*%include$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" \
+			| $__SED -e "s/$_WS*$//" )
 		log 2 "${_IN2}include: '$incFileName'"
 
 		# Parse included template for further includes
@@ -989,18 +1020,18 @@ templateRender() {
 
 	# Template tags must be one-liners
 	directives_set=$(printf '%s' "$templateText" \
-		| grep -Po "<!--$_WS*%set$_WS*:.*?-->") # [INC01]
+		| $__GREP -Po "<!--$_WS*%set$_WS*:.*?-->") # [INC01]
 	directives_cmd=$(printf '%s' "$templateText" \
-		| grep -Po "<!--$_WS*%cmd$_WS*:.*?-->") # [INC01]
+		| $__GREP -Po "<!--$_WS*%cmd$_WS*:.*?-->") # [INC01]
 	directives_setcmd=$(printf '%s' "$templateText" \
-		| grep -Po "<!--$_WS*%setcmd$_WS*:.*?-->") # [INC01]
+		| $__GREP -Po "<!--$_WS*%setcmd$_WS*:.*?-->") # [INC01]
 
 	# text comments
 	#
 	# <!-- // Comment -->
 	#
 	templateText=$(printf '%s' "$templateText" \
-		| sed -e :a -re "s/<!--$_WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
+		| $__SED -e :a -re "s/<!--$_WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
 
 	local IFSbkp="$IFS"; IFS=$'\n'
 
@@ -1011,8 +1042,8 @@ templateRender() {
 	#
 	for directive in $directives_set; do
 		setVarVal=$(printf '%s' "$directive" \
-			| sed -n -e "s/<\!--$_WS*%set$_WS*:$_WS*\(.*\)$_WS*-->/\1/p"\
-			| sed -e "s/$_WS*$//")
+			| $__SED -n -e "s/<\!--$_WS*%set$_WS*:$_WS*\(.*\)$_WS*-->/\1/p"\
+			| $__SED -e "s/$_WS*$//")
 		setVar="${setVarVal%%=*}"
 		setValue="${setVarVal#*=}"
 		log 3 "${_IN3}set: $setVar = $setValue"
@@ -1020,9 +1051,9 @@ templateRender() {
 		# Cross-platform syntax to replace including newlines
 		# http://stackoverflow.com/a/1252191
 		templateText=$(printf '%s' "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" -e "s/$directive\n\?//g")
+			| $__SED -e ":a" -e "N" -e "\$!ba" -e "s/$directive\n\?//g")
 		templateText=$(printf '%s' "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" \
+			| $__SED -e ":a" -e "N" -e "\$!ba" \
 			-e "s/<!--$_WS*@$setVar$_WS*-->\n\?/$setValue/g")
 	done
 
@@ -1032,8 +1063,8 @@ templateRender() {
 	#
 	for directive in $directives_cmd ; do
 		cmd=$(printf '%s' "$directive" \
-			| sed -n -e "s/^.*<\!--$_WS*%cmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" \
-			| sed -e "s/$_WS*$//")
+			| $__SED -n -e "s/^.*<\!--$_WS*%cmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" \
+			| $__SED -e "s/$_WS*$//")
 		cmdOutput=$(eval "$cmd")
 		log 3 "${_IN2}cmd: $cmd"
 
@@ -1050,7 +1081,7 @@ templateRender() {
 
 		# Substitute the directive in the template with the command output
 		# http://stackoverflow.com/a/40749641/940200
-		templateText=$(awk -v repl="$cmdOutput" 'FNR==NR {
+		templateText=$($__AWK -v repl="$cmdOutput" 'FNR==NR {
 				a = a $0; next
 			}
 			n = index($0, a) {
@@ -1066,15 +1097,15 @@ templateRender() {
 	#
 	for directive in $directives_setcmd; do
 		setCmd=$(printf '%s' "$directive" \
-			| sed -n -e "s/^.*<\!--$_WS*%setcmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" \
-			| sed -e "s/$_WS*$//")
+			| $__SED -n -e "s/^.*<\!--$_WS*%setcmd$_WS*:$_WS*\(.*\)$_WS*-->.*$/\1/p" \
+			| $__SED -e "s/$_WS*$//")
 		setCmdVar="${setCmd%%=*}"
 		setCmdValue="${setCmd#*=}"
 		setCmdOutput=$(eval "$setCmdValue")
 		log 3 "${_IN2}setcmd: $setCmdVar = $setCmdValue"
 
 		# Delete the directive from the template
-		templateText=$(awk -v 'FNR==NR {
+		templateText=$($__AWK -v 'FNR==NR {
 				a = a $0; next
 			}
 			n = index($0, a) {
@@ -1083,7 +1114,7 @@ templateRender() {
 		)
 		# Replace all the set variables with the command output
 		templateText=$(printf '%s' "$templateText" \
-			| sed -e ":a" -e "N" -e "\$!ba" \
+			| $__SED -e ":a" -e "N" -e "\$!ba" \
 			-e "s/<!--$_WS*@$setCmdVar$_WS*-->\n\?/$setCmdOutput/g")
 	done
 
@@ -1116,7 +1147,34 @@ __checkCompatibility() {
 		fi
 		exit 6
 	fi
-}
+
+	# prefer the GNU version of the Unix commands used, specially in Mac OS X
+	__SED="$(__gnuCmd sed)"
+	__AWK="$(__gnuCmd  awk)"
+	__GREP="$(__gnuCmd grep)"
+	__DATE="$(__gnuCmd date)"
+	__READLINK="$(__gnuCmd readlink)"
+
+} #__checkCompatibility()
+
+
+#-------------------------------------------------------------------------------
+# __gnuCmd
+#
+#   Returns the resolved command, preferring the GNU versions
+#   and falling back to the standard version when not found.
+#
+__gnuCmd() {
+	local default_cmd="$1"
+	local gnu_cmd="g$default_cmd"
+
+	if [[ "$(which "$gnu_cmd" 2> /dev/null)" ]]; then
+		printf '%s' "$gnu_cmd"
+	else
+		printf '%s' "$default_cmd"
+	fi
+
+} #__gnuCmd()
 
 
 #-------------------------------------------------------------------------------
@@ -1128,13 +1186,14 @@ __checkCompatibility() {
 #
 # shellcheck disable=SC2016
 __setupDebugging() {
-	local ps4_date='[$(($(date "+%s%3N")-__WEBERA_TIME_STAMP))ms]' # [INC02]
+	local ps4_date='[$(($($__DATE "+%s%3N")-__WEBERA_TIME_STAMP))ms]' # [INC02]
 	local ps4_line='L$LINENO'
 	local ps4_func='${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 	[[ -n "$WEBERA_DEBUG" ]] && set -o xtrace && \
 		export PS4="+ $ps4_date $ps4_line $ps4_func"
-}
+
+} #__setupDebugging()
 
 
 #-------------------------------------------------------------------------------
@@ -1162,10 +1221,10 @@ __varsPush() {
 
 	local IFSbkp="$IFS"; IFS=$'\n'
 	for configLine in $(printf '%s' "$configuration" \
-		| grep '^config' \
+		| $__GREP '^config' \
 		| cut -d ':' -f2- \
-		| sed "s/$_WS*:$_WS*/=/" \
-		| sed "$_SED_TRIM_WS" \
+		| $__SED "s/$_WS*:$_WS*/=/" \
+		| $__SED "$_SED_TRIM_WS" \
 		); do
 		if [[ "$configLine" != _* ]]; then # only read public variables
 			printf -v __VARS_WEBERA '%s' \
@@ -1174,7 +1233,7 @@ __varsPush() {
 	done
 	IFS="$IFSbkp"
 
-} # __varsPush()
+} #__varsPush()
 
 
 #-------------------------------------------------------------------------------
@@ -1186,7 +1245,7 @@ __varsPush() {
 #
 __timeElapsed() {
 	local beautiful="$1"
-	local -ir timeStampFinal="$(date '+%s%3N')"
+	local -ir timeStampFinal="$($__DATE '+%s%3N')"
 	local -ir timeElapsed="$((timeStampFinal-__WEBERA_TIME_STAMP))"
 	if [[ "$beautiful" == true ]]; then
 		printf '%s' "$(__timeBeautify "$timeElapsed")"
@@ -1194,7 +1253,7 @@ __timeElapsed() {
 		printf '%s' "$timeElapsed"
 	fi
 
-} # __timeElapsed()
+} #__timeElapsed()
 
 
 #-------------------------------------------------------------------------------
@@ -1222,7 +1281,7 @@ __timeBeautify() {
 
 	printf '%s' "${timeString}"
 
-} # __timeBeautify()
+} #__timeBeautify()
 
 
 [[ "$0" == "${BASH_SOURCE[0]}" ]] && main "$@" # Run if not sourced

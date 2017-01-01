@@ -13,6 +13,7 @@ a handy shell script for the generation of static websites.
 
 - [Features](#features-)
 - [Installation](#installation-)
+  - [Mac OS X](#mac-os-x-)
 - [Quick Start](#quick-start-)
   - [More Examples](#more-examples-)
 - [Documentation](#documentation-)
@@ -50,14 +51,13 @@ To install it globally:
 sudo sh -c "wget git.io/webera -O /usr/local/bin/webera && chmod +x /usr/local/bin/webera"
 ```
 
-### For Mac OS X users
+### Mac OS X
 
-> Warning: not yet working in Mac OS X. see [issue #14](https://github.com/andamira/webera/issues/14)
-
-You will need [Brew](http://brew.sh/) to install a more recent version of Bash than the one that comes by default.
+In Mac OS X you **need** to have a more recent version of Bash than the one that comes by default. And the GNU version of coreutils, sed, grep and awk. The easiest way to install them is with [Brew](http://brew.sh/):
 
 ```
-brew install bash
+brew tap homebrew/dupes
+brew install bash coreutils gnu-sed grep gawk
 ```
 
 

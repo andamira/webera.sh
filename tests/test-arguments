@@ -23,7 +23,7 @@ test_arguments() {
 	assert_raises "webera" "1"
 #    -h
 	newval="$(webera -h | head -14 )"
-	assert_str_contains "$newval" "Usage: ./webera"
+	assert_str_contains "$newval" "Usage: webera -[trawn]"
 #    --help
 	newval2="$(webera --help | head -14 )"
 	assert_str_equals "$newval" "$newval2"

@@ -24,7 +24,7 @@ test_helper() {
 	assert_raises "[[ $workDir != $originalDir ]]"
 #
 	# we are also in the workdir directory
-	assert_raises "pwd | grep -E --silent 'webera-test-[a-Z0-9]{9}$'"
+	assert_raises "pwd | grep -E --silent 'webera-test-[a-zA-Z0-9]{9}$'"
 #
 	# it is empty
 	assert "ls -a" ".\n.."

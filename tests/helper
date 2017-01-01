@@ -1,64 +1,65 @@
 #!/usr/bin/env bash
 #
 # webera tests helper
-#
-# dependencies: grep, sed, awk, wget, coreutils
-#
 
 
 helper_main() {
 
-	# Initializations
+	# initializations
 	helper_init_common
 
-	[[ "$NOT_SOURCED" ]] && helper_arguments "$@"
+	# parse the arguments if the script has not been sourced
+	[[ "$0" == "${BASH_SOURCE[0]}" ]] && helper_arguments "$@"
 
-} # helper_main()
+} #helper_main()
 
 
 # shellcheck disable=SC1090
 helper_init_common() {
 
-	__check_compatibility
+	# Binaries found for Unix commands employed
+	declare -g __SED __AWK __GREP __MKTEMP
 
 	DIR_TESTS="$( cd -- "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 	DIR_WEBERA="$DIR_TESTS/.."
-
 	TEMPLATE_TEMP_NAME='webera-test-XXXXXXXXX'
-
-	# Exports
-	if [[ ! -d $DIR_WORKDIR ]]; then
-		# if possible, use a previously created workdir
-		# if not, create a new one and export it again
-		export DIR_WORKDIR
-		DIR_WORKDIR="$(mktemp -d "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
-	fi
-	if [[ -z "$TOTAL_TEST_NUM" ]]; then
-		export TOTAL_TEST_NUM
-		TOTAL_TEST_NUM="$(mktemp "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
-		printf '0' > "$TOTAL_TEST_NUM"
-	fi
-	if [[ -z "$TOTAL_TEST_TIME" ]]; then
-		export TOTAL_TEST_TIME
-		TOTAL_TEST_TIME="$(mktemp "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
-		printf '0' > "$TOTAL_TEST_TIME"
-	fi
-	if [[ -z "$TOTAL_TEST_ERROR_NUM" ]]; then
-		export TOTAL_TEST_ERROR_NUM
-		TOTAL_TEST_ERROR_NUM="$(mktemp "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
-		printf '0' > "$TOTAL_TEST_ERROR_NUM"
-	fi
 
 	# Imports
 	[[ -f "$DIR_TESTS/aserta" ]] || helper_install_dependency aserta
 	source "$DIR_TESTS/aserta" -v
 	source "$DIR_WEBERA/webera"
 
+	__check_compatibility
+
+
+	# Exports
+	if [[ ! -d $DIR_WORKDIR ]]; then
+		# if possible, use a previously created workdir
+		# if not, create a new one and export it again
+		export DIR_WORKDIR
+		DIR_WORKDIR="$($__MKTEMP -d "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+	fi
+	if [[ -z "$TOTAL_TEST_NUM" ]]; then
+		export TOTAL_TEST_NUM
+		TOTAL_TEST_NUM="$($__MKTEMP "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+		printf '0' > "$TOTAL_TEST_NUM"
+	fi
+	if [[ -z "$TOTAL_TEST_TIME" ]]; then
+		export TOTAL_TEST_TIME
+		TOTAL_TEST_TIME="$($__MKTEMP "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+		printf '0' > "$TOTAL_TEST_TIME"
+	fi
+	if [[ -z "$TOTAL_TEST_ERROR_NUM" ]]; then
+		export TOTAL_TEST_ERROR_NUM
+		TOTAL_TEST_ERROR_NUM="$($__MKTEMP "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+		printf '0' > "$TOTAL_TEST_ERROR_NUM"
+	fi
+
 	# set up exit traps
 	trap helper_cleanup_signal SIGHUP SIGINT SIGTERM
 	trap helper_cleanup_exit EXIT
 
-} # helper_init_common()
+} #helper_init_common()
 
 
 helper_usage() {
@@ -78,7 +79,7 @@ helper_usage() {
 	ENDUSAGE
 	exit
 
-} # helper_usage()
+} #helper_usage()
 
 
 helper_arguments() {
@@ -114,7 +115,7 @@ helper_arguments() {
 		esac
 	done
 
-} # helper_parseArguments()
+} #helper_parseArguments()
 
 
 helper_run_all_tests() {
@@ -142,7 +143,7 @@ helper_run_all_tests() {
 
 	[[ "$TESTS_FAILED" -eq 0 ]]
 
-} # helper_run_all_tests()
+} #helper_run_all_tests()
 
 
 
@@ -194,7 +195,7 @@ test_setup() {
 			"'$DIR_WORKDIR'" >&2
 
 		export DIR_WORKDIR
-		DIR_WORKDIR="$(mktemp -d "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+		DIR_WORKDIR="$($__MKTEMP -d "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
 
 		printf 'Warning: %s %s.' \
 			"creating a new working directory at" \
@@ -203,7 +204,7 @@ test_setup() {
 		pushd "$DIR_WORKDIR"
 	fi
 
-} # test_setup()
+} #test_setup()
 
 
 # returns from and deletes the working directory
@@ -231,7 +232,7 @@ test_clean() {
 			"Warning: couldn't find working directory '$DIR_WORKDIR'" >&2
 	fi
 
-} # test_clean()
+} #test_clean()
 
 
 
@@ -270,15 +271,15 @@ test_summary() {
 
 		# get the number of passed tests
 		testNum="$(printf '%s' "$testReport" \
-			| grep -o '^all [0-9]\+' | cut -d' ' -f2 )"
+			| $__GREP -o '^all [0-9]\+' | cut -d' ' -f2 )"
 
 	# Some tests failed
 	else
-		whatFailed="$(printf "%s" "$testReport" | sed "s/\($errPattern\)//" )"
-		errorReport="$(printf "%s" "$testReport" | grep -o "$errPattern" )"
+		whatFailed="$(printf "%s" "$testReport" | $__SED "s/\($errPattern\)//" )"
+		errorReport="$(printf "%s" "$testReport" | $__GREP -o "$errPattern" )"
 
 		printf '%s\n' "$whatFailed" | tr '\t' '\n' \
-			| sed 's/\(test\ #[0-9]\)/\n> &/g' | sed 's/^/  /'
+			| $__SED 's/\(test\ #[0-9]\)/\n> &/g' | $__SED 's/^/  /'
 		printf '  %s\n' "$(test_separator)"
 		printf '  %s\n' "$errorReport"
 
@@ -286,7 +287,7 @@ test_summary() {
 		if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
 			testErrNum="$(printf '%s' "$errorReport" | cut -d' ' -f1 )"
 			previousTotalErrNum="$(cat -- "$TOTAL_TEST_ERROR_NUM")"
-			newTotalErrNum="$(awk \
+			newTotalErrNum="$($__AWK \
 				"BEGIN {print $testErrNum+$previousTotalErrNum; exit}")"
 
 			printf '%s' "$newTotalErrNum" > "$TOTAL_TEST_ERROR_NUM"
@@ -300,7 +301,7 @@ test_summary() {
 	# Update the number of passed tests
 	if [[ -f "$TOTAL_TEST_NUM" ]]; then
 		previousTotalNum="$(cat -- "$TOTAL_TEST_NUM")"
-		newTotalNum="$(awk \
+		newTotalNum="$($__AWK \
 			"BEGIN {print $testNum+$previousTotalNum; exit}")"
 
 		printf '%s' "$newTotalNum" > "$TOTAL_TEST_NUM"
@@ -308,15 +309,15 @@ test_summary() {
 
 	# Total time spent
 	if [[ -z "$INVARIANT"  && -f "$TOTAL_TEST_TIME" ]]; then
-		testTime="$(printf '%s' "$testReport" | grep -o '[0-9]\+.[0-9]\+s.' | cut -d's' -f1 )"
+		testTime="$(printf '%s' "$testReport" | $__GREP -o '[0-9]\+.[0-9]\+s.' | cut -d's' -f1 )"
 		previousTotalTime="$(cat -- "$TOTAL_TEST_TIME")"
-		newTotalTime="$(awk "BEGIN {print $testTime+$previousTotalTime; exit}")"
+		newTotalTime="$($__AWK "BEGIN {print $testTime+$previousTotalTime; exit}")"
 		printf '%s' "$newTotalTime" > "$TOTAL_TEST_TIME"
 	fi
 
 	[[ "$TESTS_FAILED" -eq 0 ]]
 
-} # test_summary()
+} #test_summary()
 
 
 test_final_summary() {
@@ -342,7 +343,7 @@ test_final_summary() {
 
 	test_final_cleanup
 
-} # test_final_summary()
+} #test_final_summary()
 
 
 test_final_cleanup() {
@@ -356,7 +357,7 @@ test_final_cleanup() {
 
 	test_teardown
 
-} # test_final_cleanup()
+} #test_final_cleanup()
 
 
 # This function gets called on test error
@@ -400,11 +401,11 @@ weberaVarValue() {
 	shopt -u extglob
 
 	printf '%s' "$webera_vars" \
-		| grep "^\[$varType\]:.*:$varName=" \
+		| $__GREP "^\[$varType\]:.*:$varName=" \
 		| cut -d':' -f3 \
 		| cut -d'=' -f2
 
-} # weberaVarValue()
+} #weberaVarValue()
 
 
 # downloads and installs a dependency
@@ -415,31 +416,35 @@ helper_install_dependency() {
 	printf 'Installing dependency: %s . . .\n' "$dependency"
 
 	case $dependency in
-		aserta)
-			#wget --quiet "https://github.com/andamira/aserta/releases/download/v2.1.1/aserta" \
-			wget --quiet "git.io/aserta" \
-				-O "$DIR_TESTS/aserta" && chmod +x "$DIR_TESTS/aserta"
+		aserta) # use the development version for now
+			#wget --quiet "git.io/aserta.stable" -O "$DIR_TESTS/aserta"
+			wget --quiet "git.io/aserta" -O "$DIR_TESTS/aserta"
 			;;
 
 		*) printf "Error: Can't recognize dependency '%s'." "$dependency" >&2
 			exit 1 ;;
 
 	esac
-} # helper_install_dependency()
+
+} #helper_install_dependency()
 
 
 __check_compatibility() {
 
-	# mktemp
-	if [[ "$(mktemp -qu --tmpdir TXXX >/dev/null 2>&1; printf '%s' "$?")" -eq 0 ]]; then
-		MKTEMP_ARGS="--tmpdir" # new syntax
+	# prefer the GNU version of the Unix commands used, specially in Mac OS X
+	__SED="$(__gnuCmd sed)"
+	__AWK="$(__gnuCmd awk)"
+	__GREP="$(__gnuCmd grep)"
+	__MKTEMP="$(__gnuCmd mktemp)"
+
+	# fix mktemp compatibility [INC04]
+	if [[ "$($__MKTEMP -qu --tmpdir TXXX >/dev/null 2>&1; printf '%s' "$?")" -eq 0 ]]; then
+		MKTEMP_ARGS="--tmpdir" # new syntax, preferred
 	else
 		MKTEMP_ARGS="-t" # obsolete syntax
 	fi
 
-} # __check_compatibility()
+} #__check_compatibility()
 
-
-[[ "$0" == "${BASH_SOURCE[0]}" ]] && NOT_SOURCED=true
 
 helper_main "$@"
