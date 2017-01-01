@@ -26,4 +26,5 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install bash coreutils gnu-sed grep gawk; fi
 
 script:
+  - ./webera --version
   - ./tests/helper --run-all

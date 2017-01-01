@@ -6,7 +6,7 @@
 #   repository : https://github.com/andamira/webera
 #       author : José Luis Cruz © 2016-2017
 #      license : MIT
-_WEBERA_VERSION=0.1.64
+_WEBERA_VERSION=0.1.65
 
 
 #-------------------------------------------------------------------------------
@@ -163,12 +163,14 @@ main() {
 #
 usage() {
 	cat -- <<-ENDUSAGE
-	webera is a handy static website generator.
+	Usage: $(basename "$0") -[trawn] [other options]
 
-	Usage: webera -[trawn] [options]
+	> a handy static website generator <
 
-	At least one OPERATIVE FLAG is needed in order for the script to run.
-	Mandatory arguments to long options are mandatory for short options too.
+	INSTRUCTIONS
+
+	1. At least one OPERATIVE FLAG is needed in order for the script to run.
+	2. Mandatory arguments to long options, are mandatory for short options too.
 
 	OPERATIVE FLAGS              ...
 
@@ -199,7 +201,7 @@ usage() {
 	  -P, --server-port=PORT     port number ($SERVER_PORT)
 
 	  -h, --help                 display this help and exit
-	      --version              output version information and exit
+	      --version              show version info and exit
 
 	ENDUSAGE
 	[[ -n "$1" ]] && exit "$1"
@@ -218,14 +220,15 @@ usage() {
 #
 versionInfo() {
 	cat -- <<-ENDVERSION
-	webera $_WEBERA_VERSION
-	Copyright (C) 2016-2017 José Luis Cruz
-	License: MIT
+	webera v$_WEBERA_VERSION
 
 	<https://github.com/andamira/webera>
 
-	# Binaries found for the Unix commands employed
-	$__SED, $__AWK, $__GREP, $__DATE
+	Copyright (C) 2016-2017 José Luis Cruz
+	Released under the MIT license.
+
+	Dependencies found:
+	  $__SED, $__AWK, $__GREP, $__DATE
 	ENDVERSION
 	exit 0
 

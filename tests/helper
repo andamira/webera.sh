@@ -25,7 +25,10 @@ helper_init_common() {
 	TEMPLATE_TEMP_NAME='webera-test-XXXXXXXXX'
 
 	# Imports
-	[[ -f "$DIR_TESTS/aserta" ]] || helper_install_dependency aserta
+	if [[ ! -s "$DIR_TESTS/aserta" ]]; then
+		#wget --quiet "git.io/aserta.stable" -O "$DIR_TESTS/aserta"
+		wget --quiet "git.io/aserta" -O "$DIR_TESTS/aserta"
+	fi
 	source "$DIR_TESTS/aserta" -v
 	source "$DIR_WEBERA/webera"
 
@@ -64,20 +67,17 @@ helper_init_common() {
 
 helper_usage() {
 	cat -- <<- ENDUSAGE
-
-	Runs all the tests
-	Also this file must be imported by each test file.
-
 	Usage: ./helper [option]
 
+	Runs all the tests for webera.
+	This file also has to be imported by each test file.
+
 	  -a, --run-all              run all the tests.
-
-	  -i, --install=<DEP>        download and install a supported dependency:
-	                             aserta, ...
-
 	  -h, --help                 display this help and exit.
 	ENDUSAGE
 	exit
+
+	#TODO: -i, --install=<DEP>        download and install a supported dependency:
 
 } #helper_usage()
 
@@ -416,14 +416,8 @@ helper_install_dependency() {
 	printf 'Installing dependency: %s . . .\n' "$dependency"
 
 	case $dependency in
-		aserta) # use the development version for now
-			#wget --quiet "git.io/aserta.stable" -O "$DIR_TESTS/aserta"
-			wget --quiet "git.io/aserta" -O "$DIR_TESTS/aserta"
-			;;
-
 		*) printf "Error: Can't recognize dependency '%s'." "$dependency" >&2
 			exit 1 ;;
-
 	esac
 
 } #helper_install_dependency()
@@ -432,6 +426,7 @@ helper_install_dependency() {
 __check_compatibility() {
 
 	# prefer the GNU version of the Unix commands used, specially in Mac OS X
+	# use __gnuCmd function from webera
 	__SED="$(__gnuCmd sed)"
 	__AWK="$(__gnuCmd awk)"
 	__GREP="$(__gnuCmd grep)"

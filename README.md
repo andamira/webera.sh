@@ -13,9 +13,10 @@ a handy shell script for the generation of static websites.
 
 - [Features](#features-)
 - [Installation](#installation-)
+  - [Manually](#manually-)
   - [Mac OS X](#mac-os-x-)
 - [Quick Start](#quick-start-)
-  - [More Examples](#more-examples-)
+  - [Examples](#examples-)
 - [Documentation](#documentation-)
   - [Config](#config-)
   - [Usage](#usage-)
@@ -37,27 +38,27 @@ a handy shell script for the generation of static websites.
 
 ## Installation [△](#table-of-contents "Back to TOC")
 
-### Manual
+### Manually [△](#table-of-contents "Back to TOC")
 
 Download the webera script and make it executable:
 
 ```sh
-wget git.io/webera && chmod +x webera
+$ wget git.io/webera && chmod +x webera
 ```
 
 To install it globally:
 
 ```sh
-sudo sh -c "wget git.io/webera -O /usr/local/bin/webera && chmod +x /usr/local/bin/webera"
+$ sudo sh -c "wget git.io/webera -O /usr/local/bin/webera && chmod +x /usr/local/bin/webera"
 ```
 
-### Mac OS X
+### Mac OS X [△](#table-of-contents "Back to TOC")
 
 In Mac OS X you **need** to have a more recent version of Bash than the one that comes by default. And the GNU version of coreutils, sed, grep and awk. The easiest way to install them is with [Brew](http://brew.sh/):
 
 ```
-brew tap homebrew/dupes
-brew install bash coreutils gnu-sed grep gawk
+$ brew tap homebrew/dupes
+$ brew install bash coreutils gnu-sed grep gawk
 ```
 
 
@@ -102,13 +103,13 @@ $ find out/
   out/res/css/style.css
 ```
 
-### More Examples [△](#table-of-contents "Back to TOC")
+### Examples [△](#table-of-contents "Back to TOC")
 
-There are *(will be, this is WIP)* several more examples you can take a look into:
+There are *(will be)* several examples you can take a look into:
 
-- The source code is in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory of the repository.
+- Their source code is in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory of the repository.
 - The generated output is in the [docs/examples](https://github.com/andamira/webera/tree/master/docs/examples) directory.
-- The result is shown in [andamira.github.io/webera/examples](https://andamira.github.io/webera/examples/).
+- The result is rendered in [andamira.github.io/webera/examples](https://andamira.github.io/webera/examples/).
 
 
 ## Documentation [△](#table-of-contents "Back to TOC")
@@ -143,90 +144,55 @@ template : route : about-me.html  : /about/me/
 template : route : about-you.html : /about/you.html
 ```
 
-See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) for more configuration possibilities.
+See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) and
+the [Configuration](https://github.com/andamira/webera/wiki/Configuration) wiki page,
+for more information about the configuration possibilities.
 
 
 ### Usage [△](#table-of-contents "Back to TOC")
 
 There are many flags to customize how the script should behave,
-that you can combine with the more stable custom configuration.
+which you can combine with a more stable custom configuration.
+See the wiki page for the
+[order of priority](https://github.com/andamira/webera/wiki/Configuration#order-of-priority-)
+between all the configuration sources.
 
-See the wiki page for the [order of priority](https://github.com/andamira/webera/wiki/Configuration#order-of-priority-) between all the configuration sources.
+The following examples demonstrate common usage situations, featuring both long and short flags.
 
-In the table below you can see several usage
-examples using both the short and long flags.
 
-<table><tbody>
+1. Process the templates, and write a level-2 logfile,
+   after clearing any previous log:
 
-<tr>
-  <th colspan="2">
-    Usage Examples
-  </th>
-</tr>
+  `webera --process-templates --clear-log --log-level=2`
 
-<tr>
-  <td colspan="2" align="left">
-    <b>1.</b> Process the templates, and write a level-2 logfile,
-    after clearing any previous log:
-  </td>
-</tr>
-<tr>
-  <td><code>
-    webera -t -cL2
-  </code></td>
-  <td><code>
-    webera --process-templates --clear-log --log-level=2
-  </code></td>
-</tr>
+  `webera -t -cL2`
 
-<tr>
-  <td colspan="2" align="left">
-    <b>2.</b> Process both the templates and the resources,
-    and then preview using a custom browser:
-  </td>
-</tr>
-<tr>
-  <td><code>
-    webera -aw -W vivaldi
-  </code></td>
-  <td><code>
-    webera --process-all --preview --browser-bin=vivaldi
-  </code></td>
-</tr>
 
-<tr>
-  <td colspan="2" align="left">
-    <b>3.</b> Process resources <em>from</em> a custom resources directory
-    <em>to</em> a custom output directory, with spaces in the path:
-  </td>
-</tr>
-<tr>
-  <td><code>
-    webera -r -R resB/ -O "out B"
-  </code></td>
-  <td><code>
-    webera --process-resources --dir-resources=resB/ --dir-output="out B"
-  </code></td>
-</tr>
+2. Process both the templates and the resources,
+   and then preview using a custom browser:
 
-<tr>
-  <td colspan="2" align="left">
-    <b>4.</b> Generate a new config file using the provided name,
-    and write there the custom settings for the server and port.
-  </td>
-</tr>
-<tr>
-  <td><code>
-    webera -nF conf/webera.conf -S php -P 8080
-  </code></td>
-  <td><code>
-    webera --new-config --file-config=conf/webera.conf --server-type=php --server-port=8080
-  </code></td>
-</tr>
+  `webera --process-all --preview --browser-bin=vivaldi`
 
-</tbody></table>
+  `webera -awW vivaldi`
 
-Run `./webera --help` to see the basic info on flags, or take a look to the complete [list of flags](https://github.com/andamira/webera/wiki/Script-Arguments#list-of-flags-) in the wiki.
+
+3. Process resources *from* a custom resources directory
+   *to* a custom output directory, with spaces in the path:
+
+  `webera --process-resources --dir-resources=resB/ --dir-output="out B"`
+
+  `webera -rR resB/ -O "out B"`
+
+
+4. Generate a new config file using the provided name,
+   and write there the custom settings for the server and port.
+
+  `webera --new-config --file-config=conf/webera.conf --server-type=php --server-port=8080`
+
+  `webera -nF conf/webera.conf -S php -P 8080`
+
+
+Run `./webera --help` to see the basic help on flags, or take a deeper look to the complete [list of flags](https://github.com/andamira/webera/wiki/Script-Arguments#list-of-flags-) in the wiki.
 
 
 ## Reasons [△](#table-of-contents "Back to TOC")
