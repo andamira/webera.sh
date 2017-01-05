@@ -1,68 +1,86 @@
 #!/usr/bin/env bash
 
-cd -- "${BASH_SOURCE%/*}" || exit 1
-# shellcheck disable=SC1091
-source ./helper
 
-test_helper() {
-	declare originalDir workDir
+#-------------------------------------------------------------------------------
+#
+webera::test::__main() {
+
+	# Change to the directory where this script is located
+	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
+		cd -- "${BASH_SOURCE%/*}" || exit 1
+	fi
+
+	# shellcheck disable=SC1091
+	source ./helper &>/dev/null
+
+	# Run tests
+	#
+	# NOTE: `test_setup` and `test_teardown` calls are part of the test
+	webera::test::test-helper
+
+	test_summary "helper"
+
+} #webera::test::__main()
+
+
+#-------------------------------------------------------------------------------
+#
+#   Test the test helper functions.
+#
+webera::test::test-helper() {
 
 	test_h1 "Helper Functions"
-	# ===================
+	# ========================
 
 
 	test_h2 "test_setup()"
-	# ======
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
+	local originalDir
 	originalDir=$(pwd)
 
 	test_setup
 
+	local workDir
 	workDir=$(pwd)
-#
-	# we are now in a different directory
-	assert_raises "[[ $workDir != $originalDir ]]"
-#
-	# we are also in the workdir directory
-	assert_raises "pwd | grep -E --silent 'webera-test-[a-zA-Z0-9]{9}$'"
-#
-	# it is empty
+
+#    we are now in a different directory
+	assert_success "[[ $workDir != $originalDir ]]"
+#    we are also in the workdir directory
+	assert_success "pwd | grep -E --silent 'webera-test-[a-zA-Z0-9]{9}$'"
+#    it is empty
 	assert "ls -a" ".\n.."
-#
-	# we can create files
+#    we can create files
 	touch test_file
-	assert_raises "ls test_file"
+	assert_success "ls test_file"
 
 
 	test_h2 "test_clean()"
-	# ======
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
 	test_clean
-#
-	# we should still be in the same directory
-	assert_raises "[[ $workDir == $(pwd) ]]"
-#
-	# previously created file shouldn't exist
-	assert_raises "[[ ! -f test_file ]]"
-#
-	# directory should be empty
+
+#    we should still be in the same directory
+	assert_success "[[ $workDir == $(pwd) ]]"
+#    previously created file shouldn't exist
+	assert_success "[[ ! -f test_file ]]"
+#    directory should be empty
 	assert "ls -a" ".\n.."
 
 
 	test_h2 "test_teardown()"
-	# ======
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
 	test_teardown
-#
-	# We are not anymore in the working directory
-	assert_raises "[[ $workDir != $originalDir ]]"
-#
-	# We are back to the original dir
-	assert_raises "[[ $originalDir == $(pwd) ]]"
-#
-	# Temporary directory doesn't exist anymore
-	assert_raises "[[ ! -d $workDir ]]"
 
-}
-test_helper
-test_summary "helper"
+#    We are not anymore in the working directory
+	assert_success "[[ $workDir != $originalDir ]]"
+#    We are back to the original dir
+	assert_success "[[ $originalDir == $(pwd) ]]"
+#    Temporary directory doesn't exist anymore
+	assert_success "[[ ! -d $workDir ]]"
+
+} #webera::test::test-helper()
+
+
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && webera::test::__main "$@"

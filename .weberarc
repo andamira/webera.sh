@@ -3,12 +3,11 @@
 
 ## SUMMARY OF CONFIG OPERATIONS
 #
-# config   : <variable>    : value
-# command  : <name>        : command
-# resource : <command>     :
-# template : <command>     :
-# include  : <config_file>
-#
+# config      : <variable>    : value
+# command     : <name>        : command
+# resource    : <command>     :
+# template    : <command>     :
+
 
 
 ## CONFIGURABLE OPTIONS
@@ -21,16 +20,14 @@
 
 ## Paths
 #
-# config : DIR_TEMPLATES : tem
-# config : DIR_RESOURCES : res
-# config : DIR_OUTPUT    : out
-# config : DIR_BUILD     : build
+#config : DIR_TEMPLATES : tem
+#config : DIR_RESOURCES : res
+#config : DIR_OUTPUT    : out
+#config : DIR_BUILD     : build
 
 
-## Delete the output & build folders before starting to write on them
-#
-# config : OPTION_DELETE_DIR_BUILD  : true
-# config : OPTION_DELETE_DIR_OUTPUT : true
+# Delete the build folder before the processing begins
+# config : DO_DELETE_DIR_BUILD  : true
 
 
 ## Web Browser & Server
@@ -41,23 +38,22 @@
 # You can use any supported server type:
 #   python | php | none | custom
 #
-# config : WEB_BROWSER_BIN : firefox
-# config : SERVER_PORT     : 8192
-# config : SERVER_TYPE     : python
+#config : WEB_BROWSER_BIN : firefox
+#config : SERVER_PORT     : 8192
+#config : SERVER_TYPE     : python
 
 
 ## Custom HTTP Server start/stop commands
 #
-# config : SERVER_TYPE  : custom
-# config : SERVER_START :
-# config : SERVER_STOP  :
+#config : SERVER_TYPE  : custom
+#config : SERVER_START :
+#config : SERVER_STOP  :
 
 
 ## Logging
 #
-# config : FILE_LOG         : log.txt
-# config : OPTION_LOG_LEVEL : 0
-# config : OPTION_CLEAR_LOG : false
+#config : FILE_LOG         : log.txt
+#config : LOG_LEVEL : 0
 
 
 
@@ -100,9 +96,9 @@ command : sass : sass -t compact {ORIGIN} {TARGET}
 #   resouce : <command> : <origin> : <destination>
 #
 
-# resource : copy : css/main.css   : css/main.css
-# resource : copy : img/           : img/
-# resource : copy : font/          : font/
+#resource : copy : css/main.css   : css/main.css
+#resource : copy : img/           : img/
+#resource : copy : font/          : font/
 
 
 
@@ -116,16 +112,23 @@ command : sass : sass -t compact {ORIGIN} {TARGET}
 #                     template:route:<template_file>:<url_slug>
 #
 
-# template : route : index.html     : /
-# template : route : contact.html   : /contact
+#template : route : index.html     : /
+#template : route : contact.html   : /contact
 
 
 
 ## INCLUDES
 ################################################################
 #
-# You can require other config files, relative to this one
+# You can include or require other config files.
 #
+# The difference between them is that required files stops the
+# execution with an error, if the file can not be included.
+#
+# The operation names are uppercase surrounded by underscores
+# in order to emphasize its exceptional and dangerous nature,
+# and the recommendation is to use them very consciously.
 
-# require : .weberarc-dependencies
-# include : .weberarc-optional-pages
+# __REQUIRE__ : .weberarc-dependencies
+# __INCLUDE__ : .weberarc-optional-pages
+

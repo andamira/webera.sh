@@ -1,39 +1,126 @@
 #!/usr/bin/env bash
+#
+# TODO:
+# - test prelog
+# - min max log level
+# - test missing arguments, and the set defaults
 
-## Include
 
-cd -- "${BASH_SOURCE%/*}" || exit 1
-# shellcheck disable=SC1091
-source ./helper
+#-------------------------------------------------------------------------------
+#
+__webera::test::main() {
+
+	# Change to the directory where this script is located
+	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
+		cd -- "${BASH_SOURCE%/*}" || exit 1
+	fi
+
+	# shellcheck disable=SC1091
+	source ./helper &>/dev/null
+
+	# Run tests
+	test_setup
+	__webera::test::test-log
+	test_teardown
+
+	test_summary 'log'
+
+} #__webera::test::main()
 
 
-## Test
+#-------------------------------------------------------------------------------
+#
+__webera::test::test-log () {
 
-test_templates() {
-	declare file_contents
+	local logFile="$DIR_WORKDIR/webera_test_logfile"
+
 
 	test_h1 "Logging"
 	# ===================
-	test_setup
 
 
-	test_h2 "New log file"
-	# ======
-
-	webera -L4
-	assert_raises "[[ -f log.txt ]]" "0"
+	# test_h2 "prelog"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+	# test_clean
 
 
-	test_h2 "File config contents"
-	# ======
+
+	test_h2 "log levels"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+#    no log [logLevel=0 < LOG_LEVEL=$MIN] (lower limits)
+	test_clean
+	webera::test::log-wrapper false 0 1 "" "no log"
+	assert "cat $logFile" ""
+
+#    no log [logLevel<0 < LOG_LEVEL=$MIN] (negative number)
+	test_clean
+	webera::test::log-wrapper false -3 1 "" "no log"
+	assert "cat $logFile" ""
+
+#    no log [logLevel < LOG_LEVEL=$MAX] (higher limits)
+	test_clean
+	webera::test::log-wrapper false 2 3 "" "no log"
+	assert "cat $logFile" ""
+
+#    no log [logLevel=0; LOG_LEVEL=0]
+	test_clean
+	webera::test::log-wrapper false 0 0 "" "no log"
+	assert "cat $logFile" ""
+
+#    log [logLevel == LOG_LEVEL = 1]
+	test_clean
+	webera::test::log-wrapper false 1 1 "" "log 1"
+	assert "cat $logFile" "log 1"
+
+#    log if log level is greater
+	test_clean
+	webera::test::log-wrapper false 3 2 "" "log 2"
+	assert "cat $logFile" "log 2"
+
+
+
+
+	# test_h2 "other"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+	# test_clean
+
+#    .
+
+
+#    log file exists
+	#assert_success "[[ -f log.txt ]]"
+
+
+	#test_h2 "File config contents"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 	#test_clean
 
 	# cat <<- EOF > .test_weberarc
 	# These contents will be written to the file.
 	# EOF
 
-	test_teardown
-}
+} #__webera::test::test-log()
 
-test_templates
-test_summary 'log'
+
+#-------------------------------------------------------------------------------
+# webera::test::log-wrapper
+#
+#   a testing wrapper for the log function
+#
+# argument: $1 : (bool)  [env] _PRELOG    (mandatory)
+# argument: $2 : (int)   [env] LOG_LEVEL  (mandatory)
+# argument: $3 : (int)  [this] logLevel   (mandatory)
+# argument: $4 : (str)  [this] logType    (mandatory)
+# argument: $5 : (str)  [this] logMessage
+#
+# shellcheck disable=SC2034
+webera::test::log-wrapper() {
+	(
+		_PRELOG="$1"; LOG_LEVEL="$2"; LOG_FILE="$logFile"
+		webera::log "$3" "$4" "$5"
+	)
+} #webera::test::log-wrapper()
+
+
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && __webera::test::main "$@"

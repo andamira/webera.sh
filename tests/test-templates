@@ -1,27 +1,80 @@
 #!/usr/bin/env bash
 
-cd -- "${BASH_SOURCE%/*}" || exit 1
-# shellcheck disable=SC1091
-source ./helper
+#-------------------------------------------------------------------------------
+#
+__webera::test::main() {
 
-test_templates() {
+	# Change to the directory where this script is located
+	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
+		cd -- "${BASH_SOURCE%/*}" || exit 1
+	fi
+
+	# shellcheck disable=SC1091
+	source ./helper &>/dev/null
+
+	# Run tests
 	test_setup
+	__webera::test:test-templates
+	test_teardown
 
-	local newval
+	test_summary "templates"
+
+} #__webera::test::main()
+
+
+#-------------------------------------------------------------------------------
+#
+__webera::test:test-templates() {
+
+	declare dir_tem='tem' dir_out='out' #dir_build='build'
 
 	test_h1 "Templates"
-	# ===================
+	# ========================
 
-	test_h2 "1"
-	# ======
-	#newval=$(weberaVarValue "$(webera -_)" 'args' '_DO_PROCESS_TEMPLATES')
-	#assert "echo $newval" "true"
+	test_h2 "Routing"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	cat <<- EOF > .test_weberarc
-	These contents will be written to the file.
-	EOF
+#    Just the index and some other
+	mkdir -p -- "$dir_tem"
+	printf 'index\n' > "$dir_tem/index.html"
+	printf 'other\n' > "$dir_tem/other.html"
+	webera -tC \
+		"template : route : index.html : /
+	     template : route : other.html : /some-other-url/"
+	assert "[[ -f $dir_out/index.html ]]"
+#    check the contents are there
+	assert "$(<$dir_out/index.html)"
 
-	test_teardown
-}
-test_templates
-test_summary "templates"
+	test_clean
+#    Route to a file, and another
+	mkdir -p -- "$dir_tem"
+	printf '%s' "$templ_simpl" > "$dir_tem/mytemplate.html"
+	webera -tC \
+		"template : route : mytemplate.html : my-file-url.html"
+	assert "[[ -f $dir_out/my-file-url.html]]"
+	ls -l $dir_out/my-file-url.html
+	assert "$(cat -- $dir_out/my-file-url.html)" "$templ_simpl"
+
+	test_clean
+#
+	assert "[[ -f out/indsex.html ]]"
+#
+	#assert "[[ -f out/subdir/index.html ]]"
+
+	#printf '%s\n' "$" > 'tem/index.html'
+
+
+	# TODO
+	#
+	# - directives
+	# - nesting
+	# - multiple levels
+	# - special characters
+	#
+	#
+	#
+
+} #__webera::test:test-templates()
+
+
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && __webera::test::main "$@"

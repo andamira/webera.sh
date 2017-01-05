@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-main() {
+
+#-------------------------------------------------------------------------------
+# ::main
+#
+webera::generate-examples::main() {
+
 	local OPTION_LOG_LEVEL=0
 	local OPTION_LOG_CLEAR=''
 	local OPTION_LOAD_IN_WEB_BROWSER=false;
@@ -11,32 +16,43 @@ main() {
 	local LOGFILE="$DIR/examples.log"
 	local OUTPUT="$DIR/../docs"
 
-	parseArguments "$@"
+	webera::generate-examples::parse-arguments "$@"
 
-	generateExamples
+	webera::generate-examples::generate-all
 
 	printf "\nDone.\n"
 
 	if [ "$OPTION_LOAD_IN_WEB_BROWSER" = true ]; then
 		$WEBERA -wO "$OUTPUT"
 	fi
-}
 
-usage() {
-	cat <<- ENDUSAGE
+} #::main()
+
+
+#-------------------------------------------------------------------------------
+# ::display-usage
+#
+webera::generate-examples::display-usage() {
+
+	cat <<- ENDwebera::generate-examples::display-usage
 
 	Generates every example.
 
-	Usage: ./generate-examples [OPTIONS]
+	webera::generate-examples::display-usage: ./generate-examples [OPTIONS]
 
 	  -w              preview in web browser
 	  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
 	  -c              switch clearing the log file (clear=$OPTION_CLEAR_LOG)
-	ENDUSAGE
+	ENDwebera::generate-examples::display-usage
 	exit 1
-}
 
-parseArguments() {
+} #::display-usage()
+
+
+#-------------------------------------------------------------------------------
+# ::parse-arguments
+#
+webera::generate-examples::parse-arguments() {
 	local OPTIND OPTION
 	while getopts 'wL:ch' OPTION; do
 
@@ -44,12 +60,17 @@ parseArguments() {
 			w) OPTION_LOAD_IN_WEB_BROWSER=true ;;
 			L) OPTION_LOG_LEVEL="$OPTARG" ;;
 			c) OPTION_LOG_CLEAR=true ;;
-			h|*) usage; exit ;;
+			h|*) webera::generate-examples::display-usage; exit ;;
 		esac
 	done
-}
 
-generateExamples() {
+} #::parse-arguments()
+
+
+#-------------------------------------------------------------------------------
+# ::generate-all
+#
+webera::generate-examples::generate-all() {
 
 	cd "$DIR" || exit
 
@@ -71,6 +92,8 @@ generateExamples() {
 
 		cd "$DIR" || exit
 	done
-}
 
-main "$@"
+} #::generate-all()
+
+
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && webera::generate-examples::main "$@"

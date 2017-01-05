@@ -3,19 +3,29 @@
 # webera tests helper
 
 
-helper_main() {
+#-------------------------------------------------------------------------------
+# ::main
+#
+#   Main entrance to the script.
+#
+webera::helper::main() {
 
-	# initializations
-	helper_init_common
+	# Initializations
+	webera::helper::init-common
 
-	# parse the arguments if the script has not been sourced
-	[[ "$0" == "${BASH_SOURCE[0]}" ]] && helper_arguments "$@"
+	# Parse the arguments if the script has not been sourced
+	[[ "$0" == "${BASH_SOURCE[0]}" ]] && webera::helper::parse-arguments "$@"
 
-} #helper_main()
+} #::main()
 
 
+#-------------------------------------------------------------------------------
+# ::init-common
+#
+#   Common initializations.
+#
 # shellcheck disable=SC1090
-helper_init_common() {
+webera::helper::init-common() {
 
 	# Binaries found for Unix commands employed
 	declare -g __SED __AWK __GREP __MKTEMP
@@ -32,7 +42,7 @@ helper_init_common() {
 	source "$DIR_TESTS/aserta" -v
 	source "$DIR_WEBERA/webera"
 
-	__check_compatibility
+	webera::helper::check-compatibility
 
 
 	# Exports
@@ -59,13 +69,19 @@ helper_init_common() {
 	fi
 
 	# set up exit traps
-	trap helper_cleanup_signal SIGHUP SIGINT SIGTERM
-	trap helper_cleanup_exit EXIT
+	trap webera::helper::cleanup-signal SIGHUP SIGINT SIGTERM
+	trap webera::helper::cleanup-exit EXIT
 
-} #helper_init_common()
+} #::init-common()
 
 
-helper_usage() {
+#-------------------------------------------------------------------------------
+# ::display-usage
+#
+#   Displays usage info and exits.
+#
+webera::helper::display-usage() {
+
 	cat -- <<- ENDUSAGE
 	Usage: ./helper [option]
 
@@ -79,12 +95,17 @@ helper_usage() {
 
 	#TODO: -i, --install=<DEP>        download and install a supported dependency:
 
-} #helper_usage()
+} #::display-usage()
 
 
-helper_arguments() {
+#-------------------------------------------------------------------------------
+# ::parse-arguments
+#
+#   Parses all the arguments received by the script.
+#
+webera::helper::parse-arguments() {
 
-	[[ -z "$@" ]] && helper_usage
+	[[ -z "$@" ]] && webera::helper::display-usage
 
 	local OPTIND option
 
@@ -96,32 +117,34 @@ helper_arguments() {
 			-)
 				case "$OPTARG" in
 
-					run-all) helper_run_all_tests ;;
-					help) helper_usage ;;
+					run-all) webera::helper::run-all-tests ;;
+					help) webera::helper::display-usage ;;
 
 					install=*)
-						helper_install_dependency "${OPTARG#*=}"
+						webera::helper::install-dependency "${OPTARG#*=}"
 						;;
 				esac ;;
 
 			# short options
-			a) helper_run_all_tests ;;
-			i) helper_install_dependency "$OPTARG" ;;
+			a) webera::helper::run-all-tests ;;
+			i) webera::helper::install-dependency "$OPTARG" ;;
 
-			h) helper_usage ;;
+			h) webera::helper::display-usage ;;
 			*)
 				printf 'Error: "%s" is not a valid argument' "$option" >&2
 				exit 1
 		esac
 	done
 
-} #helper_parseArguments()
+} #::parse-arguments()
 
 
-helper_run_all_tests() {
-
-	# First check the compatibility
-	__checkCompatibility
+#-------------------------------------------------------------------------------
+# ::run-all-tests
+#
+#   Runs all the tests.
+#
+webera::helper::run-all-tests() {
 
 	# Manual ordered list of test files
 	local testFiles=()
@@ -129,7 +152,7 @@ helper_run_all_tests() {
 	testFiles+=('test-helper')
 	testFiles+=('test-arguments')
 	testFiles+=('test-config')
-	#testFiles+=('test-log')
+	testFiles+=('test-log')
 	#testFiles+=('test-templates')
 	#testFiles+=('test-resources')
 
@@ -143,20 +166,84 @@ helper_run_all_tests() {
 
 	[[ "$TESTS_FAILED" -eq 0 ]]
 
-} #helper_run_all_tests()
+} #::run-all-tests()
 
 
+#-------------------------------------------------------------------------------
+# ::cleanup-exit
+#
+#   Gets called on test error.
+#
+webera::helper::cleanup-exit() {
 
-# PRESENTATION
-# ############
+	test_teardown
+
+} #::cleanup-exit()
 
 
+#-------------------------------------------------------------------------------
+# ::cleanup-signal
+#
+#   Gets called on abrupt exit.
+#
+webera::helper::cleanup-signal() {
+
+	test_final_cleanup
+
+} #::cleanup-signal()
+
+
+#-------------------------------------------------------------------------------
+# ::install-dependency
+#
+#   Downloads and installs a supported dependency.
+#
+webera::helper::install-dependency() {
+	declare dependency="$1"
+
+	printf 'Installing dependency: %s . . .\n' "$dependency"
+
+	case $dependency in
+		*) printf "Error: Can't recognize dependency '%s'." "$dependency" >&2
+			exit 1 ;;
+	esac
+
+} #::install-dependency()
+
+
+#-------------------------------------------------------------------------------
+# ::check-compatibility
+#
+#   ...
+#
+webera::helper::check-compatibility() {
+
+	# prefer the GNU version of the Unix commands used, specially in Mac OS X
+	# use webera::find-gnu-cmd function from webera
+	__SED="$(webera::find-gnu-cmd sed)"
+	__AWK="$(webera::find-gnu-cmd awk)"
+	__GREP="$(webera::find-gnu-cmd grep)"
+	__MKTEMP="$(webera::find-gnu-cmd mktemp)"
+
+	# fix mktemp compatibility [INC04]
+	if [[ "$($__MKTEMP -qu --tmpdir TXXX >/dev/null 2>&1; printf '%s' "$?")" -eq 0 ]]; then
+		MKTEMP_ARGS="--tmpdir" # new syntax
+	else
+		MKTEMP_ARGS="-t" # obsolete syntax
+	fi
+
+} #::check-compatibility()
+
+
+#-------------------------------------------------------------------------------
+#
 test_separator() {
 	printf '%s' '-----------------------------'
 }
 
 
-
+#-------------------------------------------------------------------------------
+#
 test_h1() {
 	if [[ "$DEBUG" -gt 0 ]]; then
 		printf '\n\n[Testing %s]\n' "$@"
@@ -164,7 +251,8 @@ test_h1() {
 }
 
 
-
+#-------------------------------------------------------------------------------
+#
 test_h2() {
 	if [[ "$DEBUG" -gt 0 ]]; then
 		printf '\n  + %s:' "$@"
@@ -172,7 +260,8 @@ test_h2() {
 }
 
 
-
+#-------------------------------------------------------------------------------
+#
 test_h3() {
 	if [[ "$DEBUG" -gt 0 ]]; then
 		printf '\n    - %s:' "$@"
@@ -180,12 +269,11 @@ test_h3() {
 }
 
 
-
-# SETUP
-# #####
-
-
-# enters the working directory
+#-------------------------------------------------------------------------------
+# test_setup
+#
+#   Enters the working directory.
+#
 test_setup() {
 	if [[ -d "$DIR_WORKDIR" ]]; then
 		pushd "$DIR_WORKDIR" >/dev/null 2>&1
@@ -207,7 +295,11 @@ test_setup() {
 } #test_setup()
 
 
-# returns from and deletes the working directory
+#-------------------------------------------------------------------------------
+# test_teardown
+#
+#   Returns from and deletes the working directory.
+#
 test_teardown() {
 	if [[ "$(pwd)" == "$DIR_WORKDIR" ]]; then
 		popd >/dev/null 2>&1
@@ -221,7 +313,11 @@ test_teardown() {
 } # test_teardown()
 
 
-# cleans the working directory
+#-------------------------------------------------------------------------------
+# test_clean
+#
+#   Cleans the working directory.
+#
 test_clean() {
 	if [[ -d "$DIR_WORKDIR" ]]; then
 		pushd "$DIR_WORKDIR" >/dev/null 2>&1
@@ -235,12 +331,11 @@ test_clean() {
 } #test_clean()
 
 
-
-# REPORT
-# ######
-
-
-# prints the report and saves the counts for the final summary
+#-------------------------------------------------------------------------------
+# test_summary
+#
+#   Prints the report and saves the counts for the final summary.
+#
 test_summary() {
 	local testStr="$1"
 
@@ -320,6 +415,11 @@ test_summary() {
 } #test_summary()
 
 
+#-------------------------------------------------------------------------------
+# test_final_summary
+#
+#   ...
+#
 test_final_summary() {
 	local -i testTotal
 	local -i testFailed
@@ -360,33 +460,23 @@ test_final_cleanup() {
 } #test_final_cleanup()
 
 
-# This function gets called on test error
-helper_cleanup_exit() {
-	test_teardown
-}
-
-
-# This function gets called on abrupt exit
-helper_cleanup_signal() {
-	test_final_cleanup
-}
-
-
-
-# WEBERA
-# ######
-
-
-# Binary wrapper
+#-------------------------------------------------------------------------------
+# webera
+#
+#   webera binary wrapper.
+#
 webera() { "$DIR_WEBERA/webera" "$@" 2>/dev/null; }
 
 
-# Parse a list of variables in debug info format
-# and return the corresponding value.
+#-------------------------------------------------------------------------------
+# get-webera-var
 #
-#  [$varType]::$varName=$varValue
+#   Parse a list of variables in debug info format
+#   and return the corresponding value.
 #
-weberaVarValue() {
+#   [$varType]::$varName=$varValue
+#
+get-webera-var() {
 	local webera_vars="$1"
 	local varType="$2"
 	local varName="$3"
@@ -405,41 +495,7 @@ weberaVarValue() {
 		| cut -d':' -f3 \
 		| cut -d'=' -f2
 
-} #weberaVarValue()
+} #get-webera-var()
 
 
-# downloads and installs a dependency
-#
-helper_install_dependency() {
-	declare dependency="$1"
-
-	printf 'Installing dependency: %s . . .\n' "$dependency"
-
-	case $dependency in
-		*) printf "Error: Can't recognize dependency '%s'." "$dependency" >&2
-			exit 1 ;;
-	esac
-
-} #helper_install_dependency()
-
-
-__check_compatibility() {
-
-	# prefer the GNU version of the Unix commands used, specially in Mac OS X
-	# use __gnuCmd function from webera
-	__SED="$(__gnuCmd sed)"
-	__AWK="$(__gnuCmd awk)"
-	__GREP="$(__gnuCmd grep)"
-	__MKTEMP="$(__gnuCmd mktemp)"
-
-	# fix mktemp compatibility [INC04]
-	if [[ "$($__MKTEMP -qu --tmpdir TXXX >/dev/null 2>&1; printf '%s' "$?")" -eq 0 ]]; then
-		MKTEMP_ARGS="--tmpdir" # new syntax, preferred
-	else
-		MKTEMP_ARGS="-t" # obsolete syntax
-	fi
-
-} #__check_compatibility()
-
-
-helper_main "$@"
+webera::helper::main "$@"

@@ -54,7 +54,9 @@ $ sudo sh -c "wget git.io/webera -O /usr/local/bin/webera && chmod +x /usr/local
 
 ### Mac OS X [△](#table-of-contents "Back to TOC")
 
-In Mac OS X you **need** to have a more recent version of Bash than the one that comes by default. And the GNU version of coreutils, sed, grep and awk. The easiest way to install them is with [Brew](http://brew.sh/):
+In Mac OS X you **need** to install a more recent version of Bash (>=4)
+than the one that comes by default. Also the GNU version of coreutils,
+sed, grep and awk. An easy way to install them is with [Brew](http://brew.sh/):
 
 ```
 $ brew tap homebrew/dupes
@@ -197,11 +199,12 @@ Run `./webera --help` to see the basic help on flags, or take a deeper look to t
 
 ## Reasons [△](#table-of-contents "Back to TOC")
 
-webera is loosely inspired by
+webera is (increasingly) loosely inspired by
 [Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e),
 the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy),
-the [suckless philosophy](http://suckless.org/philosophy)
-and the [Swiss Army knife](https://en.wikipedia.org/wiki/Swiss_Army_knife).
+the [suckless philosophy](http://suckless.org/philosophy),
+the [Swiss Army knife](https://en.wikipedia.org/wiki/Swiss_Army_knife)
+and the [Primitive Technology guy](https://www.youtube.com/channel/UCAL3JXZSzSm8AlZyD3nQdBA).
 
 The intention is to see how far this idea can be taken,
 and try to achive an ideal balance between
