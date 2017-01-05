@@ -36,8 +36,14 @@ webera::helper::init-common() {
 
 	# Imports
 	if [[ ! -s "$DIR_TESTS/aserta" ]]; then
-		#wget --quiet "git.io/aserta.stable" -O "$DIR_TESTS/aserta"
-		wget --quiet "git.io/aserta" -O "$DIR_TESTS/aserta"
+		#curl -sOL git.io/aserta.stable -o "$DIR_TESTS/aserta"
+		curl -sOL git.io/aserta -o "$DIR_TESTS/aserta"
+
+		local ret="$?"
+		if [[ $ret -ne 0 ]]; then
+			printf "ERROR: Couldn't download 'aserta' (error %s).\n" "$ret"
+			exit 1
+		fi
 	fi
 	source "$DIR_TESTS/aserta" -v
 	source "$DIR_WEBERA/webera"

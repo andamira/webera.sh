@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+#
+# Use this as a model for a new test file, and replace every BLANK keyword.
+
+
+#-------------------------------------------------------------------------------
+#
+webera::test::__main() {
+
+	# Change to the directory where this script is located
+	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
+		cd -- "${BASH_SOURCE%/*}" || exit 1
+	fi
+
+	# shellcheck disable=SC1091
+	source ./helper &>/dev/null
+
+	# Run tests
+	#
+	# Note: `test_setup` and `test_teardown` calls are part of the test
+	test_setup
+	webera::test::test-BLANK
+	test_teardown
+
+	test_summary "BLANK"
+
+} #webera::test::__main()
+
+
+#-------------------------------------------------------------------------------
+#
+webera::test::test-BLANK() {
+
+	test_h1 "BLANK"
+	# ========================
+
+
+	test_h2 "BLANK h2"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+	test_clean
+
+
+	test_h3 "BLANK h3"
+	# ------------------------
+	test_clean
+
+#    test_example
+	assert_success ""
+
+
+
+
+
+
+
+
+
+} #webera::test::test-BLANK()
+
+
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && webera::test::__main "$@"
