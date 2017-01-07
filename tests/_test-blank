@@ -4,8 +4,9 @@
 
 
 #-------------------------------------------------------------------------------
+# ::init
 #
-webera::test::__main() {
+test::init() {
 
 	# Change to the directory where this script is located
 	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
@@ -16,20 +17,19 @@ webera::test::__main() {
 	source ./helper &>/dev/null
 
 	# Run tests
-	#
-	# Note: `test_setup` and `test_teardown` calls are part of the test
 	test_setup
-	webera::test::test-BLANK
+	test::suite
 	test_teardown
 
 	test_summary "BLANK"
 
-} #webera::test::__main()
+} #::init()
 
 
 #-------------------------------------------------------------------------------
+# ::suite
 #
-webera::test::test-BLANK() {
+test::suite() {
 
 	test_h1 "BLANK"
 	# ========================
@@ -37,25 +37,28 @@ webera::test::test-BLANK() {
 
 	test_h2 "BLANK h2"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
+
 	test_clean
 
 
 	test_h3 "BLANK h3"
 	# ------------------------
+
 	test_clean
 
-#    test_example
-	assert_success ""
+
+	# T: test_example 1
+	assert_success "true"
+
+	# T: test_example 2
+	assert_failure "false"
 
 
 
 
 
 
+} #::suite()
 
 
-
-} #webera::test::test-BLANK()
-
-
-[[ "$0" == "${BASH_SOURCE[0]}" ]] && webera::test::__main "$@"
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && test::init "$@"

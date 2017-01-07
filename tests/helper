@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# webera tests helper
+# tests helper
 
 
 #-------------------------------------------------------------------------------
@@ -8,13 +8,13 @@
 #
 #   Main entrance to the script.
 #
-webera::helper::main() {
+helper::main() {
 
 	# Initializations
-	webera::helper::init-common
+	helper::init-common
 
 	# Parse the arguments if the script has not been sourced
-	[[ "$0" == "${BASH_SOURCE[0]}" ]] && webera::helper::parse-arguments "$@"
+	[[ "$0" == "${BASH_SOURCE[0]}" ]] && helper::parse-arguments "$@"
 
 } #::main()
 
@@ -25,7 +25,7 @@ webera::helper::main() {
 #   Common initializations.
 #
 # shellcheck disable=SC1090
-webera::helper::init-common() {
+helper::init-common() {
 
 	# Binaries found for Unix commands employed
 	declare -g __SED __AWK __GREP __MKTEMP
@@ -48,7 +48,7 @@ webera::helper::init-common() {
 	source "$DIR_TESTS/aserta" -v
 	source "$DIR_WEBERA/webera"
 
-	webera::helper::check-compatibility
+	helper::check-compatibility
 
 
 	# Exports
@@ -75,8 +75,8 @@ webera::helper::init-common() {
 	fi
 
 	# set up exit traps
-	trap webera::helper::cleanup-signal SIGHUP SIGINT SIGTERM
-	trap webera::helper::cleanup-exit EXIT
+	trap helper::cleanup-exit EXIT
+	trap helper::cleanup-signal SIGHUP SIGINT SIGTERM
 
 } #::init-common()
 
@@ -86,18 +86,18 @@ webera::helper::init-common() {
 #
 #   Displays usage info and exits.
 #
-webera::helper::display-usage() {
+helper::display-usage() {
 
 	cat -- <<- ENDUSAGE
-	Usage: ./helper [option]
+Usage: ./helper [option]
 
-	Runs all the tests for webera.
-	This file also has to be imported by each test file.
+Runs all the tests for webera.
+This file also has to be imported by each test file.
 
-	  -a, --run-all              run all the tests.
-	  -h, --help                 display this help and exit.
+  -a, --run-all              run all the tests.
+  -h, --help                 display this help and exit.
 	ENDUSAGE
-	exit
+	exit 0
 
 	#TODO: -i, --install=<DEP>        download and install a supported dependency:
 
@@ -109,9 +109,12 @@ webera::helper::display-usage() {
 #
 #   Parses all the arguments received by the script.
 #
-webera::helper::parse-arguments() {
+# > $@ : all the arguments passed to the script
+# x  1 : when the argument is unknown
+#
+helper::parse-arguments() {
 
-	[[ -z "$@" ]] && webera::helper::display-usage
+	[[ -z "$@" ]] && helper::display-usage
 
 	local OPTIND option
 
@@ -123,19 +126,19 @@ webera::helper::parse-arguments() {
 			-)
 				case "$OPTARG" in
 
-					run-all) webera::helper::run-all-tests ;;
-					help) webera::helper::display-usage ;;
+					run-all) helper::run-all-tests ;;
+					help) helper::display-usage ;;
 
 					install=*)
-						webera::helper::install-dependency "${OPTARG#*=}"
+						helper::install-dependency "${OPTARG#*=}"
 						;;
 				esac ;;
 
 			# short options
-			a) webera::helper::run-all-tests ;;
-			i) webera::helper::install-dependency "$OPTARG" ;;
+			a) helper::run-all-tests ;;
+			i) helper::install-dependency "$OPTARG" ;;
 
-			h) webera::helper::display-usage ;;
+			h) helper::display-usage ;;
 			*)
 				printf 'Error: "%s" is not a valid argument' "$option" >&2
 				exit 1
@@ -150,7 +153,7 @@ webera::helper::parse-arguments() {
 #
 #   Runs all the tests.
 #
-webera::helper::run-all-tests() {
+helper::run-all-tests() {
 
 	# Manual ordered list of test files
 	local testFiles=()
@@ -180,9 +183,13 @@ webera::helper::run-all-tests() {
 #
 #   Gets called on test error.
 #
-webera::helper::cleanup-exit() {
+helper::cleanup-exit() {
 
-	test_teardown
+	if [[ "${FUNCNAME[1]}" == "helper::display-usage" ]]; then
+		test_final_cleanup
+	else
+		test_teardown
+	fi
 
 } #::cleanup-exit()
 
@@ -192,9 +199,14 @@ webera::helper::cleanup-exit() {
 #
 #   Gets called on abrupt exit.
 #
-webera::helper::cleanup-signal() {
+# exit 125
+helper::cleanup-signal() {
+
+	local ret="$1"
+	echo "last return signal: $ret"
 
 	test_final_cleanup
+	exit 125
 
 } #::cleanup-signal()
 
@@ -204,7 +216,7 @@ webera::helper::cleanup-signal() {
 #
 #   Downloads and installs a supported dependency.
 #
-webera::helper::install-dependency() {
+helper::install-dependency() {
 	declare dependency="$1"
 
 	printf 'Installing dependency: %s . . .\n' "$dependency"
@@ -222,7 +234,7 @@ webera::helper::install-dependency() {
 #
 #   ...
 #
-webera::helper::check-compatibility() {
+helper::check-compatibility() {
 
 	# prefer the GNU version of the Unix commands used, specially in Mac OS X
 	# use webera::find-gnu-cmd function from webera
@@ -504,4 +516,4 @@ get-webera-var() {
 } #get-webera-var()
 
 
-webera::helper::main "$@"
+helper::main "$@"

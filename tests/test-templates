@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
+#
+# Tests for templates
+#
+# TODO:
+# - directives
+# - nesting
+# - multiple levels
+# - special characters
+#
+
 
 #-------------------------------------------------------------------------------
 #
-__webera::test::main() {
+test::init() {
 
 	# Change to the directory where this script is located
 	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
@@ -14,19 +24,46 @@ __webera::test::main() {
 
 	# Run tests
 	test_setup
-	__webera::test:test-templates
+	test::suite
 	test_teardown
 
 	test_summary "templates"
 
-} #__webera::test::main()
+} #test::init()
 
 
 #-------------------------------------------------------------------------------
+# ::suite
 #
-__webera::test:test-templates() {
+test::suite() {
 
 	declare dir_tem='tem' dir_out='out' #dir_build='build'
+	#declare templ_simpl templ_head templ_content templ_footer
+	#declare content_directives content_metadata
+
+	# To parse or not to parse
+	#declare some_cmd #some_set some_setcmd
+	#declare some_utf-8
+	#declare some_comment1 some_comment2
+
+	# A template for the most simple and the more advanced tests
+	templ_simpl=$(cat <<- 'HTML_EOF'
+	<!DOCTYPE html>
+	<html lang="{{LANG}}">
+	<head>
+	    <meta charset="utf-8">
+	    <title>{{TITLE}}</title>
+	</head>
+	<body>
+	    <-- %include content.html -->
+	</body>
+	<-- %include footer.html  -->
+	</html>
+	HTML_EOF
+	)
+	#templ_simpl_head="$(printf '%s' "$templ_simpl" | head -6)"
+	#templ_simpl_footer="<footer></footer>"
+
 
 	test_h1 "Templates"
 	# ========================
@@ -34,7 +71,7 @@ __webera::test:test-templates() {
 	test_h2 "Routing"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-#    Just the index and some other
+	# T: Just the index and some other
 	mkdir -p -- "$dir_tem"
 	printf 'index\n' > "$dir_tem/index.html"
 	printf 'other\n' > "$dir_tem/other.html"
@@ -42,11 +79,14 @@ __webera::test:test-templates() {
 		"template : route : index.html : /
 	     template : route : other.html : /some-other-url/"
 	assert "[[ -f $dir_out/index.html ]]"
-#    check the contents are there
+	# T: check the contents are there
 	assert "$(<$dir_out/index.html)"
 
+
 	test_clean
-#    Route to a file, and another
+
+
+	# T: Route to a file, and another
 	mkdir -p -- "$dir_tem"
 	printf '%s' "$templ_simpl" > "$dir_tem/mytemplate.html"
 	webera -tC \
@@ -56,25 +96,16 @@ __webera::test:test-templates() {
 	assert "$(cat -- $dir_out/my-file-url.html)" "$templ_simpl"
 
 	test_clean
-#
+	# T:
 	assert "[[ -f out/indsex.html ]]"
-#
+
+	# T:
 	#assert "[[ -f out/subdir/index.html ]]"
 
 	#printf '%s\n' "$" > 'tem/index.html'
 
 
-	# TODO
-	#
-	# - directives
-	# - nesting
-	# - multiple levels
-	# - special characters
-	#
-	#
-	#
-
-} #__webera::test:test-templates()
+} #::suite()
 
 
-[[ "$0" == "${BASH_SOURCE[0]}" ]] && __webera::test::main "$@"
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && test::init "$@"

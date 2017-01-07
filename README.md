@@ -13,20 +13,17 @@ a handy shell script for the generation of static websites.
 
 - [Features](#features-)
 - [Installation](#installation-)
-  - [Manually](#manually-)
-  - [Mac OS X](#mac-os-x-)
 - [Quick Start](#quick-start-)
   - [Examples](#examples-)
 - [Documentation](#documentation-)
   - [Config](#config-)
-  - [Usage](#usage-)
-- [Reasons](#reasons-)
+  - [Running](#running-)
 - [Status](#status-)
 
 ---
 
 
-## Features [△](#table-of-contents "Back to TOC")
+## Features [↑](#table-of-contents "Back to TOC")
 
 - A configurable system for processing content templates and
   static resources, allowing custom commands and workflows.
@@ -36,9 +33,9 @@ a handy shell script for the generation of static websites.
 - Supports automatic preview.
 
 
-## Installation [△](#table-of-contents "Back to TOC")
+## Installation [↑](#table-of-contents "Back to TOC")
 
-### Manually [△](#table-of-contents "Back to TOC")
+**Manually**
 
 Download the webera script and make it executable:
 
@@ -52,7 +49,7 @@ To install it globally:
 $ sudo sh -c "wget git.io/webera -O /usr/local/bin/webera && chmod +x /usr/local/bin/webera"
 ```
 
-### Mac OS X [△](#table-of-contents "Back to TOC")
+**Mac OS X**
 
 In Mac OS X you **need** to install a more recent version of Bash (>=4)
 than the one that comes by default. Also the GNU version of coreutils,
@@ -64,7 +61,7 @@ $ brew install bash coreutils gnu-sed grep gawk
 ```
 
 
-## Quick Start [△](#table-of-contents "Back to TOC")
+## Quick Start [↑](#table-of-contents "Back to TOC")
 
 Generate a new config file (`webera -n`) or download the
 [.weberarc](https://raw.githubusercontent.com/andamira/webera/master/.weberarc)
@@ -73,7 +70,7 @@ file from this repository.
 Put your HTML templates in the `tem/` directory, and
 configure the corresponding routes in the config file:
 
-```sh
+```
 # this will process the templates from `tem/*` to `out/*/index.html`:
 template : route : my-index.html   : /
 template : route : other-page.html : /other-url/
@@ -82,7 +79,7 @@ template : route : other-page.html : /other-url/
 Put your style.css file under `res/css/` and configure how
 it will be processed (the simplest operation is to copy):
 
-```sh
+```
 # this will copy `res/css/` to `out/css/`:
 resource : copy : css/ : css/
 ```
@@ -105,7 +102,7 @@ $ find out/
   out/res/css/style.css
 ```
 
-### Examples [△](#table-of-contents "Back to TOC")
+### Examples [↑](#table-of-contents "Back to TOC")
 
 There are *(will be)* several examples you can take a look into:
 
@@ -114,12 +111,12 @@ There are *(will be)* several examples you can take a look into:
 - The result is rendered in [andamira.github.io/webera/examples](https://andamira.github.io/webera/examples/).
 
 
-## Documentation [△](#table-of-contents "Back to TOC")
+## Documentation [↑](#table-of-contents "Back to TOC")
 
 [The wiki](https://github.com/andamira/webera/wiki) is the documentation reference.
 
 
-### Config [△](#table-of-contents "Back to TOC")
+### Config [↑](#table-of-contents "Back to TOC")
 
 The following configuration snippet shows how to:
 
@@ -151,9 +148,9 @@ the [Configuration](https://github.com/andamira/webera/wiki/Configuration) wiki 
 for more information about the configuration possibilities.
 
 
-### Usage [△](#table-of-contents "Back to TOC")
+### Running [↑](#table-of-contents "Back to TOC")
 
-There are many flags to customize how the script should behave,
+There are many flags to customize how the script should run,
 which you can combine with a more stable custom configuration.
 See the wiki page for the
 [order of priority](https://github.com/andamira/webera/wiki/Configuration#order-of-priority-)
@@ -197,22 +194,6 @@ The following examples demonstrate common usage situations, featuring both long 
 Run `./webera --help` to see the basic help on flags, or take a deeper look to the complete [list of flags](https://github.com/andamira/webera/wiki/Script-Arguments#list-of-flags-) in the wiki.
 
 
-## Reasons [△](#table-of-contents "Back to TOC")
+## Status [↑](#table-of-contents "Back to TOC")
 
-webera is (increasingly) loosely inspired by
-[Statix](https://gist.github.com/plugnburn/c2f7cc3807e8934b179e),
-the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy),
-the [suckless philosophy](http://suckless.org/philosophy),
-the [Swiss Army knife](https://en.wikipedia.org/wiki/Swiss_Army_knife)
-and the [Primitive Technology guy](https://www.youtube.com/channel/UCAL3JXZSzSm8AlZyD3nQdBA).
-
-The intention is to see how far this idea can be taken,
-and try to achive an ideal balance between
-reliability, simplicity and handiness.
-
-[See the FAQ page in the wiki](https://github.com/andamira/webera/wiki/FAQ).
-
-
-## Status [△](#table-of-contents "Back to TOC")
-
-This project is not stable yet.
+This project is not stable yet. It is still undergoing many changes.

@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
+#
+# Tests for the configuration
+#
 
 
 #-------------------------------------------------------------------------------
+# ::init
 #
-__webera::test::main() {
+test::init() {
 
 	# Change to the directory where this script is located
 	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
@@ -15,17 +19,19 @@ __webera::test::main() {
 
 	# Run tests
 	test_setup
-	__webera::test::test-config
+	test::suite
 	test_teardown
 
 	test_summary 'config'
 
-} #__webera::test::main()
+} #::init()
 
 
 #-------------------------------------------------------------------------------
+# ::suite
 #
-__webera::test::test-config() {
+test::suite() {
+
 	local newval
 
 	test_h1 "Configuration"
@@ -39,25 +45,31 @@ __webera::test::test-config() {
 	test_h3 "Whitespace"
 	# ------------------------
 
+
 	test_clean
 
-#    No spaces
+
+	# T: No spaces
 	printf "config:DIR_TEMPLATES:syn_nospaces" > .weberarc
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "syn_nospaces"
-#    Spaces
+
+	# T: Spaces
 	printf "config : DIR_TEMPLATES : syn_spaces\n" > .weberarc
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "syn_spaces"
-#    Tabs
+
+	# T: Tabs
 	printf "config\t:\tDIR_TEMPLATES\t:\tsyn_tabs\n" > .weberarc
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "syn_tabs"
-#    Spaces, tabs, trailing and leading whitespace
+
+	# T: Spaces, tabs, trailing and leading whitespace
 	printf "  \t config\t\t: DIR_TEMPLATES   :\tsyn_whitespace\t\n" > .weberarc
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "syn_whitespace"
-#    # Line splitting
+
+	# T: # Line splitting
 	printf "config : DIR_TEMPLATES : \
 		syn_linesplit\n" > .weberarc
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
@@ -67,7 +79,9 @@ __webera::test::test-config() {
 	test_h3 "Private variables"
 	# ------------------------
 
+
  	test_clean
+
 
 	# Private variables shouldn't be read
 	cat <<- EOF > .weberarc
@@ -76,16 +90,20 @@ __webera::test::test-config() {
 	config : _PRELOG : var_private_2
 	config : __OTHER: var_private_3
 	EOF
-#
+
+	# T:
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "var_public"
-#
+
+	# T:
 	newval=$(get-webera-var "$(webera -_)" 'file' '_FILE_CONFIG')
 	assert "echo $newval"
-#
+
+	# T:
 	newval=$(get-webera-var "$(webera -_)" 'file' '_PRELOG')
 	assert "echo $newval"
-#
+
+	# T:
 	newval=$(get-webera-var "$(webera -_)" 'file' '__OTHER')
 	assert "echo $newval"
 
@@ -97,18 +115,24 @@ __webera::test::test-config() {
 	test_h2 "Generate config file"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 	test_clean
 
-#    (-n) Generate with default name
+
+	# T: (-n) Generate with default name
 	assert "webera -n"
-#
+
+	# T:
 	assert_success "[[ -f .weberarc ]]"
 
-#    (-nC) Generate with a custom name
+
+	# T: (-nC) Generate with a custom name
 	assert "webera -nC .test_weberarc"
-#
+
+	# T:
 	assert_success "[[ .test_weberarc ]]"
-#    _FILE_CONFIG shouldn't be written to config file
+
+	# T: _FILE_CONFIG shouldn't be written to config file
 	assert "cat .test_weberarc"
 
 
@@ -123,48 +147,57 @@ __webera::test::test-config() {
 	test_h3 "Paths: separate"
 	# ------------------------
 
+
 	test_clean
 
-#    (-T) DIR_TEMPLATES
+
+	# T: (-T) DIR_TEMPLATES
 	assert "webera -n -T test_tem"
-#    write
+	# T: write
 	assert "cat .weberarc" "config : DIR_TEMPLATES : test_tem"
-#    read
+	# T: read
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "test_tem"
 
 
 	test_clean
 
-#    (-R) DIR_RESOURCES
+
+	# T: (-R) DIR_RESOURCES
 	assert "webera -n -R test_res"
-#    write
+
+	# T: write
 	assert "cat .weberarc" "config : DIR_RESOURCES : test_res"
-#    read
+
+	# T: read
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_RESOURCES')
 	assert "echo $newval" "test_res"
 
 
 	test_clean
 
-#    (-O) DIR_OUTPUT
+
+	# T: (-O) DIR_OUTPUT
 	assert "webera -n -O test_out"
-#    write
+
+	# T: write
 	assert "cat .weberarc" "config : DIR_OUTPUT : test_out"
-#    read
+
+	# T: read
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_OUTPUT')
 	assert "echo $newval" "test_out"
 
 
 	test_clean
 
-#    (-B) DIR_BUILD
+
+	# T: (-B) DIR_BUILD
 	assert "webera -n -B test_build"
-#
-	# write
+
+	# T: write
 	assert "cat .weberarc" "config : DIR_BUILD : test_build"
-#
-	# read
+
+	# T: read
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_BUILD')
 	assert "echo $newval" "test_build"
 
@@ -172,30 +205,36 @@ __webera::test::test-config() {
 	test_h3 "Paths: together"
 	# ------------------------
 
+
 	test_clean
 
-#    (-TROB) all paths together
+
+	# T: (-TROB) all paths together
 	assert "webera -n -T t1 -R r2 -O o3 -B b4"
-#    write 1 2 3 4
+
+	# T: write 1 2 3 4
 	assert "cat .weberarc | sort" "config : DIR_BUILD : b4
 config : DIR_OUTPUT : o3
 config : DIR_RESOURCES : r2
 config : DIR_TEMPLATES : t1"
 
-#    read 1
+	# T: read 1
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "t1"
-#    read 2
+
+	# T: read 2
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_RESOURCES')
 	assert "echo $newval" "r2"
-#    read 3
+
+	# T: read 3
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_OUTPUT')
 	assert "echo $newval" "o3"
-#    read 4
+
+	# T: read 4
 	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_BUILD')
 	assert "echo $newval" "b4"
 
-} #__webera::test::test-config()
+} #::suite()
 
 
-[[ "$0" == "${BASH_SOURCE[0]}" ]] && __webera::test::main "$@"
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && test::init "$@"

@@ -6,13 +6,13 @@
 #   repository : https://github.com/andamira/webera
 #       author : José Luis Cruz © 2016-2017
 #      license : MIT
-_WEBERA_VERSION=0.1.66
+_WEBERA_VERSION=0.1.67
 
 
 #-------------------------------------------------------------------------------
 # ::main
 #
-# argument: $@ : all the arguments passed to the script
+# > $@ : all the arguments passed to the script
 #
 webera::main() {
 
@@ -158,50 +158,50 @@ webera::main() {
 #
 #   Displays usage information.
 #
-#   parent: webera::parse-arguments webera::configure-settings
+# ^ ::parse-arguments ::configure-settings
 #
 webera::display-usage() {
 
 	cat -- <<-ENDUSAGE
-	Usage: $(basename "$0") -[trawn] [other options]
+Usage: $(basename "$0") -[trawn] [other options]
 
-	> a handy static website generator <
+> a handy static website generator <
 
-	INSTRUCTIONS
+INSTRUCTIONS
 
-	1. At least one OPERATIVE FLAG is needed in order for the script to run.
-	2. Mandatory arguments to long options, are mandatory for short options too.
+1. At least one OPERATIVE FLAG is needed in order for the script to run.
+2. Mandatory arguments to long options, are mandatory for short options too.
 
-	OPERATIVE FLAGS              ...
+OPERATIVE FLAGS              ...
 
-	  -t, --process-templates    process the templates
-	  -r, --process-resources    process the resources
-	  -a, --process-all          process both the templates and the resources
-	  -w  --preview              preview website in the web browser
-	  -n  --new-config           generate a new configuration file
+  -t, --process-templates    process the templates
+  -r, --process-resources    process the resources
+  -a, --process-all          process both the templates and the resources
+  -w  --preview              preview website in the web browser
+  -n  --new-config           generate a new configuration file
 
-	OPTION FLAGS                 ... (default value)
+OPTION FLAGS                 ... (default value)
 
-	  -F, --file-config=FILE     indicate the configuration file ($_CONFIG_FILE)
-	  -C, --config=STRING        pass the configuration as a string ($_CONFIG_STRING)
+  -F, --file-config=FILE     indicate the configuration file ($_CONFIG_FILE)
+  -C, --config=STRING        pass the configuration as a string ($_CONFIG_STRING)
 
-	  -T, --dir-templates=DIR    indicate the templates directory ($DIR_TEMPLATES)
-	  -R, --dir-resources=DIR    indicate the resources directory ($DIR_RESOURCES)
-	  -O, --dir-output=DIR       indicate the output directory ($DIR_OUTPUT)
-	  -B, --dir-build=DIR        indicate the build directory ($DIR_BUILD)
-	  -d, --dont-delete-output   don't delete the output dir ($_DO_DELETE_DIR_OUTPUT)
+  -T, --dir-templates=DIR    indicate the templates directory ($DIR_TEMPLATES)
+  -R, --dir-resources=DIR    indicate the resources directory ($DIR_RESOURCES)
+  -O, --dir-output=DIR       indicate the output directory ($DIR_OUTPUT)
+  -B, --dir-build=DIR        indicate the build directory ($DIR_BUILD)
+  -d, --dont-delete-output   don't delete the output dir ($_DO_DELETE_DIR_OUTPUT)
 
-	  -L, --log-level=LEVEL      log level [0=none|1|2|3] ($LOG_LEVEL)
-	  -c, --clear-log            clear the previous log file ($_DO_CLEAR_LOG)
-	  -G, --logfile=FILE         log file ($LOG_FILE)
+  -L, --log-level=LEVEL      log level [0=none|1|2|3] ($LOG_LEVEL)
+  -c, --clear-log            clear the previous log file ($_DO_CLEAR_LOG)
+  -G, --logfile=FILE         log file ($LOG_FILE)
 
-	  -W, --browser-bin=BIN      web browser binary ($WEB_BROWSER)
-	  -S, --server-type=TYPE     server type [none|php|python|custom] ($SERVER_TYPE)
-	  -H, --server-host=HOST     server host ($SERVER_HOST)
-	  -P, --server-port=PORT     port number ($SERVER_PORT)
+  -W, --browser-bin=BIN      web browser binary ($WEB_BROWSER)
+  -S, --server-type=TYPE     server type [none|php|python|custom] ($SERVER_TYPE)
+  -H, --server-host=HOST     server host ($SERVER_HOST)
+  -P, --server-port=PORT     port number ($SERVER_PORT)
 
-	  -h, --help                 display this help and exit
-	      --version              show version info and exit
+  -h, --help                 display this help and exit
+	  --version              show version info and exit
 
 	ENDUSAGE
 
@@ -213,9 +213,9 @@ webera::display-usage() {
 #
 #   Displays version information and exits.
 #
-# argument: $1 : (optional) error code
-#     exit: $1 : same received error code
-#   parent: webera::parse-arguments webera::configure-settings
+# > $1 : (optional) error code
+# x $1 : same received error code
+# ^ ::parse-arguments ::configure-settings
 #
 webera::display-version() {
 
@@ -240,8 +240,8 @@ webera::display-version() {
 #
 #  Parses the arguments received by the script and sets/saves the options.
 #
-# argument:   $@ : all the arguments passed to the script
-#   parent: webera::main
+# > $@ : all the arguments passed to the script
+# ^ ::main
 #
 webera::parse-arguments() {
 
@@ -342,10 +342,10 @@ webera::parse-arguments() {
 #
 #   Sets both short and long arguments, in a centralize manner.
 #
-# argument:  $1 : the common long name of the argument
-# argument:  $2 : (optional) the value of the argument
-#     exit: 255 : unknown argument
-#   parent: webera::parse-arguments
+# >  $1 : the common long name of the argument
+# >  $2 : (optional) the value of the argument
+# x 255 : unknown argument
+# ^ ::parse-arguments
 #
 webera::set-arg() {
 
@@ -431,7 +431,7 @@ webera::set-arg() {
 #
 #   Prepares the log file and writes all the logs previously saved in _PRELOG.
 #
-# parent: webera::main
+# ^ ::main
 #
 webera::setup-log() {
 
@@ -468,10 +468,10 @@ webera::setup-log() {
 #
 #   Prints a message to the log file. Errors and warnings also to STDERR.
 #
-# argument: $1  : (optional) logLevelNeeded
-# argument: $2  : (optional) logType [warn|error]
-# argument: $3+ : log message
-#   parent: <almost all functions>
+# > $1  : (optional) logLevelNeeded
+# > $2  : (optional) logType [warn|error]
+# > $3+ : log message
+# ^ (almost all functions)
 #
 # shellcheck disable=SC2059
 webera::log() {
@@ -541,8 +541,8 @@ webera::log() {
 #
 #   Prepares the server commands, for previewing in the browser.
 #
-#   exit: 5 : Server type not recognized
-# parent: webera::main : when the script received the `-r` flag
+# x 5 : Server type not recognized
+# ^ ::main (when the script received the `-r` flag)
 #
 webera::preview-website() {
 
@@ -594,7 +594,7 @@ webera::preview-website() {
 #
 #   Deletes DIR_BUILD and DIR_OUTPUT if there is pending processing.
 #
-# parent: webera::main
+# ^ ::main
 #
 webera::delete-directories() {
 
@@ -615,10 +615,10 @@ webera::delete-directories() {
 #   Reads some configuration from a file or a string,
 #   and joins it together to a common source.
 #
-# argument: $1 : $configType [file|string]
-# argument: $2 : $configPointer can be either the file name or the variable name
-#     exit: 10 : unknown config type
-#   parent: webera::main
+# > $1 : $configType [file|string]
+# > $2 : $configPointer can be either the file name or the variable name
+# x 10 : unknown config type
+# ^ ::main
 #
 webera::read-config() {
 
@@ -679,9 +679,9 @@ webera::read-config() {
 # ::configure-settings
 #
 #   Parses the configuration settings and overrides them with:
-#   1) the joint configuration 2) the passed arguments.
+#   1 - the joint configuration and 2 - the passed arguments.
 #
-# parent: webera::main
+# ^ ::main
 #
 webera::configure-settings() {
 
@@ -727,7 +727,7 @@ webera::configure-settings() {
 #
 #   Generates a config file, writing down the settings modified via arguments.
 #
-# parent: webera::main : when the script received the `-n` flag
+# ^ ::main (when the script received the `-n` flag)
 #
 webera::generate-config() {
 
@@ -752,7 +752,7 @@ webera::generate-config() {
 #
 #   Reads the configuration commands for processing templates and resources.
 #
-# parent: webera::main
+# ^ ::main
 #
 webera::read-config-commands() {
 
@@ -789,8 +789,8 @@ webera::read-config-commands() {
 #
 #   Parses the configuration and executes the resource operations.
 #
-# return:    8 : no resources directory found
-# parent: webera::main : when the script received the `-r` flag
+# < 8 : no resources directory found
+# ^ ::main (when the script received the `-r` flag)
 #
 webera::process-resources() {
 
@@ -873,8 +873,8 @@ webera::process-resources() {
 #
 #   Parses the configuration and executes the template operations.
 #
-# return:    9 : no templates directory found
-# parent: webera::main : when the script received the `-t` flag
+# < 9 : no templates directory found
+# ^ ::main (when the script received the `-t` flag)
 #
 webera::process-templates() {
 
@@ -967,10 +967,10 @@ webera::process-templates() {
 #   Recursively parses a template for include directives, and then
 #   joins all the parts together in a single template.
 #
-# argument: $1 : templateFileName
-#   return:  7 : No template found
-#     exit:  3 : Maximum nesting level overflow
-#   parent: webera::render-template
+# > $1 : templateFileName
+# <  7 : No template found
+# x  3 : Maximum nesting level overflow
+# ^ ::render-template
 #
 webera::parse-template-includes() {
 
@@ -1026,8 +1026,8 @@ webera::parse-template-includes() {
 #
 #   Parses the template, processes the directives and renders the html file.
 #
-# argument: $1 : templateFileName
-#   parent: webera::process-templates (when parsing the 'route' command)
+# > $1 : templateFileName
+# ^ ::process-templates (when parsing the 'route' command)
 #
 webera::render-template() {
 
@@ -1149,9 +1149,10 @@ webera::render-template() {
 #
 #   Checks for dependencies and displays pertinent information.
 #
-# argument: $1 : whole directive
-# argument: $2 : directive identifier (e.g. %include)
-# parent: webera::render-template
+# > $1 : whole directive
+# > $2 : directive identifier (e.g. %include)
+# ^ ::render-template
+#
 webera::get-directive-content() {
 
 	printf '%s' "$1" \
@@ -1166,8 +1167,8 @@ webera::get-directive-content() {
 #
 #   Checks for dependencies and displays pertinent information.
 #
-#   exit: 6 : bash version too old
-# parent: webera::main
+# x 6 : bash version too old
+# ^ ::main
 #
 webera::check-compatibility() {
 
@@ -1198,6 +1199,9 @@ webera::check-compatibility() {
 #   Returns the resolved command, preferring the GNU versions
 #   and falling back to the standard version when not found.
 #
+# > $1 : command binary
+# ^ ::check-compatibility
+#
 webera::find-gnu-cmd() {
 
 	local default_cmd="$1"
@@ -1217,7 +1221,7 @@ webera::find-gnu-cmd() {
 #
 #   Enables xtrace if WEBERA_DEBUG has been defined, and sets a nice formatting.
 #
-# parent: webera::main
+# ^ ::main
 #
 # shellcheck disable=SC2016
 webera::setup-debugging() {
@@ -1237,6 +1241,8 @@ webera::setup-debugging() {
 #
 #   Prints all the script "global" settings and data, public and private.
 #
+# ^ ::main
+#
 webera::print-vars() { printf '%s\n' "$__VARS_WEBERA"; }
 
 
@@ -1246,10 +1252,10 @@ webera::print-vars() { printf '%s\n' "$__VARS_WEBERA"; }
 #   Parses configuration, extracts the config variables and appends them
 #   to __VARS_WEBERA in the correct format, using the provided arguments.
 #
-# argument: $1 : varOrigin [vdef|args|file|strn]
-# argument: $2 : varPath (for files)
-# argument: $3 : configuration
-#   parent: webera::read-config
+# > $1 : varOrigin [vdef|args|file|strn]
+# > $2 : varPath (for files)
+# > $3 : configuration
+# ^ webera::read-config
 #
 webera::push-vars() {
 
@@ -1278,7 +1284,8 @@ webera::push-vars() {
 #
 #   Prints the spent time on the script, in milliseconds.
 #
-# argument: $1 : when true, prints the time beautified
+# > $1 : if true, prints the time beautified
+#
 #
 webera::elapsed-time() {
 
@@ -1299,7 +1306,8 @@ webera::elapsed-time() {
 #   Tries to format a time in milliseconds into a human readable text string
 #   showing the days, hours, minutes and/or seconds contained in that time.
 #
-# argument: $1 : time in milliseconds
+# > $1 : time in milliseconds
+# e    : time beautified
 #
 webera::beautify-time() {
 
