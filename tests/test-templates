@@ -11,6 +11,9 @@
 
 
 #-------------------------------------------------------------------------------
+# ::init
+#
+# > $1 : when equals "run-all-tests", common test data cleanup wont happen here
 #
 test::init() {
 
@@ -29,7 +32,10 @@ test::init() {
 
 	test_summary "templates"
 
-} #test::init()
+	# Only do the final cleanup when the script is run independently
+	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
+
+} #::init()
 
 
 #-------------------------------------------------------------------------------

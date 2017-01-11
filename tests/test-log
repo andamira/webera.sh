@@ -9,6 +9,9 @@
 
 
 #-------------------------------------------------------------------------------
+# ::init
+#
+# > $1 : when equals "run-all-tests", common test data cleanup wont happen here
 #
 test::init() {
 
@@ -27,6 +30,9 @@ test::init() {
 
 	test_summary 'log'
 
+	# Only do the final cleanup when the script is run independently
+	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
+
 } #test::init()
 
 
@@ -35,7 +41,8 @@ test::init() {
 #
 test::suite() {
 
-	local logFile="$DIR_WORKDIR/webera_test_logfile"
+	# shellcheck disable=SC2154
+	local log_file="$Dir_workdir/webera_test_logfile"
 
 
 	test_h1 "Logging"
@@ -55,32 +62,32 @@ test::suite() {
 	# T: no log [logLevel=0 < LOG_LEVEL=$MIN] (lower limits)
 	test_clean
 	test::log-wrapper false 0 1 "" "no log"
-	assert "cat $logFile" ""
+	assert "cat $log_file" ""
 
 	# T: no log [logLevel<0 < LOG_LEVEL=$MIN] (negative number)
 	test_clean
 	test::log-wrapper false -3 1 "" "no log"
-	assert "cat $logFile" ""
+	assert "cat $log_file" ""
 
 	# T: no log [logLevel < LOG_LEVEL=$MAX] (higher limits)
 	test_clean
 	test::log-wrapper false 2 3 "" "no log"
-	assert "cat $logFile" ""
+	assert "cat $log_file" ""
 
 	# T: no log [logLevel=0; LOG_LEVEL=0]
 	test_clean
 	test::log-wrapper false 0 0 "" "no log"
-	assert "cat $logFile" ""
+	assert "cat $log_file" ""
 
 	# T: log [logLevel == LOG_LEVEL = 1]
 	test_clean
 	test::log-wrapper false 1 1 "" "log 1"
-	assert "cat $logFile" "log 1"
+	assert "cat $log_file" "log 1"
 
 	# T: log if log level is greater
 	test_clean
 	test::log-wrapper false 3 2 "" "log 2"
-	assert "cat $logFile" "log 2"
+	assert "cat $log_file" "log 2"
 
 
 
@@ -119,10 +126,12 @@ test::suite() {
 # > $4 : (str)  [local] logType
 # > $5 : (str)  [local] logMessage
 #
+# ^ ::suite
+#
 # shellcheck disable=SC2034
 test::log-wrapper() {
 	(
-		_PRELOG="$1"; LOG_LEVEL="$2"; LOG_FILE="$logFile"
+		_Log_presaved="$1"; Opt_log_level="$2"; Opt_log_file="$log_file"
 		webera::log "$3" "$4" "$5"
 	)
 } #::log-wrapper()

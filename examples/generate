@@ -6,15 +6,15 @@
 #
 webera::generate-examples::main() {
 
-	local OPTION_LOG_LEVEL=0
-	local OPTION_LOG_CLEAR=''
-	local OPTION_LOAD_IN_WEB_BROWSER=false;
+	local Opt_log_level=0
+	local Opt_log_clear=''
+	local Opt_preview_in_web_browser=false;
 
-	local DIR
-	DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-	local WEBERA="$DIR/../webera"
-	local LOGFILE="$DIR/examples.log"
-	local OUTPUT="$DIR/../docs"
+	local Dir
+	Dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+	local Webera="$Dir/../webera"
+	local Log_file="$Dir/examples.log"
+	local Output="$Dir/../docs"
 
 	webera::generate-examples::parse-arguments "$@"
 
@@ -22,8 +22,8 @@ webera::generate-examples::main() {
 
 	printf "\nDone.\n"
 
-	if [ "$OPTION_LOAD_IN_WEB_BROWSER" = true ]; then
-		$WEBERA -wO "$OUTPUT"
+	if [ "$Opt_preview_in_web_browser" = true ]; then
+		$Webera -wO "$Output"
 	fi
 
 } #::main()
@@ -38,11 +38,11 @@ webera::generate-examples::display-usage() {
 
 	Generates every example.
 
-	webera::generate-examples::display-usage: ./generate-examples [OPTIONS]
+	webera::generate-examples::display-usage: ./generate-examples [optionS]
 
 	  -w              preview in web browser
-	  -L <NUMBER>     log level [0=none|1|2|3] ($OPTION_LOG_LEVEL)
-	  -c              switch clearing the log file (clear=$OPTION_CLEAR_LOG)
+	  -L <NUMBER>     log level [0=none|1|2|3] ($Opt_log_level)
+	  -c              switch clearing the log file (clear=$Opt_log_clear)
 	ENDwebera::generate-examples::display-usage
 	exit 1
 
@@ -53,13 +53,13 @@ webera::generate-examples::display-usage() {
 # ::parse-arguments
 #
 webera::generate-examples::parse-arguments() {
-	local OPTIND OPTION
-	while getopts 'wL:ch' OPTION; do
+	local OPTIND option
+	while getopts 'wL:ch' option; do
 
-		case "$OPTION" in
-			w) OPTION_LOAD_IN_WEB_BROWSER=true ;;
-			L) OPTION_LOG_LEVEL="$OPTARG" ;;
-			c) OPTION_LOG_CLEAR=true ;;
+		case "$option" in
+			w) Opt_preview_in_web_browser=true ;;
+			L) Opt_log_level="$OPTARG" ;;
+			c) Opt_log_clear=true ;;
 			h|*) webera::generate-examples::display-usage; exit ;;
 		esac
 	done
@@ -72,25 +72,25 @@ webera::generate-examples::parse-arguments() {
 #
 webera::generate-examples::generate-all() {
 
-	cd "$DIR" || exit
+	cd "$Dir" || exit
 
-	[[ "$OPTION_LOG_CLEAR" == true ]] && rm -- "$LOGFILE" 2>/dev/null
+	[[ "$Opt_log_clear" == true ]] && rm -- "$Log_file" 2>/dev/null
 
-	local EXAMPLES
-	EXAMPLES=$(find . -maxdepth 1 -name "[0-9a-zA-Z]*" -type d \
+	local examples_list
+	examples_list=$(find . -maxdepth 1 -name "[0-9a-zA-Z]*" -type d \
 		| cut -d'/' -f2 \
 		| grep -v '^\.\+$' \
 		| sort | tac | \
 		tr '\n' ' ')
 
-	for E in $EXAMPLES; do
-		cd "$E" || exit
+	for example in $examples_list; do
+		cd "$example" || exit
 
-		printf 'generating '%s'. . . \n' "$E"
+		printf 'generating '%s'. . . \n' "$example"
 
-		"$WEBERA" -rt -L"${OPTION_LOG_LEVEL}" -G "$LOGFILE"
+		"$Webera" -rt -L"${Opt_log_level}" -G "$Log_file"
 
-		cd "$DIR" || exit
+		cd "$Dir" || exit
 	done
 
 } #::generate-all()

@@ -30,14 +30,14 @@ helper::init-common() {
 	# Binaries found for Unix commands employed
 	declare -g __SED __AWK __GREP __MKTEMP
 
-	DIR_TESTS="$( cd -- "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-	DIR_WEBERA="$DIR_TESTS/.."
-	TEMPLATE_TEMP_NAME='webera-test-XXXXXXXXX'
+	Dir_tests="$( cd -- "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+	Dir_webera="$Dir_tests/.."
+	Template_temp_name='webera-test-XXXXXXXXX'
 
 	# Imports
-	if [[ ! -s "$DIR_TESTS/aserta" ]]; then
-		#curl -sOL git.io/aserta.stable -o "$DIR_TESTS/aserta"
-		curl -sOL git.io/aserta -o "$DIR_TESTS/aserta"
+	if [[ ! -s "$Dir_tests/aserta" ]]; then
+		#curl -sOL git.io/aserta.stable -o "$Dir_tests/aserta"
+		curl -sOL git.io/aserta -o "$Dir_tests/aserta"
 
 		local ret="$?"
 		if [[ $ret -ne 0 ]]; then
@@ -45,32 +45,32 @@ helper::init-common() {
 			exit 1
 		fi
 	fi
-	source "$DIR_TESTS/aserta" -v
-	source "$DIR_WEBERA/webera"
+	source "$Dir_tests/aserta" -v
+	source "$Dir_webera/webera"
 
 	helper::check-compatibility
 
 
 	# Exports
-	if [[ ! -d $DIR_WORKDIR ]]; then
+	if [[ ! -d $Dir_workdir ]]; then
 		# if possible, use a previously created workdir
 		# if not, create a new one and export it again
-		export DIR_WORKDIR
-		DIR_WORKDIR="$($__MKTEMP -d "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+		export Dir_workdir
+		Dir_workdir="$($__MKTEMP -d "$Mktemp_args" "$Template_temp_name")"
 	fi
 	if [[ -z "$TOTAL_TEST_NUM" ]]; then
 		export TOTAL_TEST_NUM
-		TOTAL_TEST_NUM="$($__MKTEMP "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+		TOTAL_TEST_NUM="$($__MKTEMP "$Mktemp_args" "$Template_temp_name")"
 		printf '0' > "$TOTAL_TEST_NUM"
 	fi
 	if [[ -z "$TOTAL_TEST_TIME" ]]; then
 		export TOTAL_TEST_TIME
-		TOTAL_TEST_TIME="$($__MKTEMP "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+		TOTAL_TEST_TIME="$($__MKTEMP "$Mktemp_args" "$Template_temp_name")"
 		printf '0' > "$TOTAL_TEST_TIME"
 	fi
 	if [[ -z "$TOTAL_TEST_ERROR_NUM" ]]; then
 		export TOTAL_TEST_ERROR_NUM
-		TOTAL_TEST_ERROR_NUM="$($__MKTEMP "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+		TOTAL_TEST_ERROR_NUM="$($__MKTEMP "$Mktemp_args" "$Template_temp_name")"
 		printf '0' > "$TOTAL_TEST_ERROR_NUM"
 	fi
 
@@ -156,19 +156,19 @@ helper::parse-arguments() {
 helper::run-all-tests() {
 
 	# Manual ordered list of test files
-	local testFiles=()
+	local test_file_list=()
 
-	testFiles+=('test-helper')
-	testFiles+=('test-arguments')
-	testFiles+=('test-config')
-	testFiles+=('test-log')
-	#testFiles+=('test-templates')
-	#testFiles+=('test-resources')
+	test_file_list+=('test-helper')
+	test_file_list+=('test-arguments')
+	test_file_list+=('test-config')
+	test_file_list+=('test-log')
+	#test_file_list+=('test-templates')
+	#test_file_list+=('test-resources')
 
-	printf '%s\n' "Running tests from ${#testFiles[@]} test files. . ."
+	printf '%s\n' "Running tests from ${#test_file_list[@]} test files. . ."
 
-	for T in "${testFiles[@]}"; do
-		bash "$DIR_TESTS/$T"
+	for test_file in "${test_file_list[@]}"; do
+		bash "$Dir_tests/$test_file" RUN_ALL_TESTS
 	done
 
 	test_final_summary
@@ -199,16 +199,11 @@ helper::cleanup-exit() {
 #
 #   Gets called on abrupt exit.
 #
-# exit 125
+# x 125
+#
 helper::cleanup-signal() {
-
-	local ret="$1"
-	echo "last return signal: $ret"
-
-	test_final_cleanup
-	exit 125
-
-} #::cleanup-signal()
+	test_final_cleanup; exit 125
+}
 
 
 #-------------------------------------------------------------------------------
@@ -245,9 +240,9 @@ helper::check-compatibility() {
 
 	# fix mktemp compatibility [INC04]
 	if [[ "$($__MKTEMP -qu --tmpdir TXXX >/dev/null 2>&1; printf '%s' "$?")" -eq 0 ]]; then
-		MKTEMP_ARGS="--tmpdir" # new syntax
+		Mktemp_args="--tmpdir" # new syntax
 	else
-		MKTEMP_ARGS="-t" # obsolete syntax
+		Mktemp_args="-t" # obsolete syntax
 	fi
 
 } #::check-compatibility()
@@ -293,21 +288,22 @@ test_h3() {
 #   Enters the working directory.
 #
 test_setup() {
-	if [[ -d "$DIR_WORKDIR" ]]; then
-		pushd "$DIR_WORKDIR" >/dev/null 2>&1
+
+	if [[ -d "$Dir_workdir" ]]; then
+		pushd "$Dir_workdir" >/dev/null 2>&1
 	else
 		printf 'Warning: %s %s.' \
 			"couldn't find working directory" \
-			"'$DIR_WORKDIR'" >&2
+			"'$Dir_workdir'" >&2
 
-		export DIR_WORKDIR
-		DIR_WORKDIR="$($__MKTEMP -d "$MKTEMP_ARGS" "$TEMPLATE_TEMP_NAME")"
+		export Dir_workdir
+		Dir_workdir="$($__MKTEMP -d "$Mktemp_args" "$Template_temp_name")"
 
 		printf 'Warning: %s %s.' \
 			"creating a new working directory at" \
-			"'$DIR_WORKDIR'" >&2
+			"'$Dir_workdir'" >&2
 
-		pushd "$DIR_WORKDIR"
+		pushd "$Dir_workdir"
 	fi
 
 } #test_setup()
@@ -319,13 +315,14 @@ test_setup() {
 #   Returns from and deletes the working directory.
 #
 test_teardown() {
-	if [[ "$(pwd)" == "$DIR_WORKDIR" ]]; then
+
+	if [[ "$(pwd)" == "$Dir_workdir" ]]; then
 		popd >/dev/null 2>&1
 	fi
 
-	if [[ -d "$DIR_WORKDIR" ]]; then
+	if [[ -d "$Dir_workdir" ]]; then
 		test_clean
-	   	rmdir -- "$DIR_WORKDIR"
+		rmdir -- "$Dir_workdir"
 	fi
 
 } # test_teardown()
@@ -337,13 +334,14 @@ test_teardown() {
 #   Cleans the working directory.
 #
 test_clean() {
-	if [[ -d "$DIR_WORKDIR" ]]; then
-		pushd "$DIR_WORKDIR" >/dev/null 2>&1
+
+	if [[ -d "$Dir_workdir" ]]; then
+		pushd "$Dir_workdir" >/dev/null 2>&1
 		rm -rf -- .[^.] .??* ./*
 		popd >/dev/null 2>&1
 	else
 		printf '%s\n' \
-			"Warning: couldn't find working directory '$DIR_WORKDIR'" >&2
+			"Warning: couldn't find working directory '$Dir_workdir'" >&2
 	fi
 
 } #test_clean()
@@ -355,77 +353,79 @@ test_clean() {
 #   Prints the report and saves the counts for the final summary.
 #
 test_summary() {
+
 	local testStr="$1"
 
-	local testReport
-	local testNum
-	local previousTotalNum
-	local newTotalNum
+	local test_report
+	local test_num
+	local prev_total_num
+	local new_total_num
 
-	local errorReport
-	local whatFailed
-	local testErrNum
-	local previousTotalErrNum
-	local newTotalErrNum
+	local error_report
+	local what_failed
+	local test_err_num
+	local prev_total_err_num
+	local new_total_err_num
 
-	local testTime
-	local previousTotalTime
-	local newTotalTime
+	local test_time
+	local prev_total_time
+	local new_total_time
 
 	local errPattern='[0-9]\+ of [0-9]\+ .* tests failed.*$'
 
-	testReport="$(assert_end \'"$testStr"\' | tr -d '\n' )"
+	test_report="$(assert_end \'"$testStr"\' | tr -d '\n' )"
 
 	printf '\n  %s' "$(test_separator)"
 
 	# No tests failed
-	if [[ "$(printf '%s' "$testReport" | cut -d' ' -f1)" == "all" ]]; then
-		printf '\n  %s\n' "$testReport"
+	if [[ "$(printf '%s' "$test_report" | cut -d' ' -f1)" == "all" ]]; then
+		printf '\n  %s\n' "$test_report"
 
 		# get the number of passed tests
-		testNum="$(printf '%s' "$testReport" \
+		test_num="$(printf '%s' "$test_report" \
 			| $__GREP -o '^all [0-9]\+' | cut -d' ' -f2 )"
 
 	# Some tests failed
 	else
-		whatFailed="$(printf "%s" "$testReport" | $__SED "s/\($errPattern\)//" )"
-		errorReport="$(printf "%s" "$testReport" | $__GREP -o "$errPattern" )"
+		what_failed="$(printf "%s" "$test_report" | $__SED "s/\($errPattern\)//" )"
+		error_report="$(printf "%s" "$test_report" | $__GREP -o "$errPattern" )"
 
-		printf '%s\n' "$whatFailed" | tr '\t' '\n' \
+		printf '%s\n' "$what_failed" | tr '\t' '\n' \
 			| $__SED 's/\(test\ #[0-9]\)/\n> &/g' | $__SED 's/^/  /'
 		printf '  %s\n' "$(test_separator)"
-		printf '  %s\n' "$errorReport"
+		printf '  %s\n' "$error_report"
 
 		# Update the number of failed tests
 		if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
-			testErrNum="$(printf '%s' "$errorReport" | cut -d' ' -f1 )"
-			previousTotalErrNum="$(cat -- "$TOTAL_TEST_ERROR_NUM")"
-			newTotalErrNum="$($__AWK \
-				"BEGIN {print $testErrNum+$previousTotalErrNum; exit}")"
+			test_err_num="$(printf '%s' "$error_report" | cut -d' ' -f1 )"
+			prev_total_err_num="$(cat -- "$TOTAL_TEST_ERROR_NUM")"
+			new_total_err_num="$($__AWK \
+				"BEGIN {print $test_err_num+$prev_total_err_num; exit}")"
 
-			printf '%s' "$newTotalErrNum" > "$TOTAL_TEST_ERROR_NUM"
-			TESTS_FAILED="$newTotalErrNum"
+			printf '%s' "$new_total_err_num" > "$TOTAL_TEST_ERROR_NUM"
+			TESTS_FAILED="$new_total_err_num"
 		fi
 
 		# get the number of passed tests
-		testNum="$(printf '%s' "$errorReport" | cut -d' ' -f3 )"
+		test_num="$(printf '%s' "$error_report" | cut -d' ' -f3 )"
 	fi
 
 	# Update the number of passed tests
 	if [[ -f "$TOTAL_TEST_NUM" ]]; then
-		previousTotalNum="$(cat -- "$TOTAL_TEST_NUM")"
-		newTotalNum="$($__AWK \
-			"BEGIN {print $testNum+$previousTotalNum; exit}")"
+		prev_total_num="$(cat -- "$TOTAL_TEST_NUM")"
+		new_total_num="$($__AWK \
+			"BEGIN {print $test_num+$prev_total_num; exit}")"
 
-		printf '%s' "$newTotalNum" > "$TOTAL_TEST_NUM"
+		printf '%s' "$new_total_num" > "$TOTAL_TEST_NUM"
 	fi
 
 	# Total time spent
 	if [[ -z "$INVARIANT"  && -f "$TOTAL_TEST_TIME" ]]; then
-		testTime="$(printf '%s' "$testReport" | $__GREP -o '[0-9]\+.[0-9]\+s.' | cut -d's' -f1 )"
-		previousTotalTime="$(cat -- "$TOTAL_TEST_TIME")"
-		newTotalTime="$($__AWK "BEGIN {print $testTime+$previousTotalTime; exit}")"
-		printf '%s' "$newTotalTime" > "$TOTAL_TEST_TIME"
+		test_time="$(printf '%s' "$test_report" | \
+			$__GREP -o '[0-9]\+.[0-9]\+s.' | cut -d's' -f1 )"
+		prev_total_time="$(cat -- "$TOTAL_TEST_TIME")"
+		new_total_time="$($__AWK "BEGIN {print $test_time+$prev_total_time; exit}")"
+		printf '%s' "$new_total_time" > "$TOTAL_TEST_TIME"
 	fi
 
 	[[ "$TESTS_FAILED" -eq 0 ]]
@@ -439,6 +439,7 @@ test_summary() {
 #   ...
 #
 test_final_summary() {
+
 	local -i testTotal
 	local -i testFailed
 
@@ -465,6 +466,7 @@ test_final_summary() {
 
 
 test_final_cleanup() {
+
 	[[ -f "$TOTAL_TEST_NUM" ]] && rm -f -- "$TOTAL_TEST_NUM"
 	[[ -f "$TOTAL_TEST_TIME" ]] && rm -f -- "$TOTAL_TEST_TIME"
 
@@ -483,7 +485,7 @@ test_final_cleanup() {
 #
 #   webera binary wrapper.
 #
-webera() { "$DIR_WEBERA/webera" "$@" 2>/dev/null; }
+webera() { "$Dir_webera/webera" "$@" 2>/dev/null; }
 
 
 #-------------------------------------------------------------------------------
@@ -495,6 +497,7 @@ webera() { "$DIR_WEBERA/webera" "$@" 2>/dev/null; }
 #   [$varType]::$varName=$varValue
 #
 get-webera-var() {
+
 	local webera_vars="$1"
 	local varType="$2"
 	local varName="$3"

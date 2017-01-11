@@ -6,7 +6,7 @@
 #   repository : https://github.com/andamira/webera
 #       author : José Luis Cruz © 2016-2017
 #      license : MIT
-_WEBERA_VERSION=0.1.67
+_WEBERA_VERSION=0.1.68
 
 
 #-------------------------------------------------------------------------------
@@ -16,141 +16,142 @@ _WEBERA_VERSION=0.1.67
 #
 webera::main() {
 
+
 	## PRE-SETUP
 
-	# Binaries found for Unix commands employed
-	declare __SED __AWK __GREP __DATE __READLINK
-
 	webera::check-compatibility
-	local -ir __WEBERA_TIME_STAMP="$($__DATE '+%s%3N')" # [INC02]
+
+	local -ir __Time_stamp="$($__DATE '+%s%3N')" # [INC02]
+
 	webera::setup-debugging
 
 	# prepare to save a list of the default settings
-	declare __VARS_WEBERA __VARS_BEFORE __VARS_AFTER
-	__VARS_BEFORE=$(set -o posix ; set | $__AWK -F= '{print $1"="}' )
+	local __Vars_webera __Vars_before __Vars_after
+	__Vars_before=$(set -o posix ; set | $__AWK -F= '{print $1"="}' )
 
 
-	## CONFIGURABLE SETTINGS
-	#
-	# NOTE-1: Variables starting with an underscore can't be configured
-	# from a file|string, but they can be set using script arguments.
-	# NOTE-2: Variables that don't have an argument associated they
-	# can only be changed via config file|string.
+	## CONFIGURABLE GLOBAL OPTIONS
+
+	# 1. Variables prefixed with Opt_ are the configurable options.
+	# 2. Variables starting with an underscore can't be configured from
+	#    a file|string, but they can be set using script flag arguments.
+	# 3. Variables that don't have an argument associated they can only
+	#    can only be changed via config file|string.
+	# 4. They are referenced from the config file by removing the Opt_
+	#    prefix and without case sensitivity.
 
 	# statuses
-	local _OPERATIONAL=false              # -trawn
-	local _DO_PROCESS_TEMPLATES=false     # -ta
-	local _DO_PROCESS_RESOURCES=false     # -ra
-	local _DO_PREVIEW_IN_BROWSER=false    # -w
-	local _DO_GENERATE_CONFIG_FILE=false  # -n
+	local    _Opt_operational=false              # -trawn
+	local    _Opt_do_process_templates=false     # -ta
+	local    _Opt_do_process_templates=false     # -ta
+	local    _Opt_do_process_resources=false     # -ra
+	local    _Opt_do_preview_in_browser=false    # -w
+	local    _Opt_do_generate_config_file=false  # -n
 
-	# Paths
-	local DIR_TEMPLATES=tem               # -T
-	local DIR_RESOURCES=res               # -R
-	local DIR_OUTPUT=out                  # -O
-	local DIR_BUILD=build                 # -B
-	local _CONFIG_FILE=.weberarc          # -F
-	local _CONFIG_STRING=''               # -S
+	# paths
+	local     Opt_dir_templates=tem              # -T
+	local     Opt_dir_resources=res              # -R
+	local     Opt_dir_output=out                 # -O
+	local     Opt_dir_build=build                # -B
+	local    _Opt_config_file=.weberarc          # -F
+	local    _Opt_config_string=""               # -S
 
-	# Delete output & build directories
-	local _DO_DELETE_DIR_OUTPUT=true      # -d
-	local DO_DELETE_DIR_BUILD=true
+	# delete output & build directories
+	local    _Opt_do_delete_dir_output=true      # -d
+	local     Opt_do_delete_dir_build=true
 
-	# Log
-	local LOG_FILE=log.txt                # -G
-	local _DO_CLEAR_LOG=false             # -c
-	local -i LOG_LEVEL=0                  # -L [0-3]
+	# log
+	local     Opt_log_file=log.txt               # -G
+	local    _Opt_do_clear_log=false             # -c
+	local -i  Opt_log_level=0                    # -L [0-3]
 
-	# Web Browser
-	local WEB_BROWSER="firefox"           # -W
-	local SERVER_TYPE="python"            # -S
-	local SERVER_HOST="localhost"         # -H
-	local -i SERVER_PORT=8192             # -P
-	local SERVER_START=""
-	local SERVER_STOP=""
+	# web browser
+	local     Opt_web_browser="firefox"          # -W
+	local     Opt_server_type="python"           # -S
+	local     Opt_server_host="localhost"        # -H
+	local -i  Opt_server_port=8192               # -P
+	local     Opt_server_start=""
+	local     Opt_server_stop=""
 
-	# Misc
-	local _DO_DISPLAY_USAGE=false         # -h
-	local _DO_PRINT_VARS=false            # -_
-	local -i NESTING_MAX=8
-
-
-	## NON-CONFIGURABLE DATA
-
-	# arrays
-	declare -A _ARG_OPTIONS
-	declare -A _DEFINED_CMD_MAP
-
-	local -i _NESTING_LEVEL=0
-
-	local _CONFIG_JOINT="" # where to save all the configurations
-	local _PRELOG="" # where log is saved before there's a logfile
-
-	local -r _DATE_START="$($__DATE '+%Y-%m-%d %H:%M:%S' \
-		-d @"${__WEBERA_TIME_STAMP:0:10}")" # [INC03]
+	# misc
+	local    _Opt_do_display_usage=false         # -h
+	local    _Opt_do_print_vars=false            # -_
+	local -i  Opt_nesting_max=8
 
 
 	## POST-SETUP
 
-	# save the list of the default settings
-	__VARS_AFTER="$(set -o posix ; set | $__SED '/^'\''/d' )"
-	printf -v __VARS_WEBERA '%s' "$($__GREP -vFf \
-		<(printf '%s' "$__VARS_BEFORE") <(printf '%s' "$__VARS_AFTER") \
-		| $__SED 's/^/[vdef]::/' )"
-	unset __VARS_BEFORE; unset __VARS_AFTER;
+	# save the list of the default options
+	__Vars_after="$(set -o posix ; set | $__SED '/^'\''/d' )"
+	webera::debug-save-default-vars "$__Vars_before" "$__Vars_after" __Vars_webera
+
+
+	## NON-CONFIGURABLE GLOBAL DATA
+
+	# arrays
+	declare -A _Options_args_array     # the options received as script arguments
+	declare -A _Defined_cmd_map
+
+	local -i _Nesting_level=0
+
+	local _Config_whole    # where to save all the configuration
+	local _Log_presaved    # where log is saved before there's a logfile
+
+	local -r _Date_start="$($__DATE '+%Y-%m-%d %H:%M:%S' \
+		-d @"${__Time_stamp:0:10}")" # [INC03]
 
 
 	## STRING CONSTANTS
 
 	# whitespace indentation and headline
-	declare -r _IN="  " _IN2="    " _IN3="      "
-	local -r _HL='------------------------------------------------------'
+	local -r __In="  " __In2="    " __In3="      "
+	local -r __Hl='------------------------------------------------------'
 
 	# reusable regexp patterns
-	local -r _WS="[[:space:]]" # whitespace
-	local -r _SED_TRIM_WS="s/^$_WS*//;s/$_WS*$//"
-	local -r _SED_DEL_COMMENTS="/^$_WS*#.*/d" # starting in #
-	local -r _SED_DEL_EMPTYLINES="/^$_WS*$/d"
-	local -r _SED_JOIN_SPLITLINES=':x; /\\$/ {N; s/\\\n//; tx}' # ending in \
+	local -r __Ws="[[:space:]]" # whitespace
+	local -r __Sed_trim_ws="s/^$__Ws*//;s/$__Ws*$//"
+	local -r __Sed_del_comments="/^$__Ws*#.*/d" # starting in #
+	local -r __Sed_del_empty_lines="/^$__Ws*$/d"
+	local -r __Sed_join_split_lines=':x; /\\$/ {N; s/\\\n//; tx}' # ending in \
 
 
 	## webera::main LOGIC
 
-	webera::log "\n===============[$_DATE_START]==============@\n" # s/@$/LOG_LEVEL/
+	webera::log "\n===============[$_Date_start]==============@\n" # s/@$/Opt_log_level/
 
 	webera::parse-arguments "$@"
 
-	# Read the configuration files & string
-	[[ "$_CONFIG_FILE" != "/etc/weberarc" ]] && webera::read-config file "/etc/weberarc"
-	[[ "$_CONFIG_FILE" != "$HOME/.weberarc" ]] && webera::read-config file "$HOME/.weberarc"
-	webera::read-config file "$_CONFIG_FILE"
-	webera::read-config string '_CONFIG_STRING'
+	# read the configuration files & string
+	[[ "$_Opt_config_file" != "/etc/weberarc" ]] && webera::read-config file "/etc/weberarc"
+	[[ "$_Opt_config_file" != "$HOME/.weberarc" ]] && webera::read-config file "$HOME/.weberarc"
+	webera::read-config file "$_Opt_config_file"
+	webera::read-config string '_Opt_config_string'
 
-	webera::configure-settings
+	webera::configure-options
 
-	if [[ "$_DO_PRINT_VARS" == true ]]; then
-		webera::print-vars; exit 0
-	elif [[ "$_DO_DISPLAY_USAGE" == true || "$_OPERATIONAL" == false ]]; then
+	if [[ "$_Opt_do_print_vars" == true ]]; then
+		webera::debug-print-vars; exit 0
+	elif [[ "$_Opt_do_display_usage" == true || "$_Opt_operational" == false ]]; then
 		webera::display-usage
 	fi
 
 	webera::setup-log
 
-	[[ "$_OPERATIONAL" == false ]] && exit 1
+	[[ "$_Opt_operational" == false ]] && exit 1
 
 	webera::delete-directories
 
 	webera::read-config-commands
 
-	[[ "$_DO_PROCESS_RESOURCES" == true ]] && webera::process-resources
-	[[ "$_DO_PROCESS_TEMPLATES" == true ]] && webera::process-templates
+	[[ "$_Opt_do_process_resources" == true ]] && webera::process-resources
+	[[ "$_Opt_do_process_templates" == true ]] && webera::process-templates
 
 	webera::log "Total elapsed time: $(webera::elapsed-time true)"
 
-	[[ "$_DO_PREVIEW_IN_BROWSER" == true ]] && webera::preview-website
+	[[ "$_Opt_do_preview_in_browser" == true ]] && webera::preview-website
 	exit 0
 
-} #::main()
+} # ::main
 
 
 #-------------------------------------------------------------------------------
@@ -158,7 +159,7 @@ webera::main() {
 #
 #   Displays usage information.
 #
-# ^ ::parse-arguments ::configure-settings
+# ^ ::parse-arguments ::configure-options
 #
 webera::display-usage() {
 
@@ -182,30 +183,30 @@ OPERATIVE FLAGS              ...
 
 OPTION FLAGS                 ... (default value)
 
-  -F, --file-config=FILE     indicate the configuration file ($_CONFIG_FILE)
-  -C, --config=STRING        pass the configuration as a string ($_CONFIG_STRING)
+  -F, --file-config=FILE     indicate the configuration file ($_Opt_config_file)
+  -C, --config=STRING        pass the configuration as a string ($_Opt_config_string)
 
-  -T, --dir-templates=DIR    indicate the templates directory ($DIR_TEMPLATES)
-  -R, --dir-resources=DIR    indicate the resources directory ($DIR_RESOURCES)
-  -O, --dir-output=DIR       indicate the output directory ($DIR_OUTPUT)
-  -B, --dir-build=DIR        indicate the build directory ($DIR_BUILD)
-  -d, --dont-delete-output   don't delete the output dir ($_DO_DELETE_DIR_OUTPUT)
+  -T, --dir-templates=DIR    indicate the templates directory ($Opt_dir_templates)
+  -R, --dir-resources=DIR    indicate the resources directory ($Opt_dir_resources)
+  -O, --dir-output=DIR       indicate the output directory ($Opt_dir_output)
+  -B, --dir-build=DIR        indicate the build directory ($Opt_dir_build)
+  -d, --dont-delete-output   don't delete the output dir ($_Opt_do_delete_dir_output)
 
-  -L, --log-level=LEVEL      log level [0=none|1|2|3] ($LOG_LEVEL)
-  -c, --clear-log            clear the previous log file ($_DO_CLEAR_LOG)
-  -G, --logfile=FILE         log file ($LOG_FILE)
+  -L, --log-level=LEVEL      log level [0=none|1|2|3] ($Opt_log_level)
+  -c, --clear-log            clear the previous log file ($_Opt_do_clear_log)
+  -G, --logfile=FILE         log file ($Opt_log_file)
 
-  -W, --browser-bin=BIN      web browser binary ($WEB_BROWSER)
-  -S, --server-type=TYPE     server type [none|php|python|custom] ($SERVER_TYPE)
-  -H, --server-host=HOST     server host ($SERVER_HOST)
-  -P, --server-port=PORT     port number ($SERVER_PORT)
+  -W, --browser-bin=BIN      web browser binary ($Opt_web_browser)
+  -S, --server-type=TYPE     server type [none|php|python|custom] ($Opt_server_type)
+  -H, --server-host=HOST     server host ($Opt_server_host)
+  -P, --server-port=PORT     port number ($Opt_server_port)
 
   -h, --help                 display this help and exit
-	  --version              show version info and exit
+      --version              show version info and exit
 
 	ENDUSAGE
 
-} #::display-usage()
+} # ::display-usage
 
 
 #-------------------------------------------------------------------------------
@@ -215,7 +216,7 @@ OPTION FLAGS                 ... (default value)
 #
 # > $1 : (optional) error code
 # x $1 : same received error code
-# ^ ::parse-arguments ::configure-settings
+# ^ ::parse-arguments ::configure-options
 #
 webera::display-version() {
 
@@ -232,7 +233,7 @@ webera::display-version() {
 	ENDVERSION
 	exit 0
 
-} #::display-version()
+} # ::display-version
 
 
 #-------------------------------------------------------------------------------
@@ -334,7 +335,7 @@ webera::parse-arguments() {
 	done
 	shift $((OPTIND-1))
 
-} #::parse-arguments()
+} # ::parse-arguments
 
 
 #-------------------------------------------------------------------------------
@@ -349,28 +350,28 @@ webera::parse-arguments() {
 #
 webera::set-arg() {
 
-	declare argument="$1" value="$2"
+	local argument="$1" value="$2"
 
 	case "$argument" in
 
 		# OPERATIONAL flags
 		process-templates)
-			_OPERATIONAL=true
-			_ARG_OPTIONS[_DO_PROCESS_TEMPLATES]=true    ;;
+			_Opt_operational=true
+			webera::push-arg _Opt_do_process_templates true    ;;
 		process-resources)
-		   _OPERATIONAL=true
-		   _ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true     ;;
+		   _Opt_operational=true
+		   webera::push-arg _Opt_do_process_resources true     ;;
 		process-all)
-			_OPERATIONAL=true
-			_ARG_OPTIONS[_DO_PROCESS_RESOURCES]=true
-			_ARG_OPTIONS[_DO_PROCESS_TEMPLATES]=true    ;;
+			_Opt_operational=true
+			webera::push-arg _Opt_do_process_resources true
+			webera::push-arg _Opt_do_process_templates true    ;;
 		preview)
-			_OPERATIONAL=true
-			_ARG_OPTIONS[_DO_PREVIEW_IN_BROWSER]=true   ;;
+			_Opt_operational=true
+			webera::push-arg _Opt_do_preview_in_browser true   ;;
 		new-config)
-			_OPERATIONAL=true
-			_DO_GENERATE_CONFIG_FILE=true
-			_ARG_OPTIONS[_DO_GENERATE_CONFIG_FILE]=true ;;
+			_Opt_operational=true
+			_Opt_do_generate_config_file=true
+			webera::push-arg _Opt_do_generate_config_file true ;;
 
 
 		# OPTIONS flags
@@ -379,67 +380,79 @@ webera::set-arg() {
 		# via script arguments; they are not read from any configuration.
 
 		file-config)
-			_CONFIG_FILE="$value"
-			_ARG_OPTIONS[_CONFIG_FILE]="$value"        ;;
+			_Opt_config_file="$value"
+			webera::push-arg _Opt_config_file "$value"         ;;
 		config)
-			_CONFIG_STRING="$value"
-			_ARG_OPTIONS[_CONFIG_STRING]="$value"      ;;
+			_Opt_config_string="$value"
+			webera::push-arg _Opt_config_string "$value"       ;;
 		clear-log)
-			_ARG_OPTIONS[_DO_CLEAR_LOG]=true           ;;
+			webera::push-arg _Opt_do_clear_log true            ;;
 		dont-delete-output)
-			_ARG_OPTIONS[_DO_DELETE_DIR_OUTPUT]=false  ;;
+			webera::push-arg _Opt_do_delete_dir_output false   ;;
 
 		# The following options can also be defined in configuration file,
 		# but passing them as arguments to the script has a higher priority.
 
 		dir-templates)
-			_ARG_OPTIONS[DIR_TEMPLATES]="$value"       ;;
+			webera::push-arg Opt_dir_templates "$value"        ;;
 		dir-resources)
-			_ARG_OPTIONS[DIR_RESOURCES]="$value"       ;;
+			webera::push-arg Opt_dir_resources "$value"        ;;
 		dir-output)
-			_ARG_OPTIONS[DIR_OUTPUT]="$value"          ;;
+			webera::push-arg Opt_dir_output "$value"           ;;
 		dir-build)
-			_ARG_OPTIONS[DIR_BUILD]="$value"           ;;
+			webera::push-arg Opt_dir_build "$value"            ;;
 		log-level)
-			_ARG_OPTIONS[LOG_LEVEL]="$value"           ;;
+			webera::push-arg Opt_log_level "$value"            ;;
 		log-file)
-			_ARG_OPTIONS[LOG_FILE]="$value"            ;;
+			webera::push-arg Opt_log_file "$value"             ;;
 		browser-bin)
-			_ARG_OPTIONS[WEB_BROWSER]="$value"         ;;
+			webera::push-arg Opt_web_browser "$value"          ;;
 		server-type)
-			_ARG_OPTIONS[SERVER_TYPE]="$value"         ;;
+			webera::push-arg Opt_server_type "$value"          ;;
 		server-host)
-			_ARG_OPTIONS[SERVER_HOST]="$value"         ;;
+			webera::push-arg Opt_server_host "$value"          ;;
 		server-port)
-			_ARG_OPTIONS[SERVER_PORT]="$value"         ;;
+			webera::push-arg Opt_server_port "$value"          ;;
 		help)
-			_DO_DISPLAY_USAGE=true ;;
+			_Opt_do_display_usage=true ;;
 		version)
 			webera::display-version ;;
 		_)
-			_DO_PRINT_VARS=true ;;
+			_Opt_do_print_vars=true ;;
 		*) # UNKNOWN
 			webera::log error "ERROR: unknow argument '$argument'"
 			exit 255 ;; # TODO send to log
 	esac
 
-} #::set-arg()
+} # ::set-arg
 
+
+# ::push-arg
+#
+#   Pushes a key to the array of options received as args,
+#   sanitizing the variable name first JIC.
+#
+# > $1 option key
+# > $2 value received
+#
+webera::push-arg() {
+	_Options_args_array[${1//[:=+-.,;]/_}]="${2}"
+}
 
 #-------------------------------------------------------------------------------
 # ::setup-log
 #
-#   Prepares the log file and writes all the logs previously saved in _PRELOG.
+#   Sets up the log file and then writes all the pre-saved logs.
 #
 # ^ ::main
 #
 webera::setup-log() {
 
-	local parsedPrelog
+	local parsed_prelog
 
-	if [[ "$_DO_CLEAR_LOG" == true ]]; then
-		webera::log 3 warn "\nWarning: deleting previous log file '$LOG_FILE'"
-		rm -- "$LOG_FILE" 2>/dev/null;
+	if [[ "$_Opt_do_clear_log" == true ]]; then
+		webera::log 3 warn "\nWarning: deleting previous log file '$Opt_log_file'"
+		rm -- "$Opt_log_file" 2>/dev/null;
 	fi
 
 	# Restore the pre-saved log messages
@@ -450,17 +463,17 @@ webera::setup-log() {
 	# 4. put the log level in the date header
 	#
 	# shellcheck disable=SC2059
-	parsedPrelog=$(printf "$_PRELOG" \
-		| $__AWK -v logLevel=$LOG_LEVEL -F '|' '$1<=logLevel' \
+	parsed_prelog=$(printf "$_Log_presaved" \
+		| $__AWK -v log_level=$Opt_log_level -F '|' '$1<=log_level' \
 		| cut -d'|' -f3- \
 		| tr '\a' '\n' \
-		| $__SED "s/====@$/====$LOG_LEVEL/" \
+		| $__SED "s/====@$/====$Opt_log_level/" \
 	)
-	_PRELOG=false
+	_Log_presaved=false
 
-	[[ -n "$parsedPrelog" ]] && webera::log "$parsedPrelog" # print what's left
+	[[ -n "$parsed_prelog" ]] && webera::log "$parsed_prelog" # print what's left
 
-} #::setup-log()
+} # ::setup-log
 
 
 #-------------------------------------------------------------------------------
@@ -468,72 +481,72 @@ webera::setup-log() {
 #
 #   Prints a message to the log file. Errors and warnings also to STDERR.
 #
-# > $1  : (optional) logLevelNeeded
-# > $2  : (optional) logType [warn|error]
+# > $1  : (optional) log_level_needed
+# > $2  : (optional) log_type [warn|error]
 # > $3+ : log message
 # ^ (almost all functions)
 #
 # shellcheck disable=SC2059
 webera::log() {
 
-	declare logLevelNeeded="$1" # First (optional) parameter
-	declare -ir logLevelMin=1 logLevelMax=3
-	declare logLevel
+	local log_level_needed="$1" # First (optional) parameter
+	local -ir log_level_min=1 log_level_max=3
+	local -i log_level
 
 	# must be an integer number
-	if [[ "$logLevelNeeded" =~ ^[0-9]+$ ]]; then
-		if [[ "$logLevelNeeded" -lt "$logLevelMin" ]]; then
-			logLevel="$logLevelMin"
-		elif [[ "$logLevelNeeded" -gt "$logLevelMax" ]]; then
-			logLevel="$logLevelMax"
+	if [[ "$log_level_needed" =~ ^[0-9]+$ ]]; then
+		if [[ "$log_level_needed" -lt "$log_level_min" ]]; then
+			log_level="$log_level_min"
+		elif [[ "$log_level_needed" -gt "$log_level_max" ]]; then
+			log_level="$log_level_max"
 		else
-			logLevel="$logLevelNeeded"
+			log_level="$log_level_needed"
 		fi
 		shift # prepare next positional parameter
 
 	else # if not a number, use defaults
-		logLevel="$logLevelMin"
+		log_level="$log_level_min"
 	fi
 
-	local logType="$1" # Second (optional) parameter
+	local log_type="$1" # Second (optional) parameter
 
 	# must be the type
-	case "$logType" in
+	case "$log_type" in
 		error|warn)
 			shift # prepare next positional parameter
 			;;
-		*) logType="" ;;
+		*) log_type="" ;;
 	esac
 
-	local IFSbkp="$IFS"; IFS=$''
-	local logMessage="$*" # All that rewebera::mains is the log message
-	IFS="$IFSbkp"
+	local _ifs="$IFS"; IFS=$''
+	local log_msg="$*" # All that rewebera::mains is the log message
+	IFS="$_ifs"
 
-	if [[ "$_PRELOG" == false ]]; then
-		if [[ "$logLevel" -le "$LOG_LEVEL" ]]; then
-			printf "$logMessage\n" >> "$LOG_FILE"
+	if [[ "$_Log_presaved" == false ]]; then
+		if [[ "$log_level" -le "$Opt_log_level" ]]; then
+			printf "$log_msg\n" >> "$Opt_log_file"
 		fi
 	else
 		# Pre-save this log message as a single line
 		#
 		# 1. replace the newlines with a BEL
 		# 2. put the log level and type at the beginning
-		local msg1line; msg1line=$(printf "$logMessage" | tr '\n' '\a') || true
-		_PRELOG+="\n$logLevel|$logType|$msg1line"
+		local log_msg_1line; log_msg_1line=$(printf "$log_msg" | tr '\n' '\a') || true
+		_Log_presaved+="\n$log_level|$log_type|$log_msg_1line"
 	fi
 
 	# Print errors and warnings to stderr [OPTIMIZE]
-	if [[ "$logType" == "error" || "$logType" == "warn" ]]; then
+	if [[ "$log_type" == "error" || "$log_type" == "warn" ]]; then
 		# 1. trim whitespace
 		# 2. delete newlines
 		# 3. print to STDERR
-		printf "$logMessage" \
-			| $__SED -e "$_SED_TRIM_WS" \
+		printf "$log_msg" \
+			| $__SED -e "$__Sed_trim_ws" \
 			| tr -d '\n' \
 			| $__AWK '{ print }' - >&2
 	fi
 
-} #::log()
+} # ::log
 
 
 #-------------------------------------------------------------------------------
@@ -546,67 +559,68 @@ webera::log() {
 #
 webera::preview-website() {
 
-	local cmdBrowser
+	local cmd_browser
 
 	# shellcheck disable=SC2016
-	case "$SERVER_TYPE" in
+	case "$Opt_server_type" in
 		python)
-			SERVER_START='pushd "$DIR_OUTPUT"; python -m SimpleHTTPServer $SERVER_PORT'
-			SERVER_STOP='kill $(pgrep -f "python -m SimpleHTTPServer")'
+			Opt_server_start='pushd "$Opt_dir_output"; python -m SimpleHTTPServer $Opt_server_port'
+			Opt_server_stop='kill $(pgrep -f "python -m SimpleHTTPServer")'
 			;;
 		php)
-			SERVER_START='php -S "$SERVER_HOST:$SERVER_PORT" -t "$DIR_OUTPUT"'
-			SERVER_STOP='kill $(pgrep -f "php -S $SERVER_HOST")'
+			Opt_server_start='php -S "$Opt_server_host:$Opt_server_port" -t "$Opt_dir_output"'
+			Opt_server_stop='kill $(pgrep -f "php -S $Opt_server_host")'
 			;;
 		none) # useful when not using `dir/index.html` structure
-			SERVER_START=""
-			SERVER_STOP=""
+			Opt_server_start=""
+			Opt_server_stop=""
 			;;
-		custom) # for when a server is already running, or custom SERVER_START
+		custom) # for when a server is already running, or custom Opt_server_start
 			;;
 		*)
-			webera::log 2 error "ERROR: Not recognized SERVER_TYPE='$SERVER_TYPE'"
+			webera::log 2 error "ERROR: Not recognized Opt_server_type='$Opt_server_type'"
 			exit 5
 			;;
 	esac
 
-	printf 'Loading website in "%s"...\n' "$WEB_BROWSER"
+	printf 'Loading website in "%s"...\n' "$Opt_web_browser"
 
-	if [[ "$SERVER_TYPE" == "none" ]]; then
-		cmdBrowser="$WEB_BROWSER file://$($__READLINK -f $DIR_OUTPUT) &"
+	if [[ "$Opt_server_type" == "none" ]]; then
+		cmd_browser="$Opt_web_browser file://$($__READLINK -f $Opt_dir_output) &"
 	else
-		cmdBrowser="$WEB_BROWSER http://$SERVER_HOST:$SERVER_PORT &"
+		cmd_browser="$Opt_web_browser http://$Opt_server_host:$Opt_server_port &"
 	fi
 
-	sleep 1s && eval "$cmdBrowser" >&2 2>/dev/null
-	if [[ -n "$SERVER_START" ]]; then
+	sleep 1s && eval "$cmd_browser" >&2 2>/dev/null
+	if [[ -n "$Opt_server_start" ]]; then
 		printf '(Use CTRL+C to stop the "%s" web server)\n' \
-			"$SERVER_TYPE"
-		printf 'SERVER_START=%s' "$SERVER_START"
-		eval "$SERVER_STOP >&2 2>/dev/null"; eval "$SERVER_START"
+			"$Opt_server_type"
+		printf 'Opt_server_start=%s' "$Opt_server_start"
+		eval "$Opt_server_stop >&2 2>/dev/null"; eval "$Opt_server_start"
 	fi
 
-} #::preview-website()
+} # ::preview-website
 
 
 #-------------------------------------------------------------------------------
 # ::delete-directories
 #
-#   Deletes DIR_BUILD and DIR_OUTPUT if there is pending processing.
+#   Deletes Opt_dir_build and Opt_dir_output if there is pending processing.
 #
 # ^ ::main
 #
 webera::delete-directories() {
 
-	[[ "$DO_DELETE_DIR_BUILD" == true ]] && rm -rf -- "$DIR_BUILD" 2>/dev/null
+	[[ "$Opt_do_delete_dir_build" == true ]] &&
+		rm -rf -- "$Opt_dir_build" 2>/dev/null
 
-	if [[ "$_DO_DELETE_DIR_OUTPUT" == true ]] && \
-		[[ $_DO_PROCESS_RESOURCES == true \
-		|| $_DO_PROCESS_TEMPLATES == true ]]; then
-		rm -rf -- "$DIR_OUTPUT" 2>/dev/null
+	if [[ "$_Opt_do_delete_dir_output" == true ]] && \
+		[[ $_Opt_do_process_resources == true \
+		|| $_Opt_do_process_templates == true ]]; then
+		rm -rf -- "$Opt_dir_output" 2>/dev/null
 	fi
 
-} #::delete-directories()
+} # ::delete-directories
 
 
 #-------------------------------------------------------------------------------
@@ -615,55 +629,56 @@ webera::delete-directories() {
 #   Reads some configuration from a file or a string,
 #   and joins it together to a common source.
 #
-# > $1 : $configType [file|string]
-# > $2 : $configPointer can be either the file name or the variable name
+# > $1 : $config_type [file|string]
+# > $3 : $config_pointer will be interpreted as the file name if config_type=file,
+#        or as the variable name if config_type=string
 # x 10 : unknown config type
 # ^ ::main
 #
 webera::read-config() {
 
-	declare configType="$1" configPointer="$2"
-	declare readConfig configLine
+	local config_type="$1" config_pointer="$2"
+	local read_config config_line
 
-	if [[ "$configType" == "string" ]]; then
-		if [[ -n "${!configPointer}" ]]; then # string is not empty
+	if [[ "$config_type" == "string" ]]; then
+		if [[ -n "${!config_pointer}" ]]; then # string's not empty
 			webera::log 3 "Reading settings passed as an argument."
-			readConfig="$(printf '%s' "${!configPointer}" \
-				| $__SED -e "$_SED_TRIM_WS" \
-				| $__SED -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
-				| $__SED -e "$_SED_JOIN_SPLITLINES" \
+			read_config="$(printf '%s' "${!config_pointer}" \
+				| $__SED -e "$__Sed_trim_ws" \
+				| $__SED -e "$__Sed_del_comments" -e "$__Sed_del_empty_lines" \
+				| $__SED -e "$__Sed_join_split_lines" \
 			)"$'\n'
-			_CONFIG_JOINT+="$readConfig"
-			webera::push-vars strn "" "$readConfig"
+			_Config_whole+="$read_config"
+			webera::debug-vars-add-config strn "" "$read_config"
 		fi
 
-	elif [[ "$configType" == "file" ]]; then
-		if [[ -f "$configPointer" ]]; then # file exists
+	elif [[ "$config_type" == "file" ]]; then
+		if [[ -f "$config_pointer" ]]; then # file exists
 
-			if [[ "$_DO_GENERATE_CONFIG_FILE" == true ]]; then
+			if [[ $_Opt_do_generate_config_file == true && $config_pointer == "$_Opt_config_file" ]]; then
 				webera::log 2 warn "Warning: automatic override of an existing " \
-					"local config file ('$configPointer') is not permitted."
+					"local config file ('$config_pointer') is not permitted."
 			else
-				webera::log 3 "Reading settings from file '$configPointer'"
-				readConfig="$(sed -e "$_SED_TRIM_WS" "$configPointer" \
-					| $__SED -e "$_SED_DEL_COMMENTS" -e "$_SED_DEL_EMPTYLINES" \
-					| $__SED -e "$_SED_JOIN_SPLITLINES" \
+				webera::log 3 "Reading settings from file '$config_pointer'"
+				read_config="$(sed -e "$__Sed_trim_ws" "$config_pointer" \
+					| $__SED -e "$__Sed_del_comments" -e "$__Sed_del_empty_lines" \
+					| $__SED -e "$__Sed_join_split_lines" \
 				)"$'\n'
-				_CONFIG_JOINT+="$readConfig" # append
-				webera::push-vars file "$configPointer" "$readConfig"
+				_Config_whole+="$read_config"
+				webera::debug-vars-add-config file "$config_pointer" "$read_config"
 			fi
 
 		else # config file doesn't exist
 			# it's the config file of the project
-			if [[ "$configPointer" == "$_CONFIG_FILE" ]]; then
-				 # stop if printing debug info
-				[[ "$_DO_PRINT_VARS" == true ]] && return 0
+			if [[ "$config_pointer" == "$_Opt_config_file" ]]; then
+				# stop if printing debug info
+				[[ "$_Opt_do_print_vars" == true ]] && return 0
 
-				if [[ "$_DO_GENERATE_CONFIG_FILE" == true ]]; then
+				if [[ "$_Opt_do_generate_config_file" == true ]]; then
 					webera::generate-config
 				else
 					webera::log 3 warn "Warning: project's config file " \
-						"'$_CONFIG_FILE' doesn't exist."
+						"'$_Opt_config_file' doesn't exist."
 				fi
 			fi
 		fi
@@ -672,79 +687,95 @@ webera::read-config() {
 		exit 10
 	fi
 
-} #::read-config()
+} # ::read-config
 
 
 #-------------------------------------------------------------------------------
-# ::configure-settings
+# ::configure-options
 #
-#   Parses the configuration settings and overrides them with:
-#   1 - the joint configuration and 2 - the passed arguments.
+#   Parses the configuration options and overrides the default options with:
+#   1 - the joint configuration and 2 - the passed arguments, in that order.
 #
 # ^ ::main
 #
-webera::configure-settings() {
+webera::configure-options() {
 
-	declare settingsList setting arg settingName settingValue settingPrevious
+	local settings_list setting option_name setting_value setting_previous
 
-	settingsList="$(printf '%s' "$_CONFIG_JOINT" | $__GREP "^$_WS*config$_WS*:" )"
+	# Create a list of all the 'config' operations
+	settings_list="$(printf '%s' "$_Config_whole" \
+		| $__GREP "^$__Ws*config$__Ws*:" )"
 
-	if [[ -n "$settingsList" ]]; then
-		webera::log 1 "\nConfiguring settings...\n$_HL"
+	if [[ -n "$settings_list" ]]; then
+		webera::log "\nConfiguring settings...\n$__Hl"
 
-		local IFSbkp="$IFS"; IFS=$'\n'
-		for setting in $settingsList; do
-			settingName=$(printf '%s' "$setting" \
+		local _ifs="$IFS"; IFS=$'\n'
+		for setting in $settings_list; do
+			# TODO: sanitize received data
+			option_name=$(printf '%s' "$setting" \
 				| cut -d':' -f2 \
-				| $__SED -e "$_SED_TRIM_WS")
-			settingValue=$(printf '%s' "$setting" \
+				| $__SED -e "$__Sed_trim_ws")
+			setting_value=$(printf '%s' "$setting" \
 				| cut -d':' -f3- \
-				| $__SED -e "$_SED_TRIM_WS")
+				| $__SED -e "$__Sed_trim_ws")
 
-			[[ -n "${!settingName}" ]] &&
-				settingPrevious="(previous=${!settingName})"
-			webera::log 1 "${_IN}setting: $settingName=$settingValue " \
-				"$settingPrevious"
+			[[ -n "${!option_name}" ]] &&
+				setting_previous="(previous=${!option_name})"
 
-			[[ "$setting" != _* ]] && # read (only public) settings from file
-				printf -v "$settingName" '%s' "$settingValue"
+			webera::log "${__In}setting: $option_name=$setting_value " \
+				"$setting_previous"
+
+			# Read (only public) settings from file
+			if [[ "$setting" != _* ]]; then
+				# Adapt name to inner style (lowercase, 1st letter UPPERCASE)
+				option_name="Opt_${option_name,,}"
+				printf -v "$option_name" '%s' "$setting_value"
+			fi
 		done
-		IFS="$IFSbkp"
+		IFS="$_ifs"
 	fi
 
-	# Override the settings with the parsed arguments
-	for arg in "${!_ARG_OPTIONS[@]}"; do
-		printf -v "$arg" '%s' "${_ARG_OPTIONS[$arg]}"
-		printf -v __VARS_WEBERA '%s' \
-			"$__VARS_WEBERA"$'\n'"[args]::$arg=${_ARG_OPTIONS[$arg]}"
-	done
+	local opt opt_list
 
-} #::configure-settings()
+	for opt in "${!_Options_args_array[@]}"; do
+		# Override the option variable with the parsed argument
+		printf -v "$opt" '%s' "${_Options_args_array[$opt]}"
+		# add it to a temporary list
+		opt_list+="$opt=${_Options_args_array[$opt]}"$'\n'
+	done
+	# Add to the list the prepared prepared variable names
+	__Vars_webera+=$'\n'"$(webera::debug-vars-prepare-name "$opt_list" args)"
+
+} # ::configure-options
 
 
 #-------------------------------------------------------------------------------
 # ::generate-config
 #
-#   Generates a config file, writing down the settings modified via arguments.
+#   Generates a config file, writing down the options modified via arguments.
 #
 # ^ ::main (when the script received the `-n` flag)
 #
 webera::generate-config() {
 
-	local configLines=()
-	declare opt line
+	local config_lines=() option line
 
-	for opt in "${!_ARG_OPTIONS[@]}"; do
-		[[ "$opt" != _* ]] && # write (only public) vars to config file
-			configLines+=("config : $opt : ${_ARG_OPTIONS[$opt]}")
+	for option in "${!_Options_args_array[@]}"; do
+
+		# Write (only public) options to config file
+		if [[ "$option" != _* ]]; then
+			# Make name UPPERCASE and remove Opt_ prefix
+			local opt=${option#Opt_}
+			config_lines+=("config : ${opt^^} : ${_Options_args_array[$option]}")
+		fi
 	done
 
-	touch "$_CONFIG_FILE"
-	for line in "${configLines[@]}"; do
-		printf '%s\n' "$line" >> "$_CONFIG_FILE"
+	for line in "${config_lines[@]}"; do
+		printf '%s\n' "$line" >> "$_Opt_config_file"
 	done
+	touch "$_Opt_config_file"
 
-} #::generate-config()
+} # ::generate-config
 
 
 #-------------------------------------------------------------------------------
@@ -756,32 +787,32 @@ webera::generate-config() {
 #
 webera::read-config-commands() {
 
-	declare commandList cmd commandNum commandName commandAction
+	local commands_list cmd commands_num command_name command_action
 
-	commandList="$(printf '%s' "$_CONFIG_JOINT" | $__GREP "^$_WS*command$_WS*:" )"
+	commands_list="$(printf '%s' "$_Config_whole" | $__GREP "^$__Ws*command$__Ws*:" )"
 
-	if [[ -n "$commandList" ]]; then
-		commandNum=$(printf '%s\n' "$commandList" | wc -l )
-		webera::log 1 "\nParsing commands...\n$_HL"
-		webera::log 1 "${_IN}Found $commandNum defined command:"
+	if [[ -n "$commands_list" ]]; then
+		commands_num=$(printf '%s\n' "$commands_list" | wc -l )
+		webera::log 1 "\nParsing commands...\n$__Hl"
+		webera::log 1 "${__In}Found $commands_num defined command:"
 	else return 0; fi
 
-	local IFSbkp="$IFS"; IFS=$'\n'
-	for cmd in $commandList; do # [OPTIMIZE]
-		commandName=$(printf '%s' "$cmd" \
+	local _ifs="$IFS"; IFS=$'\n'
+	for cmd in $commands_list; do # [OPTIMIZE]
+		command_name=$(printf '%s' "$cmd" \
 			| cut -d':' -f2 \
-			| $__SED -e "$_SED_TRIM_WS" )
-		commandAction=$(printf '%s' "$cmd" \
+			| $__SED -e "$__Sed_trim_ws" )
+		command_action=$(printf '%s' "$cmd" \
 			| cut -d':' -f3- \
-			| $__SED -e "$_SED_TRIM_WS" )
+			| $__SED -e "$__Sed_trim_ws" )
 
-		_DEFINED_CMD_MAP["$commandName"]="$commandAction"
+		_Defined_cmd_map["$command_name"]="$command_action"
 
-		webera::log 2 "${_IN}$commandName='$commandAction'"
+		webera::log 2 "${__In}$command_name='$command_action'"
 	done
-	IFS="$IFSbkp"
+	IFS="$_ifs"
 
-} #::read-config-commands()
+} # ::read-config-commands
 
 
 #-------------------------------------------------------------------------------
@@ -794,78 +825,78 @@ webera::read-config-commands() {
 #
 webera::process-resources() {
 
-	declare resourceOpList resourceOpNum resourceOp
-	declare operation fileOrigin fileTarget command
+	local resource_op_list resource_op_num resource_op
+	local operation file_orig file_target cmd
 
-	webera::log 1 "\nProcessing resources...\n$_HL"
+	webera::log 1 "\nProcessing resources...\n$__Hl"
 
-	if [[ ! -d "$DIR_RESOURCES" ]]; then
-		webera::log 1 error "No resources dir '$DIR_RESOURCES' found."
+	if [[ ! -d "$Opt_dir_resources" ]]; then
+		webera::log 1 error "No resources dir '$Opt_dir_resources' found."
 		return 8
 	fi
 
-	resourceOpList="$(printf '%s' "$_CONFIG_JOINT" \
-		| $__GREP "^$_WS*resource$_WS*:" )"
-	resourceOpNum=$(printf '%s\n' "$resourceOpList" \
-		| $__SED "$_SED_DEL_EMPTYLINES" \
+	resource_op_list="$(printf '%s' "$_Config_whole" \
+		| $__GREP "^$__Ws*resource$__Ws*:" )"
+	resource_op_num=$(printf '%s\n' "$resource_op_list" \
+		| $__SED "$__Sed_del_empty_lines" \
 		| wc -l )
-	webera::log 1 "${_IN}Found $resourceOpNum operations on resources:"
+	webera::log 1 "${__In}Found $resource_op_num operations on resources:"
 
-	local IFSbkp="$IFS"; IFS=$'\n'
-	for resourceOp in $resourceOpList; do # [OPTIMIZE]
-		operation=$(printf '%s' "$resourceOp" \
+	local _ifs="$IFS"; IFS=$'\n'
+	for resource_op in $resource_op_list; do # [OPTIMIZE]
+		operation=$(printf '%s' "$resource_op" \
 			| cut -d':' -f2 \
-			| $__SED -e "$_SED_TRIM_WS" )
-		fileOrigin=$(printf '%s' "$resourceOp" \
+			| $__SED -e "$__Sed_trim_ws" )
+		file_orig=$(printf '%s' "$resource_op" \
 			| cut -d':' -f3 \
-			| $__SED -e "$_SED_TRIM_WS" )
-		fileTarget=$(printf '%s' "$resourceOp" \
+			| $__SED -e "$__Sed_trim_ws" )
+		file_target=$(printf '%s' "$resource_op" \
 			| cut -d':' -f4 \
-			| $__SED -e "$_SED_TRIM_WS" )
+			| $__SED -e "$__Sed_trim_ws" )
 
-		webera::log 1 "${_IN}$operation: $fileOrigin > $fileTarget"
+		webera::log 1 "${__In}$operation: $file_orig > $file_target"
 
-		if [[ ! -e "$DIR_RESOURCES/$fileOrigin" ]]; then
-			webera::log 1 error "${_IN}ERROR: '$fileOrigin' don't exist"
+		if [[ ! -e "$Opt_dir_resources/$file_orig" ]]; then
+			webera::log 1 error "${__In}ERROR: '$file_orig' don't exist"
 			continue # XXX do break instead?
 		fi
 
 		case "$operation" in
 			"copy")
-				mkdir -p -- "$DIR_OUTPUT/$DIR_RESOURCES/$(dirname "$fileTarget")"
-				cp -r -- "$DIR_RESOURCES/$fileOrigin" \
-					"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget"
+				mkdir -p -- "$Opt_dir_output/$Opt_dir_resources/$(dirname "$file_target")"
+				cp -r -- "$Opt_dir_resources/$file_orig" \
+					"$Opt_dir_output/$Opt_dir_resources/$file_target"
 				;;
 			*)
-				# On custom commands, {PATHS} tags are adapted for resources
-				if [[ -n "${_DEFINED_CMD_MAP[$operation]}" ]]; then
+				# On custom cmds, {PATHS} tags are adapted for resources
+				if [[ -n "${_Defined_cmd_map[$operation]}" ]]; then
 
-					command=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
-						| $__SED "s|{ORIGIN}|$DIR_RESOURCES/$fileOrigin|g" \
-						| $__SED "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
-						| $__SED "s|{TARGET}|$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget|g")
+					cmd=$(printf '%s' "${_Defined_cmd_map[$operation]}" \
+						| $__SED "s|{ORIGIN}|$Opt_dir_resources/$file_orig|g" \
+						| $__SED "s|{BUILD}|$Opt_dir_build/$file_orig|g" \
+						| $__SED "s|{TARGET}|$Opt_dir_output/$Opt_dir_resources/$file_target|g")
 
 					# Create target paths
-					if [[ "${_DEFINED_CMD_MAP[$operation]}" == *"{BUILD}"* ]]; then
-						mkdir -p -- "$(dirname "$DIR_BUILD/$fileTarget")"
+					if [[ "${_Defined_cmd_map[$operation]}" == *"{BUILD}"* ]]; then
+						mkdir -p -- "$(dirname "$Opt_dir_build/$file_target")"
 					fi
-					if [[ "${_DEFINED_CMD_MAP[$operation]}" == *"{TARGET}"* ]]; then
+					if [[ "${_Defined_cmd_map[$operation]}" == *"{TARGET}"* ]]; then
 						mkdir -p -- "$(dirname \
-							"$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")"
+							"$Opt_dir_output/$Opt_dir_resources/$file_target")"
 					fi
 
-					webera::log 3 "${_IN}Executing: $command"
-					eval "$command"
+					webera::log 3 "${__In}Executing: $cmd"
+					eval "$cmd"
 				else
 					webera::log 1 error \
-						"${_IN}ERROR: operation '$operation' not recognized"
+						"${__In}ERROR: operation '$operation' not recognized"
 				fi
 				;;
 		esac
 	done
-	IFS="$IFSbkp"
+	IFS="$_ifs"
 
-} #::process-resources()
+} # ::process-resources
 
 
 #-------------------------------------------------------------------------------
@@ -878,87 +909,88 @@ webera::process-resources() {
 #
 webera::process-templates() {
 
-	declare templateOpList templateOpNum templateOp
-	declare operation fileOrigin fileTarget command
+	local template_op_list template_op_num template_op
+	local operation file_orig file_target cmd
 
-	webera::log 1 "\nProcessing templates...\n$_HL"
+	webera::log 1 "\nProcessing templates...\n$__Hl"
 
-	if [[ ! -d "$DIR_TEMPLATES" ]]; then
-		webera::log 1 error "No templates dir '$DIR_TEMPLATES' found."
+	if [[ ! -d "$Opt_dir_templates" ]]; then
+		webera::log 1 error "No templates dir '$Opt_dir_templates' found."
 		return 9
 	fi
 
-	templateOpList="$(printf '%s' "$_CONFIG_JOINT" \
-		| $__GREP "^$_WS*template$_WS*:" )"
+	template_op_list="$(printf '%s' "$_Config_whole" \
+		| $__GREP "^$__Ws*template$__Ws*:" )"
 
-	templateOpNum=$(printf '%s\n' "$templateOpList" \
-		| $__SED "$_SED_DEL_EMPTYLINES" \
+	template_op_num=$(printf '%s\n' "$template_op_list" \
+		| $__SED "$__Sed_del_empty_lines" \
 		| wc -l )
-	webera::log 1 "${_IN}Found $templateOpNum operations on templates:"
+	webera::log 1 "${__In}Found $template_op_num operations on templates:"
 
-	local IFSbkp="$IFS"; IFS=$'\n'
-	for templateOp in $templateOpList; do
-		operation=$(printf '%s' "$templateOp" \
+	local _ifs="$IFS"; IFS=$'\n'
+	for template_op in $template_op_list; do
+		operation=$(printf '%s' "$template_op" \
 			| cut -d':' -f2 \
-			| $__SED -e "$_SED_TRIM_WS" )
-		fileOrigin=$(printf '%s'  "$templateOp" \
+			| $__SED -e "$__Sed_trim_ws" )
+		file_orig=$(printf '%s'  "$template_op" \
 			| cut -d':' -f3 \
-			| $__SED -e "$_SED_TRIM_WS" )
-		fileTarget=$(printf '%s' "$templateOp" \
+			| $__SED -e "$__Sed_trim_ws" )
+		file_target=$(printf '%s' "$template_op" \
 			| cut -d':' -f4 \
-			| $__SED -e "$_SED_TRIM_WS" )
+			| $__SED -e "$__Sed_trim_ws" )
 
-		webera::log 1 "${_IN}$operation: $fileOrigin > $fileTarget"
+		webera::log 1 "${__In}$operation: $file_orig > $file_target"
 
 		case "$operation" in
 			"route")
-				if [[ -n "$fileOrigin" && -n "$fileTarget" ]]; then
+				if [[ -n "$file_orig" && -n "$file_target" ]]; then
 					# A path ending in `/`, will be a dir_name/index.html
-					if [[ "$fileTarget" == */ ]]; then
-						mkdir -p -- "${DIR_OUTPUT}/${fileTarget}"
-						webera::render-template "$fileOrigin" > \
-							"${DIR_OUTPUT}/${fileTarget}/index.html"
+					if [[ "$file_target" == */ ]]; then
+						mkdir -p -- "${Opt_dir_output}/${file_target}"
+						webera::render-template "$file_orig" > \
+							"${Opt_dir_output}/${file_target}/index.html"
 					else
-						mkdir -p -- "$(dirname "${DIR_OUTPUT}/${fileTarget}")"
-						webera::render-template "$fileOrigin" > \
-							"${DIR_OUTPUT}/${fileTarget}"
+						mkdir -p -- "$(dirname "${Opt_dir_output}/${file_target}")"
+						webera::render-template "$file_orig" > \
+							"${Opt_dir_output}/${file_target}"
 					fi
 				else
-					webera::log 1 error "${_IN}ERROR: missing arguments for" \
+					webera::log 1 error "${__In}ERROR: missing arguments for" \
 						"'template:route' operation"
 				fi
 				;;
 
 			*)
-				# On custom commands, the {PATHS} tags are adapted for templates
-				if [[ -n "${_DEFINED_CMD_MAP[$operation]}" ]]; then
+				# On custom cmds, the {PATHS} tags are adapted for templates
+				if [[ -n "${_Defined_cmd_map[$operation]}" ]]; then
 
-					command=$(printf '%s' "${_DEFINED_CMD_MAP[$operation]}" \
-						| $__SED "s|{ORIGIN}|$DIR_TEMPLATES/$fileOrigin|g" \
-						| $__SED "s|{BUILD}|$DIR_BUILD/$fileOrigin|g" \
-						| $__SED "s|{TARGET}|$DIR_OUTPUT/$fileTarget|g" \
+					cmd=$(printf '%s' "${_Defined_cmd_map[$operation]}" \
+						| $__SED "s|{ORIGIN}|$Opt_dir_templates/$file_orig|g" \
+						| $__SED "s|{BUILD}|$Opt_dir_build/$file_orig|g" \
+						| $__SED "s|{TARGET}|$Opt_dir_output/$file_target|g" \
 					)
 
 					# Create target paths
-					if [[ "${_DEFINED_CMD_MAP[$operation]}" == *"{BUILD}"* ]]; then
-						mkdir -p -- "$(dirname "$DIR_BUILD/$fileTarget")"
+					if [[ "${_Defined_cmd_map[$operation]}" == *"{BUILD}"* ]]; then
+						mkdir -p -- "$(dirname "$Opt_dir_build/$file_target")"
 					fi
-					if [[ "${_DEFINED_CMD_MAP[$operation]}" == *"{TARGET}"* ]]; then
-						mkdir -p -- "$(dirname "$DIR_OUTPUT/$DIR_RESOURCES/$fileTarget")"
+					if [[ "${_Defined_cmd_map[$operation]}" == *"{TARGET}"* ]]; then
+						mkdir -p -- \
+							"$(dirname "$Opt_dir_output/$Opt_dir_resources/$file_target")"
 					fi
 
-					webera::log 3 "${_IN}Executing: $command"
-					eval "$command"
+					webera::log 3 "${__In}Executing: $cmd"
+					eval "$cmd"
 				else
 					webera::log 1 error \
-						"${_IN}ERROR: operation '$operation' not recognized"
+						"${__In}ERROR: operation '$operation' not recognized"
 				fi
 				;;
 		esac
 	done
-	IFS="$IFSbkp"
+	IFS="$_ifs"
 
-} #::process-templates()
+} # ::process-templates
 
 
 #-------------------------------------------------------------------------------
@@ -967,58 +999,58 @@ webera::process-templates() {
 #   Recursively parses a template for include directives, and then
 #   joins all the parts together in a single template.
 #
-# > $1 : templateFileName
+# > $1 : template_file_name
 # <  7 : No template found
 # x  3 : Maximum nesting level overflow
 # ^ ::render-template
 #
 webera::parse-template-includes() {
 
-	declare templateFileName=$1
-	declare templateContent directive directives_include incFileName incFileContent
+	local template_file_name=$1
+	local template_content directive directives_include inc_file_name inc_file_content
 
-	((_NESTING_LEVEL++))
+	((_Nesting_level++))
 
-	if [[ "$_NESTING_LEVEL" -gt "$NESTING_MAX" ]]; then
-		webera::log 1 error "${_IN}ERROR: max nesting level ($NESTING_MAX)" \
-			"reached for template $templateFileName"
+	if [[ "$_Nesting_level" -gt "$Opt_nesting_max" ]]; then
+		webera::log 1 error "${__In}ERROR: max nesting level ($Opt_nesting_max)" \
+			"reached for template $template_file_name"
 		exit 3
 	fi
 
 	# Parse template
-	local templateFile="${DIR_TEMPLATES}/$templateFileName"
-	if [[ -f "$templateFile" ]]; then
-		templateContent="$(<"$templateFile")"
+	local template_file="${Opt_dir_templates}/$template_file_name"
+	if [[ -f "$template_file" ]]; then
+		template_content="$(<"$template_file")"
 	else
-		webera::log 1 error "${_IN}ERROR: No template found '$templateFile'"
+		webera::log 1 error "${__In}ERROR: No template found '$template_file'"
 		return 7
 	fi
-	directives_include=$($__GREP -Po "<!--$_WS*%include$_WS*:.*?-->" \
-		"$templateFile") # [INC01]
+	directives_include=$($__GREP -Po "<!--$__Ws*%include$__Ws*:.*?-->" \
+		"$template_file") # [INC01]
 
 	# Remove duplicates
 	if [[ -n "$directives_include" ]]; then
 		directives_include=$(printf '%s' "$directives_include" | uniq)
 	fi
 
-	local IFSbkp="$IFS"; IFS=$'\n'
+	local _ifs="$IFS"; IFS=$'\n'
 	for directive in $directives_include; do
-		incFileName=$(webera::get-directive-content "$directive" '%include')
-		webera::log 2 "${_IN2}include: '$incFileName'"
+		inc_file_name=$(webera::get-directive-content "$directive" '%include')
+		webera::log 2 "${__In2}include: '$inc_file_name'"
 
 		# Parse included template for further includes
-		incFileContent="$(webera::parse-template-includes "${incFileName}")"
+		inc_file_content="$(webera::parse-template-includes "${inc_file_name}")"
 
 		# Mass-replace directive with template contents
-		templateContent="${templateContent//$directive/$incFileContent}"
+		template_content="${template_content//$directive/$inc_file_content}"
 	done
-	IFS="$IFSbkp"
+	IFS="$_ifs"
 
-	((_NESTING_LEVEL--))
+	((_Nesting_level--))
 
-	printf '%s' "$templateContent"
+	printf '%s' "$template_content"
 
-} #::parse-template-includes()
+} # ::parse-template-includes
 
 
 #-------------------------------------------------------------------------------
@@ -1026,83 +1058,83 @@ webera::parse-template-includes() {
 #
 #   Parses the template, processes the directives and renders the html file.
 #
-# > $1 : templateFileName
+# > $1 : template_file_name
 # ^ ::process-templates (when parsing the 'route' command)
 #
 webera::render-template() {
 
-	declare templateFileName=$1
+	local template_file_name="$1"
 
-	declare templateText directives_set directives_cmd directives_setcmd
-	declare directive setVarVal setVar setValue cmd cmdOutput
-	declare setCmdVar setCmdValue setCmd setCmdOutput
-	declare -i cmdOutputLength maxOutputLength=50 # in characters
+	local template_text directives_set directives_cmd directives_setcmd
+	local directive setVarVal setVar setValue cmd cmd_output
+	local set_cmd_var set_cmd_value set_cmd set_cmd_output
+	local -i cmd_output_len _max_output_len=50 # in characters
 
-	templateText="$(webera::parse-template-includes "$templateFileName")"
+	template_text="$(webera::parse-template-includes "$template_file_name")"
 
 	# text comments
 	#
 	# <!-- // Comment -->
 	#
-	templateText=$(printf '%s' "$templateText" \
-		| $__SED -e :a -re "s/<!--$_WS*\/\/.*?-->//g;/<!--\/\//N;//ba")
+	template_text=$(printf '%s' "$template_text" \
+		| $__SED -e :a -re "s/<!--$__Ws*\/\/.*?-->//g;/<!--\/\//N;//ba")
 
-	local IFSbkp="$IFS"; IFS=$'\n'
+	local _ifs="$IFS"; IFS=$'\n'
 
 	# set variables
 	#
 	# <!-- %set : VARIABLE=something -->
 	# <!-- @VARIABLE -->
 	#
-	directives_set=$(printf '%s' "$templateText" \
-		| $__GREP -Po "<!--$_WS*%set$_WS*:.*?-->") # [INC01]
+	directives_set=$(printf '%s' "$template_text" \
+		| $__GREP -Po "<!--$__Ws*%set$__Ws*:.*?-->") # [INC01]
 
 	for directive in $directives_set; do
 		setVarVal=$(webera::get-directive-content "$directive" '%set')
 		setVar="${setVarVal%%=*}"
 		setValue="${setVarVal#*=}"
-		webera::log 3 "${_IN3}set: $setVar = $setValue"
+		webera::log 3 "${__In3}set: $setVar = $setValue"
 
 		# Cross-platform syntax to replace including newlines
 		# http://stackoverflow.com/a/1252191
-		templateText=$(printf '%s' "$templateText" \
+		template_text=$(printf '%s' "$template_text" \
 			| $__SED -e ":a" -e "N" -e "\$!ba" -e "s/$directive\n\?//g")
-		templateText=$(printf '%s' "$templateText" \
+		template_text=$(printf '%s' "$template_text" \
 			| $__SED -e ":a" -e "N" -e "\$!ba" \
-			-e "s/<!--$_WS*@$setVar$_WS*-->\n\?/$setValue/g")
+			-e "s/<!--$__Ws*@$setVar$__Ws*-->\n\?/$setValue/g")
 	done
 
 	# execute commands, render output
 	#
 	# <!-- %cmd : ls -l -->
 	#
-	directives_cmd=$(printf '%s' "$templateText" \
-		| $__GREP -Po "<!--$_WS*%cmd$_WS*:.*?-->") # [INC01]
+	directives_cmd=$(printf '%s' "$template_text" \
+		| $__GREP -Po "<!--$__Ws*%cmd$__Ws*:.*?-->") # [INC01]
 
 	for directive in $directives_cmd ; do
 		cmd=$(webera::get-directive-content "$directive" '%cmd')
-		cmdOutput=$(eval "$cmd")
-		webera::log 3 "${_IN2}cmd: $cmd"
+		cmd_output=$(eval "$cmd")
+		webera::log 3 "${__In2}cmd: $cmd"
 
-		cmdOutputLength=$(printf "%s" "$cmdOutput" | wc -c)
+		cmd_output_len=$(printf "%s" "$cmd_output" | wc -c)
 
-		if [[ "$cmdOutputLength" -le "$maxOutputLength" ]]; then
-			webera::log 3 "${_IN3}=: $cmdOutput"
+		if [[ "$cmd_output_len" -le "$_max_output_len" ]]; then
+			webera::log 3 "${__In3}=: $cmd_output"
 		else
-			webera::log 3 "${_IN3}=: $(printf '%s' "$cmdOutput" \
+			webera::log 3 "${__In3}=: $(printf '%s' "$cmd_output" \
 				| tr '\n' ' ' \
-				| head -c$maxOutputLength) (...) +" \
-				"$((cmdOutputLength-maxOutputLength)) chars"
+				| head -c$_max_output_len) (...) +" \
+				"$((cmd_output_len-_max_output_len)) chars"
 		fi
 
 		# Substitute the directive in the template with the command output
 		# http://stackoverflow.com/a/40749641/940200
-		templateText=$($__AWK -v repl="$cmdOutput" 'FNR==NR {
+		template_text=$($__AWK -v repl="$cmd_output" 'FNR==NR {
 				a = a $0; next
 			}
 			n = index($0, a) {
 				$0 = substr($0, 1, n-1) repl substr($0, n+length(a))
-			} 1' <(printf '%s\n' "$directive") <(printf '%s' "$templateText")
+			} 1' <(printf '%s\n' "$directive") <(printf '%s' "$template_text")
 		)
 	done
 
@@ -1111,37 +1143,37 @@ webera::render-template() {
 	# <!-- %setcmd : VARIABLE=ls -l -->
 	# <!-- @VARIABLE -->
 	#
-	directives_setcmd=$(printf '%s' "$templateText" \
-		| $__GREP -Po "<!--$_WS*%setcmd$_WS*:.*?-->") # [INC01]
+	directives_setcmd=$(printf '%s' "$template_text" \
+		| $__GREP -Po "<!--$__Ws*%setcmd$__Ws*:.*?-->") # [INC01]
 
 	for directive in $directives_setcmd; do
-		setCmd=$(webera::get-directive-content "$directive" '%setcmd')
-		setCmdVar="${setCmd%%=*}"
-		setCmdValue="${setCmd#*=}"
-		setCmdOutput=$(eval "$setCmdValue")
-		webera::log 3 "${_IN2}setcmd: $setCmdVar = $setCmdValue"
+		set_cmd=$(webera::get-directive-content "$directive" '%setcmd')
+		set_cmd_var="${set_cmd%%=*}"
+		set_cmd_value="${set_cmd#*=}"
+		set_cmd_output=$(eval "$set_cmd_value")
+		webera::log 3 "${__In2}setcmd: $set_cmd_var = $set_cmd_value"
 
 		# Delete the directive from the template
-		templateText=$($__AWK -v 'FNR==NR {
+		template_text=$($__AWK -v 'FNR==NR {
 				a = a $0; next
 			}
 			n = index($0, a) {
 				$0 = substr($0, 1, n-1) substr($0, n+length(a))
-			} 1' <(printf '%s\n' "$directive") <(printf '%s' "$templateText")
+			} 1' <(printf '%s\n' "$directive") <(printf '%s' "$template_text")
 		)
 		# Replace all the set variables with the command output
-		templateText=$(printf '%s' "$templateText" \
+		template_text=$(printf '%s' "$template_text" \
 			| $__SED -e ":a" -e "N" -e "\$!ba" \
-			-e "s/<!--$_WS*@$setCmdVar$_WS*-->\n\?/$setCmdOutput/g")
+			-e "s/<!--$__Ws*@$set_cmd_var$__Ws*-->\n\?/$set_cmd_output/g")
 	done
 
-	IFS="$IFSbkp"
+	IFS="$_ifs"
 
 	webera::log 3
 
-	printf "%s" "$templateText"
+	printf "%s" "$template_text"
 
-} #::render-template()
+} # ::render-template
 
 
 #-------------------------------------------------------------------------------
@@ -1156,10 +1188,10 @@ webera::render-template() {
 webera::get-directive-content() {
 
 	printf '%s' "$1" \
-		| $__SED -n -e "s/<\!--$_WS*$2$_WS*:$_WS*\(.*\)$_WS*-->/\1/p" \
-		| $__SED -e "s/$_WS*$//"
+		| $__SED -n -e "s/<\!--$__Ws*$2$__Ws*:$__Ws*\(.*\)$__Ws*-->/\1/p" \
+		| $__SED -e "s/$__Ws*$//"
 
-} #::get-directive-content()
+} # ::get-directive-content
 
 
 #-------------------------------------------------------------------------------
@@ -1190,7 +1222,7 @@ webera::check-compatibility() {
 	__DATE="$(webera::find-gnu-cmd date)"
 	__READLINK="$(webera::find-gnu-cmd readlink)"
 
-} #::check-compatibility()
+} # ::check-compatibility
 
 
 #-------------------------------------------------------------------------------
@@ -1204,16 +1236,16 @@ webera::check-compatibility() {
 #
 webera::find-gnu-cmd() {
 
-	local default_cmd="$1"
-	local gnu_cmd="g$default_cmd"
+	local cmd_default="$1"
+	local cmd_gnu="g$cmd_default"
 
-	if [[ "$(which "$gnu_cmd" 2> /dev/null)" ]]; then
-		printf '%s' "$gnu_cmd"
+	if [[ "$(which "$cmd_gnu" 2> /dev/null)" ]]; then
+		printf '%s' "$cmd_gnu"
 	else
-		printf '%s' "$default_cmd"
+		printf '%s' "$cmd_default"
 	fi
 
-} #::find-gnu-cmd()
+} # ::find-gnu-cmd
 
 
 #-------------------------------------------------------------------------------
@@ -1226,57 +1258,99 @@ webera::find-gnu-cmd() {
 # shellcheck disable=SC2016
 webera::setup-debugging() {
 
-	local ps4_date='[$(($($__DATE "+%s%3N")-__WEBERA_TIME_STAMP))ms]' # [INC02]
+	local ps4_date='[$(($($__DATE "+%s%3N")-__Time_stamp))ms]' # [INC02]
 	local ps4_line='L$LINENO'
 	local ps4_func='${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 	[[ -n "$WEBERA_DEBUG" ]] && set -o xtrace && \
 		export PS4="+ $ps4_date $ps4_line $ps4_func"
 
-} #::setup-debugging()
+} # ::setup-debugging
 
 
 #-------------------------------------------------------------------------------
-# ::print-vars
+# ::debug-print-vars
 #
 #   Prints all the script "global" settings and data, public and private.
 #
 # ^ ::main
 #
-webera::print-vars() { printf '%s\n' "$__VARS_WEBERA"; }
+webera::debug-print-vars() { printf '%s\n' "$__Vars_webera"; }
 
 
 #-------------------------------------------------------------------------------
-# ::push-vars
+# ::debug-save-default-vars
+#
+#   Saves all the default declared pseudo-global variables.
+#
+# ^ ::main
+#
+webera::debug-save-default-vars() {
+
+	# return the variables not common to both lists
+	local declared_vars; declared_vars=$( $__GREP -vFf \
+		<(printf '%s' "$__Vars_before") <(printf '%s' "$__Vars_after") )
+
+	# saves them after sanitizing the names
+	printf -v __Vars_webera '%s' \
+		"$(webera::debug-vars-prepare-name "$declared_vars" vdef)"
+
+	unset __Vars_before; unset __Vars_after;
+
+} # ::debug-save-default-vars
+
+
+#-------------------------------------------------------------------------------
+# ::debug-vars-prepare-name
+#
+#   Removes the Opt_ prefix, UPPERCASES `variable=`, and adds the origin prefix.
+#
+# > $1 : the lines in `variable=value` format
+# > $2 : the variable origin prefix [vdef|args|file|strn]
+#
+webera::debug-vars-prepare-name() {
+
+	$__SED -e 's/^\(_\?\)Opt_/\1/' \
+		-e 's/[^=]*/\U&/' \
+		-e "s/^/[$2]::/" \
+		<(printf '%s' "$1")
+
+} # ::debug-vars-prepare-name
+
+
+#-------------------------------------------------------------------------------
+# ::debug-vars-add-config
 #
 #   Parses configuration, extracts the config variables and appends them
-#   to __VARS_WEBERA in the correct format, using the provided arguments.
+#   to __Vars_webera in the correct format, using the provided arguments.
 #
-# > $1 : varOrigin [vdef|args|file|strn]
-# > $2 : varPath (for files)
+# > $1 : the variable origin prefix [vdef|args|file|strn]
+# > $2 : the variable path (only for files)
 # > $3 : configuration
 # ^ webera::read-config
 #
-webera::push-vars() {
+webera::debug-vars-add-config() {
 
-	declare varOrigin="$1" varPath="$2" configuration="$3"
-	declare configLine
+	local var_orig="$1" var_path="$2" configuration="$3"
+	local config_line config_var config_value
 
-	local IFSbkp="$IFS"; IFS=$'\n'
-	for configLine in $(printf '%s' "$configuration" \
+	local _ifs="$IFS"; IFS=$'\n'
+	for config_line in $(printf '%s' "$configuration" \
 		| $__GREP '^config' \
 		| cut -d ':' -f2- \
-		| $__SED "s/$_WS*:$_WS*/=/" \
-		| $__SED "$_SED_TRIM_WS" \
+		| $__SED "s/$__Ws*:$__Ws*/=/" \
+		| $__SED "$__Sed_trim_ws" \
 		); do
-		if [[ "$configLine" != _* ]]; then # only read public variables
-			printf -v __VARS_WEBERA '%s' \
-			"$__VARS_WEBERA"$'\n'"[$varOrigin]:$varPath:$configLine"
+		if [[ "$config_line" != _* ]]; then # only read public variables
+			config_var="${config_line%=*}"
+			config_value="${config_line#*=}"
+			config_line="${config_var^^}=$config_value"
+			__Vars_webera+=$'\n'"[$var_orig]:$var_path:$config_line"
 		fi
 	done
-	IFS="$IFSbkp"
+	IFS="$_ifs"
 
-} #::push-vars()
+} # ::debug-vars-add-config
 
 
 #-------------------------------------------------------------------------------
@@ -1289,15 +1363,15 @@ webera::push-vars() {
 #
 webera::elapsed-time() {
 
-	local -ir timeStampFinal="$($__DATE '+%s%3N')"
-	local -ir timeElapsed="$((timeStampFinal-__WEBERA_TIME_STAMP))"
+	local -ir time_stamp_final="$($__DATE '+%s%3N')"
+	local -ir time_elapsed="$((time_stamp_final-__Time_stamp))"
 	if [[ "$1" == true ]]; then
-		printf '%s' "$(webera::beautify-time "$timeElapsed")"
+		printf '%s' "$(webera::beautify-time "$time_elapsed")"
 	else
-		printf '%s' "$timeElapsed"
+		printf '%s' "$time_elapsed"
 	fi
 
-} #::elapsed-time()
+} # ::elapsed-time
 
 
 #-------------------------------------------------------------------------------
@@ -1317,17 +1391,17 @@ webera::beautify-time() {
 	local -ir h="$((ms/3600000%24))"
 	local -ir d="$((ms/86400000))"
 
-	declare timeString didTime
+	local time_str
 
-	[[ "$d" -gt 0 ]] && timeString+="${d}d " && didTime=true
-	[[ "$h" -gt 0 || -n "$didTime" ]] && timeString+="${h}h " && didTime=true
-	[[ "$m" -gt 0 || -n "$didTime" ]] && timeString+="${m}m " && didTime=true
-	[[ -n "$didTime" ]] && timeString+="${s}s " # shows seconds if time > 1m
-	[[ "$m" -lt 1 && -z "$didTime" ]] && timeString+="${ms}ms "
+	[[ "$d" -gt 0 ]] && time_str+="${d}d"
+	[[ "$h" -gt 0 || -n "$time_str" ]] && time_str+="${h}h "
+	[[ "$m" -gt 0 || -n "$time_str" ]] && time_str+="${m}m "
+	[[ -n "$time_str" ]] && time_str+="${s}s " # shows seconds if time > 1m
+	[[ "$m" -lt 1 && -z "$time_str" ]] && time_str+="${ms}ms "
 
-	printf '%s' "${timeString}"
+	printf '%s' "${time_str}"
 
-} #::beautify-time()
+} # ::beautify-time
 
 
 [[ "$0" == "${BASH_SOURCE[0]}" ]] && webera::main "$@" # Run if not sourced

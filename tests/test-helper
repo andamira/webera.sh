@@ -7,6 +7,8 @@
 #-------------------------------------------------------------------------------
 # ::init
 #
+# > $1 : when equals "run-all-tests", common test data cleanup wont happen here
+#
 test::init() {
 
 	# Change to the directory where this script is located
@@ -19,10 +21,13 @@ test::init() {
 
 	# Run tests
 	#
-	# NOTE: `test_setup` and `test_teardown` calls are part of the test
+	# NOTE: calls to `test_setup` and `test_teardown` are included in the suite
 	test::suite
 
 	test_summary "helper"
+
+	# Only do the final cleanup when the script is run independently
+	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
 
 } #::init()
 
