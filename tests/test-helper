@@ -1,38 +1,6 @@
 #!/usr/bin/env bash
-#
-# Tests for the helper functions
-#
 
 
-#-------------------------------------------------------------------------------
-# ::init
-#
-# > $1 : when equals "run-all-tests", common test data cleanup wont happen here
-#
-test::init() {
-
-	# Change to the directory where this script is located
-	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
-		cd -- "${BASH_SOURCE%/*}" || exit 1
-	fi
-
-	# shellcheck disable=SC1091
-	source ./helper &>/dev/null
-
-	# Run tests
-	#
-	# NOTE: calls to `test_setup` and `test_teardown` are included in the suite
-	test::suite
-
-	test_summary "helper"
-
-	# Only do the final cleanup when the script is run independently
-	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
-
-} #::init()
-
-
-#-------------------------------------------------------------------------------
 # ::suite
 #
 #   Test the test helper functions.
@@ -106,6 +74,34 @@ test::suite() {
 
 
 } #::suite()
+
+
+#-------------------------------------------------------------------------------
+# ::init
+#
+# > $1 : if equals "RUN_ALL_TESTS" then don't do final cleanup
+#
+test::init() {
+
+	# Change to the directory where this script is located
+	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
+		cd -- "${BASH_SOURCE%/*}" || exit 1
+	fi
+
+	# shellcheck disable=SC1091
+	source ./helper &>/dev/null
+
+	# Run tests
+	#
+	# NOTE: calls to `test_setup` and `test_teardown` are included in the suite
+	test::suite
+
+	test_summary "helper"
+
+	# Only do the final cleanup when the script is run independently
+	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
+
+} #::init()
 
 
 [[ "$0" == "${BASH_SOURCE[0]}" ]] && test::init "$@"

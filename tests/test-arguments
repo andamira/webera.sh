@@ -1,43 +1,14 @@
 #!/usr/bin/env bash
-#
-# Tests for the script arguments
-#
 
 
-#-------------------------------------------------------------------------------
-# ::init
-#
-# > $1 : when equals "run-all-tests", common test data cleanup wont happen here
-#
-test::init() {
-
-	# Change to the directory where this script is located
-	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
-		cd -- "${BASH_SOURCE%/*}" || exit 1
-	fi
-
-	# shellcheck disable=SC1091
-	source ./helper
-
-	# Run tests
-	test_setup
-	test::suite
-	test_teardown
-
-	test_summary 'arguments'
-
-	# Only do the final cleanup when the script is run independently
-	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
-
-} #::init()
-
-
-#-------------------------------------------------------------------------------
 # ::suite
+#
+#   Tests for the script arguments.
 #
 test::suite() {
 
 	declare default newval newval2
+
 
 	test_h1 "Script Arguments"
 	# ========================
@@ -385,6 +356,34 @@ test::suite() {
 
 
 } #::suite()
+
+
+#-------------------------------------------------------------------------------
+# ::init
+#
+# > $1 : if equals "RUN_ALL_TESTS" then don't do final cleanup
+#
+test::init() {
+
+	# Change to the directory where this script is located
+	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
+		cd -- "${BASH_SOURCE%/*}" || exit 1
+	fi
+
+	# shellcheck disable=SC1091
+	source ./helper
+
+	# Run tests
+	test_setup
+	test::suite
+	test_teardown
+
+	test_summary 'arguments'
+
+	# Only do the final cleanup when the script is run independently
+	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
+
+} #::init()
 
 
 [[ "$0" == "${BASH_SOURCE[0]}" ]] && test::init "$@"

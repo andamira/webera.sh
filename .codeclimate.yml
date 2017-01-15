@@ -1,6 +1,9 @@
 engines:
   shellcheck:
     enabled: true
+      checks:
+        SC2016:
+          enabled: false
 ratings:
   paths:
   - "webera"

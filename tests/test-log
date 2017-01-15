@@ -1,43 +1,9 @@
 #!/usr/bin/env bash
-#
-# Tests for logging
-#
-# TODO:
-# - test prelog
-# - min max log level
-# - test missing arguments, and the set defaults
 
 
-#-------------------------------------------------------------------------------
-# ::init
-#
-# > $1 : when equals "run-all-tests", common test data cleanup wont happen here
-#
-test::init() {
-
-	# Change to the directory where this script is located
-	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
-		cd -- "${BASH_SOURCE%/*}" || exit 1
-	fi
-
-	# shellcheck disable=SC1091
-	source ./helper &>/dev/null
-
-	# Run tests
-	test_setup
-	test::suite
-	test_teardown
-
-	test_summary 'log'
-
-	# Only do the final cleanup when the script is run independently
-	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
-
-} #test::init()
-
-
-#-------------------------------------------------------------------------------
 # ::suite
+#
+#   Tests for logging.
 #
 test::suite() {
 
@@ -91,7 +57,6 @@ test::suite() {
 
 
 
-
 	# test_h2 "other"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 	# test_clean
@@ -117,7 +82,7 @@ test::suite() {
 #-------------------------------------------------------------------------------
 # ::log-wrapper
 #
-#   a wrapper for the log function
+#   A wrapper for the webera::log().
 #
 # > $1 : (bool) [envir] _PRELOG
 # > $2 : (int)  [envir] LOG_LEVEL
@@ -130,11 +95,37 @@ test::suite() {
 #
 # shellcheck disable=SC2034
 test::log-wrapper() {
-	(
-		_Log_presaved="$1"; Opt_log_level="$2"; Opt_log_file="$log_file"
-		webera::log "$3" "$4" "$5"
-	)
+	local Log_presaved="$1" Opt_log_level="$2" Opt_log_file="$log_file"
+	webera::log "$3" "$4" "$5"
 } #::log-wrapper()
+
+
+#-------------------------------------------------------------------------------
+# ::init
+#
+# > $1 : if equals "RUN_ALL_TESTS" then don't do final cleanup
+#
+test::init() {
+
+	# Change to the directory where this script is located
+	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
+		cd -- "${BASH_SOURCE%/*}" || exit 1
+	fi
+
+	# shellcheck disable=SC1091
+	source ./helper &>/dev/null
+
+	# Run tests
+	test_setup
+	test::suite
+	test_teardown
+
+	test_summary 'log'
+
+	# Only do the final cleanup when the script is run independently
+	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
+
+} #test::init()
 
 
 [[ "$0" == "${BASH_SOURCE[0]}" ]] && test::init "$@"

@@ -1,39 +1,9 @@
 #!/usr/bin/env bash
-#
-# Tests for the configuration
-#
 
 
-#-------------------------------------------------------------------------------
-# ::init
-#
-# > $1 : when equals "run-all-tests", common test data cleanup wont happen here
-#
-test::init() {
-
-	# Change to the directory where this script is located
-	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
-		cd -- "${BASH_SOURCE%/*}" || exit 1
-	fi
-
-	# shellcheck disable=SC1091
-	source ./helper &>/dev/null
-
-	# Run tests
-	test_setup
-	test::suite
-	test_teardown
-
-	test_summary 'config'
-
-	# Only do the final cleanup when the script is run independently
-	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
-
-} #::init()
-
-
-#-------------------------------------------------------------------------------
 # ::suite
+#
+#   Test the configuration.
 #
 test::suite() {
 
@@ -113,7 +83,7 @@ test::suite() {
 	assert "echo $newval"
 
 
-	# TODO test_h3 "Missing parameters"
+	# test_h3 "Missing parameters"
 	# ------------------------
 
 
@@ -240,6 +210,34 @@ config : DIR_TEMPLATES : t1"
 	assert "echo $newval" "b4"
 
 } #::suite()
+
+
+#-------------------------------------------------------------------------------
+# ::init
+#
+# > $1 : if equals "RUN_ALL_TESTS" then don't do final cleanup
+#
+test::init() {
+
+	# Change to the directory where this script is located
+	if [[ "${BASH_SOURCE%/*}" != "${BASH_SOURCE[0]}" ]]; then
+		cd -- "${BASH_SOURCE%/*}" || exit 1
+	fi
+
+	# shellcheck disable=SC1091
+	source ./helper &>/dev/null
+
+	# Run tests
+	test_setup
+	test::suite
+	test_teardown
+
+	test_summary 'config'
+
+	# Only do the final cleanup when the script is run independently
+	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
+
+} #::init()
 
 
 [[ "$0" == "${BASH_SOURCE[0]}" ]] && test::init "$@"

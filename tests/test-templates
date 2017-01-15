@@ -1,13 +1,82 @@
 #!/usr/bin/env bash
+
+
+# ::suite
 #
-# Tests for templates
+#   Test the templates system.
 #
-# TODO:
-# - directives
-# - nesting
-# - multiple levels
-# - special characters
-#
+test::suite() {
+
+
+	test_h1 "Templates"
+	# ========================
+
+
+	## Config
+
+	local dir_tem_in="$Dir_tests/files/tem-in"   # input templates for render
+	local dir_tem_out="$Dir_tests/files/tem-out" # render output control models
+	#local render_result
+
+	# directory names for running webera during the tests
+	local dir_tem='tem' dir_out='out' #dir_build='build'
+
+
+	test_h2 "webera::render-template"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+	# T: simple HTML5. Exact copy expected.
+	result_test="$(test::render-template "$dir_tem_in/00-simple-html5.html")"
+	result_model="$(cat "$dir_tem_out/00-simple-html5.html")"
+	assert_str_equals "$result_test" "$result_model"
+
+	# T: nesting. Exact copy expected.
+	result_test="$(test::render-template "$dir_tem_in/00-simple-html5.html")"
+	result_model="$(cat "$dir_tem_out/00-simple-html5.html")"
+
+
+
+	# DEBUG_TEMP resources
+	#echo "»»» res:$result_test"; echo "-----"; echo "mod:$result_model"; exit # DEBUG_TEMP
+
+
+
+	test_h2 "Routing"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+	# T: Just the index and some other
+	mkdir -p -- "$dir_tem"
+	printf 'index\n' > "$dir_tem/index.html"
+	printf 'other\n' > "$dir_tem/other.html"
+	webera -tC \
+		"template : route : index.html : /
+	     template : route : other.html : /some-other-url/"
+	assert "[[ -f $dir_out/index.html ]]"
+
+	# T: check the contents are there
+	assert "$(<$dir_out/index.html)"
+
+
+	test_clean
+
+
+	# T: Route to a file, and another
+	# mkdir -p -- "$dir_tem"
+	# cp -- "$dir_tem/XXX" "$dir_tem/mytemplate.html"
+	# webera -tC \
+	# 	"template : route : mytemplate.html : my-file-url.html"
+	# assert "[[ -f $dir_out/my-file-url.html]]"
+	# ls -l $dir_out/my-file-url.html
+	# assert "$(cat -- $dir_out/my-file-url.html)" "$templ_simpl"
+
+	test_clean
+
+	# T:
+	assert "[[ -f out/indsex.html ]]"
+
+
+
+} #::suite()
 
 
 #-------------------------------------------------------------------------------
@@ -22,6 +91,8 @@ test::init() {
 		cd -- "${BASH_SOURCE%/*}" || exit 1
 	fi
 
+	local Dir_tests; Dir_tests="$(pwd)"
+
 	# shellcheck disable=SC1091
 	source ./helper &>/dev/null
 
@@ -35,83 +106,29 @@ test::init() {
 	# Only do the final cleanup when the script is run independently
 	[[ $1 != RUN_ALL_TESTS ]] && test_final_cleanup
 
-} #::init()
+} # ::init()
 
 
-#-------------------------------------------------------------------------------
-# ::suite
+# ::render-template
 #
-test::suite() {
+#   A wrapper for webera::render-template.
+#
+# > $1 : template file
+#
+# shellcheck disable=SC2034
+test::render-template() {
 
-	declare dir_tem='tem' dir_out='out' #dir_build='build'
-	#declare templ_simpl templ_head templ_content templ_footer
-	#declare content_directives content_metadata
+	# global variables needed for the wrapped function and its childs
+	local Opt_nesting_max=8
+	local -r __Ws="[[:space:]]" # whitespace
+	# local -r __Sed_trim_ws="s/^$__Ws*//;s/$__Ws*$//"
+	# local -r __Sed_del_comments="/^$__Ws*#.*/d" # starting in #
+	# local -r __Sed_del_empty_lines="/^$__Ws*$/d"
+	# local -r __Sed_join_split_lines=':x; /\\$/ {N; s/\\\n//; tx}' # ending in \
 
-	# To parse or not to parse
-	#declare some_cmd #some_set some_setcmd
-	#declare some_utf-8
-	#declare some_comment1 some_comment2
+	webera::render-template "$1"
 
-	# A template for the most simple and the more advanced tests
-	templ_simpl=$(cat <<- 'HTML_EOF'
-	<!DOCTYPE html>
-	<html lang="{{LANG}}">
-	<head>
-	    <meta charset="utf-8">
-	    <title>{{TITLE}}</title>
-	</head>
-	<body>
-	    <-- %include content.html -->
-	</body>
-	<-- %include footer.html  -->
-	</html>
-	HTML_EOF
-	)
-	#templ_simpl_head="$(printf '%s' "$templ_simpl" | head -6)"
-	#templ_simpl_footer="<footer></footer>"
-
-
-	test_h1 "Templates"
-	# ========================
-
-	test_h2 "Routing"
-	# ~~~~~~~~~~~~~~~~~~~~~~~~
-
-	# T: Just the index and some other
-	mkdir -p -- "$dir_tem"
-	printf 'index\n' > "$dir_tem/index.html"
-	printf 'other\n' > "$dir_tem/other.html"
-	webera -tC \
-		"template : route : index.html : /
-	     template : route : other.html : /some-other-url/"
-	assert "[[ -f $dir_out/index.html ]]"
-	# T: check the contents are there
-	assert "$(<$dir_out/index.html)"
-
-
-	test_clean
-
-
-	# T: Route to a file, and another
-	mkdir -p -- "$dir_tem"
-	printf '%s' "$templ_simpl" > "$dir_tem/mytemplate.html"
-	webera -tC \
-		"template : route : mytemplate.html : my-file-url.html"
-	assert "[[ -f $dir_out/my-file-url.html]]"
-	ls -l $dir_out/my-file-url.html
-	assert "$(cat -- $dir_out/my-file-url.html)" "$templ_simpl"
-
-	test_clean
-	# T:
-	assert "[[ -f out/indsex.html ]]"
-
-	# T:
-	#assert "[[ -f out/subdir/index.html ]]"
-
-	#printf '%s\n' "$" > 'tem/index.html'
-
-
-} #::suite()
+} # ::render-template()
 
 
 [[ "$0" == "${BASH_SOURCE[0]}" ]] && test::init "$@"
