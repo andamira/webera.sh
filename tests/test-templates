@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#
+# TODO:
+# - fix removing comment
+# - be able to pass here doc(s) easily to render-template
 
 
 # ::suite
@@ -12,49 +16,52 @@ test::suite() {
 	# ========================
 
 
-	## Config
-
-	local dir_tem_in="$Dir_tests/files/tem-in"   # input templates for render
-	local dir_tem_out="$Dir_tests/files/tem-out" # render output control models
-	#local render_result
-
-	# directory names for running webera during the tests
-	local dir_tem='tem' dir_out='out' #dir_build='build'
-
-
 	test_h2 "webera::render-template"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	# T: simple HTML5. Exact copy expected.
-	result_test="$(test::render-template "$dir_tem_in/00-simple-html5.html")"
-	result_model="$(cat "$dir_tem_out/00-simple-html5.html")"
-	assert_str_equals "$result_test" "$result_model"
+	# T: simple HTML5
+	test::render-template "00-simple-html5.html"
 
-	# T: nesting. Exact copy expected.
-	result_test="$(test::render-template "$dir_tem_in/00-simple-html5.html")"
-	result_model="$(cat "$dir_tem_out/00-simple-html5.html")"
+	# T: comments
+	# Directive <!-- // -->
+	test::render-template "01-comments.html"
 
+	# T: basic nesting
+	# Directive <!-- %include -->
+	test::render-template "02-include-basic.html"
 
+	# TODO T: nesting limits
+	# Directive <!-- %include -->
+	# ...
 
-	# DEBUG_TEMP resources
-	#echo "»»» res:$result_test"; echo "-----"; echo "mod:$result_model"; exit # DEBUG_TEMP
+	# TODO T: set variables
+	# Directives: <!-- %set --> <!-- @var -->
+	# ...
+
+	# TODO T: command
+	# Directive <!-- %cmd -->
+	# ...
+
+	# TODO T: set command
+	# Directives: <!-- %setcmd --> <!-- @var -->
+	# ...
 
 
 
 	test_h2 "Routing"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	# T: Just the index and some other
-	mkdir -p -- "$dir_tem"
-	printf 'index\n' > "$dir_tem/index.html"
-	printf 'other\n' > "$dir_tem/other.html"
-	webera -tC \
-		"template : route : index.html : /
-	     template : route : other.html : /some-other-url/"
-	assert "[[ -f $dir_out/index.html ]]"
-
-	# T: check the contents are there
-	assert "$(<$dir_out/index.html)"
+	# # T: Just the index and some other
+	# mkdir -p -- "$dir_tem"
+	# printf 'index\n' > "$dir_tem/index.html"
+	# printf 'other\n' > "$dir_tem/other.html"
+	# webera -tC \
+	# 	"template : route : index.html : /
+	#      template : route : other.html : /some-other-url/"
+	# assert "[[ -f $dir_out/index.html ]]"
+    #
+	# # T: check the contents are there
+	# assert "$(<"$dir_out/index.html")"
 
 
 	test_clean
@@ -72,7 +79,7 @@ test::suite() {
 	test_clean
 
 	# T:
-	assert "[[ -f out/indsex.html ]]"
+	#assert "[[ -f out/index.html ]]"
 
 
 
@@ -84,6 +91,7 @@ test::suite() {
 #
 # > $1 : when equals "run-all-tests", common test data cleanup wont happen here
 #
+# shellcheck disable=SC2154
 test::init() {
 
 	# Change to the directory where this script is located
@@ -91,10 +99,16 @@ test::init() {
 		cd -- "${BASH_SOURCE%/*}" || exit 1
 	fi
 
-	local Dir_tests; Dir_tests="$(pwd)"
-
 	# shellcheck disable=SC1091
 	source ./helper &>/dev/null
+
+	## Config
+
+	local dir_tem_in="$WEBERA_DIR_TESTS/files/tem-in"   # input templates for render
+	local dir_tem_out="$WEBERA_DIR_TESTS/files/tem-out" # render output control models
+
+	# directory names for running webera during the tests
+	#local dir_tem='tem' dir_out='out' #dir_build='build'
 
 	# Run tests
 	test_setup
@@ -111,22 +125,66 @@ test::init() {
 
 # ::render-template
 #
-#   A wrapper for webera::render-template.
+#   A wrapper for testing webera::render-template.
 #
-# > $1 : template file
+# > $1 : the template file to render
+# > $2 : (optional) the template model
+# x  1 : couldn't change directory
 #
 # shellcheck disable=SC2034
+# shellcheck disable=SC2181
 test::render-template() {
 
-	# global variables needed for the wrapped function and its childs
-	local Opt_nesting_max=8
-	local -r __Ws="[[:space:]]" # whitespace
-	# local -r __Sed_trim_ws="s/^$__Ws*//;s/$__Ws*$//"
-	# local -r __Sed_del_comments="/^$__Ws*#.*/d" # starting in #
-	# local -r __Sed_del_empty_lines="/^$__Ws*$/d"
-	# local -r __Sed_join_split_lines=':x; /\\$/ {N; s/\\\n//; tx}' # ending in \
+	local template_file="$1"  # The filename for the template to render
+	local model_file="$2"     # The optional filename of the model to compare
 
-	webera::render-template "$1"
+	local model_content       # The content of $model_file
+	local template_rendered   # The rendering of $template_file
+
+	local __Ws="[[:space:]]"
+	local Opt_nesting_max=8
+	local Opt_dir_templates=""
+	#local Opt_dir_templates="$dir_tem_in"
+
+	template_rendered="$(webera::render-template "$dir_tem_in/$template_file")"
+
+	# if a template model file is not provided
+	if [[ -z $model_file ]]; then
+		# try with the same file name as the template to render
+		if [[ -f $dir_tem_out/$template_file ]]; then
+			model_content="$(cat -- "$dir_tem_out/$template_file")"
+		else
+			printf "\nERROR: no template model file could be found.\n"
+			exit 1
+		fi
+	else
+		# if it is provided, check that the file actually exists
+		if [[ -f "$dir_tem_out/$model_file" ]]; then
+			model_content="$(cat -- "$dir_tem_out/$model_file")"
+		else
+			printf "\nERROR: requested template model file not found (%s).\n" \
+				"$dir_tem_out/$template_file"
+			exit 1
+		fi
+	fi
+	assert_str_equals "$template_rendered" "$model_content"
+
+	# Show a diff in case they are not equal
+	if [[ $? -ne 0 ]]; then
+		local str_diff delim=$'\001'
+		str_diff+="\n\n-------------------------------------------------------\n"
+		str_diff+="template='tem-in/$template_file'\n"
+		str_diff+="   model='tem-out/$model_file'\n"
+		str_diff+="-------------------------------------------------------\n"
+		str_diff+="$(
+			diff --unified --text --suppress-common-lines \
+				<(echo -e "$template_rendered") <(echo -e "$model_content")
+		)\n"
+		str_diff+="-------------------------------------------------------\n"
+
+		# shellcheck disable=SC2059
+		printf "$str_diff" | sed "s$delim^$delim    $delim"
+	fi
 
 } # ::render-template()
 

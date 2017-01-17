@@ -26,28 +26,28 @@ test::suite() {
 
 	# T: No spaces
 	printf "config:DIR_TEMPLATES:syn_nospaces" > .weberarc
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "syn_nospaces"
 
 	# T: Spaces
 	printf "config : DIR_TEMPLATES : syn_spaces\n" > .weberarc
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "syn_spaces"
 
 	# T: Tabs
 	printf "config\t:\tDIR_TEMPLATES\t:\tsyn_tabs\n" > .weberarc
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "syn_tabs"
 
 	# T: Spaces, tabs, trailing and leading whitespace
 	printf "  \t config\t\t: DIR_TEMPLATES   :\tsyn_whitespace\t\n" > .weberarc
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "syn_whitespace"
 
 	# T: # Line splitting
 	printf "config : DIR_TEMPLATES : \
 		syn_linesplit\n" > .weberarc
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "syn_linesplit"
 
 
@@ -67,19 +67,19 @@ test::suite() {
 	EOF
 
 	# T:
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "var_public"
 
 	# T:
-	newval=$(get-webera-var "$(webera -_)" 'file' '_FILE_CONFIG')
+	newval=$(get-webera-option "$(webera -_)" 'file' '_FILE_CONFIG')
 	assert "echo $newval"
 
 	# T:
-	newval=$(get-webera-var "$(webera -_)" 'file' '_PRELOG')
+	newval=$(get-webera-option "$(webera -_)" 'file' '_PRELOG')
 	assert "echo $newval"
 
 	# T:
-	newval=$(get-webera-var "$(webera -_)" 'file' '__OTHER')
+	newval=$(get-webera-option "$(webera -_)" 'file' '__OTHER')
 	assert "echo $newval"
 
 
@@ -131,7 +131,7 @@ test::suite() {
 	# T: write
 	assert "cat .weberarc" "config : DIR_TEMPLATES : test_tem"
 	# T: read
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "test_tem"
 
 
@@ -145,7 +145,7 @@ test::suite() {
 	assert "cat .weberarc" "config : DIR_RESOURCES : test_res"
 
 	# T: read
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_RESOURCES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_RESOURCES')
 	assert "echo $newval" "test_res"
 
 
@@ -159,7 +159,7 @@ test::suite() {
 	assert "cat .weberarc" "config : DIR_OUTPUT : test_out"
 
 	# T: read
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_OUTPUT')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_OUTPUT')
 	assert "echo $newval" "test_out"
 
 
@@ -173,7 +173,7 @@ test::suite() {
 	assert "cat .weberarc" "config : DIR_BUILD : test_build"
 
 	# T: read
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_BUILD')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_BUILD')
 	assert "echo $newval" "test_build"
 
 
@@ -194,19 +194,19 @@ config : DIR_RESOURCES : r2
 config : DIR_TEMPLATES : t1"
 
 	# T: read 1
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_TEMPLATES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_TEMPLATES')
 	assert "echo $newval" "t1"
 
 	# T: read 2
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_RESOURCES')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_RESOURCES')
 	assert "echo $newval" "r2"
 
 	# T: read 3
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_OUTPUT')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_OUTPUT')
 	assert "echo $newval" "o3"
 
 	# T: read 4
-	newval=$(get-webera-var "$(webera -_)" 'file' 'DIR_BUILD')
+	newval=$(get-webera-option "$(webera -_)" 'file' 'DIR_BUILD')
 	assert "echo $newval" "b4"
 
 } #::suite()

@@ -8,7 +8,7 @@
 test::suite() {
 
 	# shellcheck disable=SC2154
-	local log_file="$Dir_workdir/webera_test_logfile"
+	local log_file="$WEBERA_DIR_WORKDIR/webera_test_logfile"
 
 
 	test_h1 "Logging"

@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
+#
+# This script generates the examples from ../examples/ to ../docs/
+#
 
 
 #-------------------------------------------------------------------------------
 # ::main
 #
-webera::generate-examples::main() {
+# > $@ : all the arguments passed to the script
+#
+generate::main() {
 
 	local Opt_log_level=0
 	local Opt_log_clear=''
@@ -16,9 +21,9 @@ webera::generate-examples::main() {
 	local Log_file="$Dir/examples.log"
 	local Output="$Dir/../docs"
 
-	webera::generate-examples::parse-arguments "$@"
+	generate::parse-arguments "$@"
 
-	webera::generate-examples::generate-all
+	generate::generate-all
 
 	printf "\nDone.\n"
 
@@ -26,33 +31,39 @@ webera::generate-examples::main() {
 		$Webera -wO "$Output"
 	fi
 
-} #::main()
+} # ::main
 
 
 #-------------------------------------------------------------------------------
 # ::display-usage
 #
-webera::generate-examples::display-usage() {
+#   Displays usage info and exits.
+#
+generate::display-usage() {
 
-	cat <<- ENDwebera::generate-examples::display-usage
+	cat <<- ENDUSAGE
 
 	Generates every example.
 
-	webera::generate-examples::display-usage: ./generate-examples [optionS]
+	generate::display-usage: ./generate-examples [optionS]
 
 	  -w              preview in web browser
 	  -L <NUMBER>     log level [0=none|1|2|3] ($Opt_log_level)
 	  -c              switch clearing the log file (clear=$Opt_log_clear)
-	ENDwebera::generate-examples::display-usage
+	ENDUSAGE
 	exit 1
 
-} #::display-usage()
+} # ::display-usage
 
 
 #-------------------------------------------------------------------------------
 # ::parse-arguments
 #
-webera::generate-examples::parse-arguments() {
+#   Parses the script arguments.
+#
+# > $@ : all the arguments passed to the script
+#
+generate::parse-arguments() {
 	local OPTIND option
 	while getopts 'wL:ch' option; do
 
@@ -60,17 +71,20 @@ webera::generate-examples::parse-arguments() {
 			w) Opt_preview_in_web_browser=true ;;
 			L) Opt_log_level="$OPTARG" ;;
 			c) Opt_log_clear=true ;;
-			h|*) webera::generate-examples::display-usage; exit ;;
+			h|*) generate::display-usage; exit ;;
 		esac
 	done
 
-} #::parse-arguments()
+} # ::parse-arguments
 
 
 #-------------------------------------------------------------------------------
 # ::generate-all
 #
-webera::generate-examples::generate-all() {
+#   Generates all the examples.
+#   They must be under ../examples/ and start with an alphanumeric character.
+#
+generate::generate-all() {
 
 	cd "$Dir" || exit
 
@@ -93,7 +107,7 @@ webera::generate-examples::generate-all() {
 		cd "$Dir" || exit
 	done
 
-} #::generate-all()
+} # ::generate-all
 
 
-[[ "$0" == "${BASH_SOURCE[0]}" ]] && webera::generate-examples::main "$@"
+[[ "$0" == "${BASH_SOURCE[0]}" ]] && generate::main "$@"

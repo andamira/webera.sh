@@ -16,7 +16,7 @@ helper::main() {
 	# Parse the arguments if the script has not been sourced
 	[[ "$0" == "${BASH_SOURCE[0]}" ]] && helper::parse-arguments "$@"
 
-} #::main()
+} # ::main
 
 
 #-------------------------------------------------------------------------------
@@ -27,17 +27,14 @@ helper::main() {
 # shellcheck disable=SC1090
 helper::init-common() {
 
-	# Binaries found for Unix commands employed
-	declare -g __SED __AWK __GREP __MKTEMP
+	export WEBERA_DIR_TESTS
+	WEBERA_DIR_TESTS="$( cd -- "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-	Dir_tests="$( cd -- "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-	Dir_webera="$Dir_tests/.."
-	Template_temp_name='webera-test-XXXXXXXXX'
+	export WEBERA_DIR="$WEBERA_DIR_TESTS/.."
 
-	# Imports
-	if [[ ! -s "$Dir_tests/aserta" ]]; then
-		#curl -sOL git.io/aserta.stable -o "$Dir_tests/aserta"
-		curl -sOL git.io/aserta -o "$Dir_tests/aserta"
+	if [[ ! -s "$WEBERA_DIR_TESTS/aserta" ]]; then
+		#curl -sOL git.io/aserta.stable -o "$WEBERA_DIR_TESTS/aserta"
+		curl -sOL git.io/aserta -o "$WEBERA_DIR_TESTS/aserta"
 
 		local ret="$?"
 		if [[ $ret -ne 0 ]]; then
@@ -45,40 +42,41 @@ helper::init-common() {
 			exit 1
 		fi
 	fi
-	source "$Dir_tests/aserta" -v
-	source "$Dir_webera/webera"
+	source "$WEBERA_DIR_TESTS/aserta" -v
+	source "$WEBERA_DIR/webera"
 
 	helper::check-compatibility
 
 
-	# Exports
-	if [[ ! -d $Dir_workdir ]]; then
+	export WEBERA_TEMP_PATTERN='webera-test-XXXXXXXXX'
+
+	if [[ ! -d $WEBERA_DIR_WORKDIR ]]; then
 		# if possible, use a previously created workdir
 		# if not, create a new one and export it again
-		export Dir_workdir
-		Dir_workdir="$($__MKTEMP -d "$Mktemp_args" "$Template_temp_name")"
+		export WEBERA_DIR_WORKDIR
+		WEBERA_DIR_WORKDIR="$($__MKTEMP -d "$Mktemp_args" "$WEBERA_TEMP_PATTERN")"
 	fi
-	if [[ -z "$TOTAL_TEST_NUM" ]]; then
-		export TOTAL_TEST_NUM
-		TOTAL_TEST_NUM="$($__MKTEMP "$Mktemp_args" "$Template_temp_name")"
-		printf '0' > "$TOTAL_TEST_NUM"
+	if [[ -z "$WEBERA_TEST_TOTAL_NUM" ]]; then
+		export WEBERA_TEST_TOTAL_NUM
+		WEBERA_TEST_TOTAL_NUM="$($__MKTEMP "$Mktemp_args" "$WEBERA_TEMP_PATTERN")"
+		printf '0' > "$WEBERA_TEST_TOTAL_NUM"
 	fi
-	if [[ -z "$TOTAL_TEST_TIME" ]]; then
-		export TOTAL_TEST_TIME
-		TOTAL_TEST_TIME="$($__MKTEMP "$Mktemp_args" "$Template_temp_name")"
-		printf '0' > "$TOTAL_TEST_TIME"
+	if [[ -z "$WEBERA_TEST_TOTAL_TIME" ]]; then
+		export WEBERA_TEST_TOTAL_TIME
+		WEBERA_TEST_TOTAL_TIME="$($__MKTEMP "$Mktemp_args" "$WEBERA_TEMP_PATTERN")"
+		printf '0' > "$WEBERA_TEST_TOTAL_TIME"
 	fi
-	if [[ -z "$TOTAL_TEST_ERROR_NUM" ]]; then
-		export TOTAL_TEST_ERROR_NUM
-		TOTAL_TEST_ERROR_NUM="$($__MKTEMP "$Mktemp_args" "$Template_temp_name")"
-		printf '0' > "$TOTAL_TEST_ERROR_NUM"
+	if [[ -z "$WEBERA_TEST_TOTAL_ERROR_NUM" ]]; then
+		export WEBERA_TEST_TOTAL_ERROR_NUM
+		WEBERA_TEST_TOTAL_ERROR_NUM="$($__MKTEMP "$Mktemp_args" "$WEBERA_TEMP_PATTERN")"
+		printf '0' > "$WEBERA_TEST_TOTAL_ERROR_NUM"
 	fi
 
 	# set up exit traps
 	trap helper::cleanup-exit EXIT
 	trap helper::cleanup-signal SIGHUP SIGINT SIGTERM
 
-} #::init-common()
+} # ::init-common
 
 
 #-------------------------------------------------------------------------------
@@ -94,14 +92,15 @@ Usage: ./helper [option]
 Runs all the tests for webera.
 This file also has to be imported by each test file.
 
-  -a, --run-all              run all the tests.
-  -h, --help                 display this help and exit.
+  -a, --run-all             run all the tests.
+  -r, --render <TEMPLATE>   render TEMPLATE to stdin
+  -h, --help                display this help and exit.
 	ENDUSAGE
 	exit 0
 
 	#TODO: -i, --install=<DEP>        download and install a supported dependency:
 
-} #::display-usage()
+} # ::display-usage
 
 
 #-------------------------------------------------------------------------------
@@ -118,7 +117,7 @@ helper::parse-arguments() {
 
 	local OPTIND option
 
-	while getopts ':ahi:-:' option; do
+	while getopts ':ahi:r:-:' option; do
 
 		case "$option" in
 
@@ -132,11 +131,17 @@ helper::parse-arguments() {
 					install=*)
 						helper::install-dependency "${OPTARG#*=}"
 						;;
+
+					render=*)
+						helper::render-template "${OPTARG#*=}"
+						;;
 				esac ;;
 
 			# short options
 			a) helper::run-all-tests ;;
 			i) helper::install-dependency "$OPTARG" ;;
+
+			r) helper::render-template "$OPTARG" ;;
 
 			h) helper::display-usage ;;
 			*)
@@ -145,7 +150,7 @@ helper::parse-arguments() {
 		esac
 	done
 
-} #::parse-arguments()
+} # ::parse-arguments
 
 
 #-------------------------------------------------------------------------------
@@ -162,20 +167,20 @@ helper::run-all-tests() {
 	test_file_list+=('test-arguments')
 	test_file_list+=('test-config')
 	test_file_list+=('test-log')
-	#test_file_list+=('test-templates')
+	test_file_list+=('test-templates')
 	#test_file_list+=('test-resources')
 
 	printf '%s\n' "Running tests from ${#test_file_list[@]} test files. . ."
 
 	for test_file in "${test_file_list[@]}"; do
-		bash "$Dir_tests/$test_file" RUN_ALL_TESTS
+		bash "$WEBERA_DIR_TESTS/$test_file" RUN_ALL_TESTS
 	done
 
 	test_final_summary
 
 	[[ "$TESTS_FAILED" -eq 0 ]]
 
-} #::run-all-tests()
+} # ::run-all-tests
 
 
 #-------------------------------------------------------------------------------
@@ -191,7 +196,7 @@ helper::cleanup-exit() {
 		test_teardown
 	fi
 
-} #::cleanup-exit()
+} # ::cleanup-exit
 
 
 #-------------------------------------------------------------------------------
@@ -201,9 +206,7 @@ helper::cleanup-exit() {
 #
 # x 125
 #
-helper::cleanup-signal() {
-	test_final_cleanup; exit 125
-}
+helper::cleanup-signal() { test_final_cleanup; exit 125; }
 
 
 #-------------------------------------------------------------------------------
@@ -221,7 +224,7 @@ helper::install-dependency() {
 			exit 1 ;;
 	esac
 
-} #::install-dependency()
+} # ::install-dependency
 
 
 #-------------------------------------------------------------------------------
@@ -229,14 +232,15 @@ helper::install-dependency() {
 #
 #   ...
 #
+# shellcheck disable=SC2155
 helper::check-compatibility() {
 
 	# prefer the GNU version of the Unix commands used, specially in Mac OS X
 	# use webera::find-gnu-cmd function from webera
-	__SED="$(webera::find-gnu-cmd sed)"
-	__AWK="$(webera::find-gnu-cmd awk)"
-	__GREP="$(webera::find-gnu-cmd grep)"
-	__MKTEMP="$(webera::find-gnu-cmd mktemp)"
+	export __SED="$(webera::find-gnu-cmd sed)"
+	export __AWK="$(webera::find-gnu-cmd awk)"
+	export __GREP="$(webera::find-gnu-cmd grep)"
+	export __MKTEMP="$(webera::find-gnu-cmd mktemp)"
 
 	# fix mktemp compatibility [INC04]
 	if [[ "$($__MKTEMP -qu --tmpdir TXXX >/dev/null 2>&1; printf '%s' "$?")" -eq 0 ]]; then
@@ -245,7 +249,7 @@ helper::check-compatibility() {
 		Mktemp_args="-t" # obsolete syntax
 	fi
 
-} #::check-compatibility()
+} # ::check-compatibility
 
 
 #-------------------------------------------------------------------------------
@@ -289,24 +293,24 @@ test_h3() {
 #
 test_setup() {
 
-	if [[ -d "$Dir_workdir" ]]; then
-		pushd "$Dir_workdir" >/dev/null 2>&1
+	if [[ -d "$WEBERA_DIR_WORKDIR" ]]; then
+		pushd "$WEBERA_DIR_WORKDIR" >/dev/null 2>&1
 	else
 		printf 'Warning: %s %s.' \
 			"couldn't find working directory" \
-			"'$Dir_workdir'" >&2
+			"'$WEBERA_DIR_WORKDIR'" >&2
 
-		export Dir_workdir
-		Dir_workdir="$($__MKTEMP -d "$Mktemp_args" "$Template_temp_name")"
+		export WEBERA_DIR_WORKDIR
+		WEBERA_DIR_WORKDIR="$($__MKTEMP -d "$Mktemp_args" "$WEBERA_TEMP_PATTERN")"
 
 		printf 'Warning: %s %s.' \
 			"creating a new working directory at" \
-			"'$Dir_workdir'" >&2
+			"'$WEBERA_DIR_WORKDIR'" >&2
 
-		pushd "$Dir_workdir"
+		pushd "$WEBERA_DIR_WORKDIR"
 	fi
 
-} #test_setup()
+} # test_setup
 
 
 #-------------------------------------------------------------------------------
@@ -316,16 +320,16 @@ test_setup() {
 #
 test_teardown() {
 
-	if [[ "$(pwd)" == "$Dir_workdir" ]]; then
+	if [[ "$(pwd)" == "$WEBERA_DIR_WORKDIR" ]]; then
 		popd >/dev/null 2>&1
 	fi
 
-	if [[ -d "$Dir_workdir" ]]; then
+	if [[ -d "$WEBERA_DIR_WORKDIR" ]]; then
 		test_clean
-		rmdir -- "$Dir_workdir"
+		rmdir -- "$WEBERA_DIR_WORKDIR"
 	fi
 
-} # test_teardown()
+} # test_teardown
 
 
 #-------------------------------------------------------------------------------
@@ -335,16 +339,16 @@ test_teardown() {
 #
 test_clean() {
 
-	if [[ -d "$Dir_workdir" ]]; then
-		pushd "$Dir_workdir" >/dev/null 2>&1
+	if [[ -d "$WEBERA_DIR_WORKDIR" ]]; then
+		pushd "$WEBERA_DIR_WORKDIR" >/dev/null 2>&1
 		rm -rf -- .[^.] .??* ./*
 		popd >/dev/null 2>&1
 	else
 		printf '%s\n' \
-			"Warning: couldn't find working directory '$Dir_workdir'" >&2
+			"Warning: couldn't find working directory '$WEBERA_DIR_WORKDIR'" >&2
 	fi
 
-} #test_clean()
+} # test_clean
 
 
 #-------------------------------------------------------------------------------
@@ -396,13 +400,13 @@ test_summary() {
 		printf '  %s\n' "$error_report"
 
 		# Update the number of failed tests
-		if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
+		if [[ -f "$WEBERA_TEST_TOTAL_ERROR_NUM" ]]; then
 			test_err_num="$(printf '%s' "$error_report" | cut -d' ' -f1 )"
-			prev_total_err_num="$(cat -- "$TOTAL_TEST_ERROR_NUM")"
+			prev_total_err_num="$(cat -- "$WEBERA_TEST_TOTAL_ERROR_NUM")"
 			new_total_err_num="$($__AWK \
 				"BEGIN {print $test_err_num+$prev_total_err_num; exit}")"
 
-			printf '%s' "$new_total_err_num" > "$TOTAL_TEST_ERROR_NUM"
+			printf '%s' "$new_total_err_num" > "$WEBERA_TEST_TOTAL_ERROR_NUM"
 			TESTS_FAILED="$new_total_err_num"
 		fi
 
@@ -411,26 +415,26 @@ test_summary() {
 	fi
 
 	# Update the number of passed tests
-	if [[ -f "$TOTAL_TEST_NUM" ]]; then
-		prev_total_num="$(cat -- "$TOTAL_TEST_NUM")"
+	if [[ -f "$WEBERA_TEST_TOTAL_NUM" ]]; then
+		prev_total_num="$(cat -- "$WEBERA_TEST_TOTAL_NUM")"
 		new_total_num="$($__AWK \
 			"BEGIN {print $test_num+$prev_total_num; exit}")"
 
-		printf '%s' "$new_total_num" > "$TOTAL_TEST_NUM"
+		printf '%s' "$new_total_num" > "$WEBERA_TEST_TOTAL_NUM"
 	fi
 
 	# Total time spent
-	if [[ -z "$INVARIANT"  && -f "$TOTAL_TEST_TIME" ]]; then
+	if [[ -z "$INVARIANT"  && -f "$WEBERA_TEST_TOTAL_TIME" ]]; then
 		test_time="$(printf '%s' "$test_report" | \
 			$__GREP -o '[0-9]\+.[0-9]\+s.' | cut -d's' -f1 )"
-		prev_total_time="$(cat -- "$TOTAL_TEST_TIME")"
+		prev_total_time="$(cat -- "$WEBERA_TEST_TOTAL_TIME")"
 		new_total_time="$($__AWK "BEGIN {print $test_time+$prev_total_time; exit}")"
-		printf '%s' "$new_total_time" > "$TOTAL_TEST_TIME"
+		printf '%s' "$new_total_time" > "$WEBERA_TEST_TOTAL_TIME"
 	fi
 
 	[[ "$TESTS_FAILED" -eq 0 ]]
 
-} #test_summary()
+} # test_summary
 
 
 #-------------------------------------------------------------------------------
@@ -443,8 +447,8 @@ test_final_summary() {
 	local -i testTotal
 	local -i testFailed
 
-	testTotal="$(cat -- "$TOTAL_TEST_NUM")"
-	testFailed="$(cat -- "$TOTAL_TEST_ERROR_NUM")"
+	testTotal="$(cat -- "$WEBERA_TEST_TOTAL_NUM")"
+	testFailed="$(cat -- "$WEBERA_TEST_TOTAL_ERROR_NUM")"
 	local -i testPassed="$((testTotal-testFailed))"
 
 	printf '\n\n%s\n%s\n' "SUMMARY:" "$(test_separator)"
@@ -455,29 +459,29 @@ test_final_summary() {
 
 	if [[ -z "$INVARIANT" ]]; then
 		LC_NUMERIC=C LC_COLLATE=C
-		printf '%s %16.2fs\n' "Time spent:" "$(cat -- "$TOTAL_TEST_TIME")"
+		printf '%s %16.2fs\n' "Time spent:" "$(cat -- "$WEBERA_TEST_TOTAL_TIME")"
 	fi
 
 	printf '%s\n' "$(test_separator)"
 
 	test_final_cleanup
 
-} #test_final_summary()
+} # test_final_summary
 
 
 test_final_cleanup() {
 
-	[[ -f "$TOTAL_TEST_NUM" ]] && rm -f -- "$TOTAL_TEST_NUM"
-	[[ -f "$TOTAL_TEST_TIME" ]] && rm -f -- "$TOTAL_TEST_TIME"
+	[[ -f "$WEBERA_TEST_TOTAL_NUM" ]] && rm -f -- "$WEBERA_TEST_TOTAL_NUM"
+	[[ -f "$WEBERA_TEST_TOTAL_TIME" ]] && rm -f -- "$TOTAL_TEST_TIME"
 
-	if [[ -f "$TOTAL_TEST_ERROR_NUM" ]]; then
-		TESTS_FAILED="$(cat -- "$TOTAL_TEST_ERROR_NUM")"
-		rm -f -- "$TOTAL_TEST_ERROR_NUM"
+	if [[ -f "$WEBERA_TEST_TOTAL_ERROR_NUM" ]]; then
+		TESTS_FAILED="$(cat -- "$WEBERA_TEST_TOTAL_ERROR_NUM")"
+		rm -f -- "$WEBERA_TEST_TOTAL_ERROR_NUM"
 	fi
 
 	test_teardown
 
-} #test_final_cleanup()
+} # test_final_cleanup
 
 
 #-------------------------------------------------------------------------------
@@ -485,38 +489,61 @@ test_final_cleanup() {
 #
 #   webera binary wrapper.
 #
-webera() { "$Dir_webera/webera" "$@" 2>/dev/null; }
+webera() { "$WEBERA_DIR/webera" "$@" 2>/dev/null; }
 
 
 #-------------------------------------------------------------------------------
-# get-webera-var
+# get-webera-option
 #
-#   Parse a list of variables in debug info format
-#   and return the corresponding value.
+#   Parse a list of options and return the corresponding value. Correct format:
 #
-#   [$varType]::$varName=$varValue
+#     [$option_type]::$option_name=$option_value
 #
-get-webera-var() {
+get-webera-option() {
 
-	local webera_vars="$1"
-	local varType="$2"
-	local varName="$3"
+	local webera_options="$1"
+	local option_type="$2"
+	local option_name="$3"
 
 	shopt -s extglob
-	local varTypesAllowed='@(vdef|file|args|strn)'
+	local option_typesAllowed='@(vdef|file|args|strn)'
 
-	case "$varType" in
-		$varTypesAllowed) ;;
-		*) printf '%s' "ERROR: Unknown var type '$varType'." 1>&2 ;;
+	case "$option_type" in
+		$option_typesAllowed) ;;
+		*) printf '%s' "ERROR: Unknown var type '$option_type'." 1>&2 ;;
 	esac
 	shopt -u extglob
 
-	printf '%s' "$webera_vars" \
-		| $__GREP "^\[$varType\]:.*:$varName=" \
+	printf '%s' "$webera_options" \
+		| $__GREP "^\[$option_type\]:.*:$option_name=" \
 		| cut -d':' -f3 \
 		| cut -d'=' -f2
 
-} #get-webera-var()
+} # get-webera-option
+
+
+#-------------------------------------------------------------------------------
+# ::render-template
+#
+#   Renders the requested template file to stdin.
+#
+# > $1 : the template file to render
+#
+# shellcheck disable=SC2034
+helper::render-template() {
+
+	local template_file="$1" #target_file="$2"
+
+	local __Ws="[[:space:]]"
+	local Opt_nesting_max=8
+	local Opt_dir_templates="."
+
+	webera::render-template "$template_file"
+	#printf '%s\n' "$template_rendered" > "$target_file"
+
+	test_final_cleanup
+
+} # ::render-template
 
 
 helper::main "$@"

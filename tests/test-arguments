@@ -52,44 +52,44 @@ test::suite() {
 
 
 	#T: -t
-	newval=$(get-webera-var "$(webera -_t)" \
+	newval=$(get-webera-option "$(webera -_t)" \
 		'args' '_DO_PROCESS_TEMPLATES')
 	assert_str_equals "$newval" "true"
 
 	#T: --process-templates
-	newval=$(get-webera-var "$(webera -_ --process-templates)" \
+	newval=$(get-webera-option "$(webera -_ --process-templates)" \
 		'args' '_DO_PROCESS_TEMPLATES')
 	assert_str_equals "$newval" "true"
 
 	#T: -r
-	newval=$(get-webera-var "$(webera -_r)" \
+	newval=$(get-webera-option "$(webera -_r)" \
 		'args' '_DO_PROCESS_RESOURCES')
 	assert_str_equals "$newval" "true"
 
 	# T: --process-resources
-	newval=$(get-webera-var "$(webera -_ --process-resources)" \
+	newval=$(get-webera-option "$(webera -_ --process-resources)" \
 		'args' '_DO_PROCESS_RESOURCES')
 	assert_str_equals "$newval" "true"
 
 
 	# T: -w
-	newval=$(get-webera-var "$(webera -_w)" \
+	newval=$(get-webera-option "$(webera -_w)" \
 		'args' '_DO_PREVIEW_IN_BROWSER')
 	assert_str_equals "$newval" "true"
 
 	# T: --preview
-	newval=$(get-webera-var "$(webera -_ --preview)" \
+	newval=$(get-webera-option "$(webera -_ --preview)" \
 		'args' '_DO_PREVIEW_IN_BROWSER')
 	assert_str_equals "$newval" "true"
 
 
 	# T: -n
-	newval=$(get-webera-var "$(webera -_n)" \
+	newval=$(get-webera-option "$(webera -_n)" \
 		'args' '_DO_GENERATE_CONFIG_FILE')
 	assert_str_equals "$newval" "true"
 
 	# T: --new-config
-	newval=$(get-webera-var "$(webera -_ --new-config)" \
+	newval=$(get-webera-option "$(webera -_ --new-config)" \
 		'args' '_DO_GENERATE_CONFIG_FILE')
 	assert_str_equals "$newval" "true"
 
@@ -101,16 +101,16 @@ test::suite() {
 
 
 	# T: configuration string
-	default=$(get-webera-var "$defaults" 'vdef' '_CONFIG_STRING')
+	default=$(get-webera-option "$defaults" 'vdef' '_CONFIG_STRING')
 	assert_str_equals "$default" ''
 
 	# T: -C
-	newval=$(get-webera-var "$(webera -_C "config:DIR_TEMPLATES:tem5")" \
+	newval=$(get-webera-option "$(webera -_C "config:DIR_TEMPLATES:tem5")" \
 		'strn' 'DIR_TEMPLATES')
 	assert_str_equals "$newval" "tem5"
 
 	# T: --config
-	newval=$(get-webera-var "$(webera -_ --config="config:DIR_RESOURCES:res7")" \
+	newval=$(get-webera-option "$(webera -_ --config="config:DIR_RESOURCES:res7")" \
 		'strn' 'DIR_RESOURCES')
 	assert_str_equals "$newval" "res7"
 
@@ -122,16 +122,16 @@ test::suite() {
 
 
 	# T: default configuration file
-	default=$(get-webera-var "$defaults" 'vdef' '_CONFIG_FILE')
+	default=$(get-webera-option "$defaults" 'vdef' '_CONFIG_FILE')
 	assert_str_equals "$default" ".weberarc"
 
 	# T: -F
-	newval=$(get-webera-var "$(webera -_F test_weberarc)" \
+	newval=$(get-webera-option "$(webera -_F test_weberarc)" \
 		'args' '_CONFIG_FILE')
 	assert_str_equals "$newval" "test_weberarc"
 
 	# T: --file-config
-	newval=$(get-webera-var "$(webera -_ --file-config=test_weberarc2)" \
+	newval=$(get-webera-option "$(webera -_ --file-config=test_weberarc2)" \
 		'args' '_CONFIG_FILE')
 	assert_str_equals "$newval" "test_weberarc2"
 
@@ -143,61 +143,61 @@ test::suite() {
 
 
 	# T: default templates directory
-	default=$(get-webera-var "$defaults" 'vdef' 'DIR_TEMPLATES')
+	default=$(get-webera-option "$defaults" 'vdef' 'DIR_TEMPLATES')
 	assert_str_equals "$default" "tem"
 
 	# T: -T
-	newval=$(get-webera-var "$(webera -_T test_tem)" \
+	newval=$(get-webera-option "$(webera -_T test_tem)" \
 		'args' 'DIR_TEMPLATES')
 	assert_str_equals "$newval" "test_tem"
 
 	# T: --dir-templates
-	newval=$(get-webera-var "$(webera -_ --dir-templates=test_tem2)" \
+	newval=$(get-webera-option "$(webera -_ --dir-templates=test_tem2)" \
 		'args' 'DIR_TEMPLATES')
 	assert_str_equals "$newval" "test_tem2"
 
 
 	# T: default resources directory
-	default=$(get-webera-var "$defaults" 'vdef' 'DIR_RESOURCES')
+	default=$(get-webera-option "$defaults" 'vdef' 'DIR_RESOURCES')
 	assert_str_equals "$default" "res"
 
 	# T: -R
-	newval=$(get-webera-var "$(webera -_R test_res)" \
+	newval=$(get-webera-option "$(webera -_R test_res)" \
 		'args' 'DIR_RESOURCES')
 	assert_str_equals "$newval" "test_res"
 
 	# T: --dir-resources
-	newval=$(get-webera-var "$(webera -_ --dir-resources=test_res2)" \
+	newval=$(get-webera-option "$(webera -_ --dir-resources=test_res2)" \
 		'args' 'DIR_RESOURCES')
 	assert_str_equals "$newval" "test_res2"
 
 
 	# T: default output directory
-	default=$(get-webera-var "$defaults" 'vdef' 'DIR_OUTPUT')
+	default=$(get-webera-option "$defaults" 'vdef' 'DIR_OUTPUT')
 	assert_str_equals "$default" "out"
 
 	# T: -O
-	newval=$(get-webera-var "$(webera -_O test_out)" \
+	newval=$(get-webera-option "$(webera -_O test_out)" \
 		'args' 'DIR_OUTPUT')
 	assert_str_equals "$newval" "test_out"
 
 	# T: --dir-output
-	newval=$(get-webera-var "$(webera -_ --dir-output=test_out2)" \
+	newval=$(get-webera-option "$(webera -_ --dir-output=test_out2)" \
 		'args' 'DIR_OUTPUT')
 	assert_str_equals "$newval" "test_out2"
 
 
 	# T: default build directory
-	default=$(get-webera-var "$defaults" 'vdef' 'DIR_BUILD')
+	default=$(get-webera-option "$defaults" 'vdef' 'DIR_BUILD')
 	assert_str_equals "$default" "build"
 
 	# T: -B
-	newval=$(get-webera-var "$(webera -_B test_build)" \
+	newval=$(get-webera-option "$(webera -_B test_build)" \
 		'args' 'DIR_BUILD')
 	assert_str_equals "$newval" "test_build"
 
 	# T: --dir-build
-	newval=$(get-webera-var "$(webera -_ --dir-build=test_build2)" \
+	newval=$(get-webera-option "$(webera -_ --dir-build=test_build2)" \
 		'args' 'DIR_BUILD')
 	assert_str_equals "$newval" "test_build2"
 
@@ -209,33 +209,33 @@ test::suite() {
 
 
 	# T: by default delete the output directory
-	default=$(get-webera-var "$defaults" \
+	default=$(get-webera-option "$defaults" \
 		'vdef' '_DO_DELETE_DIR_OUTPUT')
 	assert_str_equals "$default" "true"
 
 	# T: -d
-	newval=$(get-webera-var "$(webera -_d)" \
+	newval=$(get-webera-option "$(webera -_d)" \
 		'args' '_DO_DELETE_DIR_OUTPUT')
 	assert_str_equals "$newval" "false"
 
 	# T: --dont-delete-output
-	newval=$(get-webera-var "$(webera -_ --dont-delete-output)" \
+	newval=$(get-webera-option "$(webera -_ --dont-delete-output)" \
 		'args' '_DO_DELETE_DIR_OUTPUT')
 	assert_str_equals "$newval" "false"
 
 
 	# T: by default don't clear the log file
-	default=$(get-webera-var "$defaults" \
+	default=$(get-webera-option "$defaults" \
 		'vdef' '_DO_CLEAR_LOG')
 	assert_str_equals "$default" "false"
 
 	# T: -c
-	newval=$(get-webera-var "$(webera -_c)" \
+	newval=$(get-webera-option "$(webera -_c)" \
 		'args' '_DO_CLEAR_LOG')
 	assert_str_equals "$newval" "true"
 
 	# T: --clear-log
-	newval=$(get-webera-var "$(webera -_ --clear-log)" \
+	newval=$(get-webera-option "$(webera -_ --clear-log)" \
 		'args' '_DO_CLEAR_LOG')
 	assert_str_equals "$newval" "true"
 
@@ -247,31 +247,31 @@ test::suite() {
 
 
 	# T: default log level
-	default=$(get-webera-var "$defaults" 'vdef' 'LOG_LEVEL')
+	default=$(get-webera-option "$defaults" 'vdef' 'LOG_LEVEL')
 	assert_str_equals "$default" "0"
 
 	# T: -L
-	newval=$(get-webera-var "$(webera -_L3)" \
+	newval=$(get-webera-option "$(webera -_L3)" \
 		'args' 'LOG_LEVEL')
 	assert_str_equals "$newval" "3"
 
 	# T: --log-level
-	newval=$(get-webera-var "$(webera -_ --log-level=3)" \
+	newval=$(get-webera-option "$(webera -_ --log-level=3)" \
 		'args' 'LOG_LEVEL')
 	assert_str_equals "$newval" "3"
 
 
 	# T: default log file
-	default=$(get-webera-var "$defaults" 'vdef' 'LOG_FILE')
+	default=$(get-webera-option "$defaults" 'vdef' 'LOG_FILE')
 	assert_str_equals "$default" "log.txt"
 
 	# T: -G
-	newval=$(get-webera-var "$(webera -_G test_logfile)" \
+	newval=$(get-webera-option "$(webera -_G test_logfile)" \
 		'args' 'LOG_FILE')
 	assert_str_equals "$newval" "test_logfile"
 
 	# T: --log-file
-	newval=$(get-webera-var "$(webera -_ --log-file=test_logfile2)" \
+	newval=$(get-webera-option "$(webera -_ --log-file=test_logfile2)" \
 		'args' 'LOG_FILE')
 	assert_str_equals "$newval" "test_logfile2"
 
@@ -284,61 +284,61 @@ test::suite() {
 
 	# T: default web browser binary
     # SEMIBUG_20161212: this one makes kcov fail
-	default=$(get-webera-var "$defaults" 'vdef' 'WEB_BROWSER')
+	default=$(get-webera-option "$defaults" 'vdef' 'WEB_BROWSER')
 	assert_str_equals "$default" "firefox"
 
 	# T: -W
-	newval=$(get-webera-var "$(webera -_W test_browser)" \
+	newval=$(get-webera-option "$(webera -_W test_browser)" \
 		'args' 'WEB_BROWSER')
 	assert_str_equals "$newval" "test_browser"
 
 	# T: --browser-bin
-	newval=$(get-webera-var "$(webera -_ --browser-bin=test_browser2)" \
+	newval=$(get-webera-option "$(webera -_ --browser-bin=test_browser2)" \
 		'args' 'WEB_BROWSER')
 	assert_str_equals "$newval" "test_browser2"
 
 
 	# T: default server type
-	default=$(get-webera-var "$defaults" 'vdef' 'SERVER_TYPE')
+	default=$(get-webera-option "$defaults" 'vdef' 'SERVER_TYPE')
 	assert_str_equals "$default" "python"
 
 	# T: -S
-	newval=$(get-webera-var "$(webera -_S test_custom)" \
+	newval=$(get-webera-option "$(webera -_S test_custom)" \
 		'args' 'SERVER_TYPE')
 	assert_str_equals "$newval" "test_custom"
 
 	# T: --server-type
-	newval=$(get-webera-var "$(webera -_ --server-type=test_custom2)" \
+	newval=$(get-webera-option "$(webera -_ --server-type=test_custom2)" \
 		'args' 'SERVER_TYPE')
 	assert_str_equals "$newval" "test_custom2"
 
 
 	# T: default host
-	default=$(get-webera-var "$defaults" 'vdef' 'SERVER_HOST')
+	default=$(get-webera-option "$defaults" 'vdef' 'SERVER_HOST')
 	assert_str_equals "$default" "localhost"
 
 	# T: -H
-	newval=$(get-webera-var "$(webera -_H test_host)" \
+	newval=$(get-webera-option "$(webera -_H test_host)" \
 		'args' 'SERVER_HOST')
 	assert_str_equals "$newval" "test_host"
 
 	# T: --server-host
-	newval=$(get-webera-var "$(webera -_ --server-host=test_host2)" \
+	newval=$(get-webera-option "$(webera -_ --server-host=test_host2)" \
 		'args' 'SERVER_HOST')
 	assert_str_equals "$newval" "test_host2"
 
 
 	# T: default port
-	default=$(get-webera-var "$defaults" 'vdef' 'SERVER_PORT')
+	default=$(get-webera-option "$defaults" 'vdef' 'SERVER_PORT')
 	assert_str_equals "$default" "8192"
 
 	# T: -P
-	newval=$(get-webera-var "$(webera -_P 9000)" \
+	newval=$(get-webera-option "$(webera -_P 9000)" \
 		'args' 'SERVER_PORT')
 	assert_str_equals "$newval" "9000"
 
 	# T: --server-port
-	newval=$(get-webera-var "$(webera -_ --server-port=10000)" \
+	newval=$(get-webera-option "$(webera -_ --server-port=10000)" \
 		'args' 'SERVER_PORT')
 	assert_str_equals "$newval" "10000"
 
@@ -350,7 +350,7 @@ test::suite() {
 
 
 	# T: using -h still parses the rest of the arguments
-	newval=$(get-webera-var "$(webera -_hP 7000)" \
+	newval=$(get-webera-option "$(webera -_hP 7000)" \
 		'args' 'SERVER_PORT')
 	assert_str_equals "$newval" "7000"
 
