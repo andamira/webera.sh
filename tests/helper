@@ -14,7 +14,7 @@ helper::main() {
 	helper::init-common
 
 	# Parse the arguments if the script has not been sourced
-	[[ "$0" == "${BASH_SOURCE[0]}" ]] && helper::parse-arguments "$@"
+	[[ $0 == "${BASH_SOURCE[0]}" ]] && helper::parse-arguments "$@"
 
 } # ::main
 
@@ -56,17 +56,17 @@ helper::init-common() {
 		export WEBERA_DIR_WORKDIR
 		WEBERA_DIR_WORKDIR="$($__MKTEMP -d "$Mktemp_args" "$WEBERA_TEMP_PATTERN")"
 	fi
-	if [[ -z "$WEBERA_TEST_TOTAL_NUM" ]]; then
+	if [[ -z $WEBERA_TEST_TOTAL_NUM ]]; then
 		export WEBERA_TEST_TOTAL_NUM
 		WEBERA_TEST_TOTAL_NUM="$($__MKTEMP "$Mktemp_args" "$WEBERA_TEMP_PATTERN")"
 		printf '0' > "$WEBERA_TEST_TOTAL_NUM"
 	fi
-	if [[ -z "$WEBERA_TEST_TOTAL_TIME" ]]; then
+	if [[ -z $WEBERA_TEST_TOTAL_TIME ]]; then
 		export WEBERA_TEST_TOTAL_TIME
 		WEBERA_TEST_TOTAL_TIME="$($__MKTEMP "$Mktemp_args" "$WEBERA_TEMP_PATTERN")"
 		printf '0' > "$WEBERA_TEST_TOTAL_TIME"
 	fi
-	if [[ -z "$WEBERA_TEST_TOTAL_ERROR_NUM" ]]; then
+	if [[ -z $WEBERA_TEST_TOTAL_ERROR_NUM ]]; then
 		export WEBERA_TEST_TOTAL_ERROR_NUM
 		WEBERA_TEST_TOTAL_ERROR_NUM="$($__MKTEMP "$Mktemp_args" "$WEBERA_TEMP_PATTERN")"
 		printf '0' > "$WEBERA_TEST_TOTAL_ERROR_NUM"
@@ -113,7 +113,7 @@ This file also has to be imported by each test file.
 #
 helper::parse-arguments() {
 
-	[[ -z "$@" ]] && helper::display-usage
+	[[ -z $@ ]] && helper::display-usage
 
 	local OPTIND option
 
@@ -178,7 +178,7 @@ helper::run-all-tests() {
 
 	test_final_summary
 
-	[[ "$TESTS_FAILED" -eq 0 ]]
+	[[ $TESTS_FAILED -eq 0 ]]
 
 } # ::run-all-tests
 
@@ -190,7 +190,7 @@ helper::run-all-tests() {
 #
 helper::cleanup-exit() {
 
-	if [[ "${FUNCNAME[1]}" == "helper::display-usage" ]]; then
+	if [[ ${FUNCNAME[1]} == "helper::display-usage" ]]; then
 		test_final_cleanup
 	else
 		test_teardown
@@ -243,7 +243,7 @@ helper::check-compatibility() {
 	export __MKTEMP="$(webera::find-gnu-cmd mktemp)"
 
 	# fix mktemp compatibility [INC04]
-	if [[ "$($__MKTEMP -qu --tmpdir TXXX >/dev/null 2>&1; printf '%s' "$?")" -eq 0 ]]; then
+	if [[ $($__MKTEMP -qu --tmpdir TXXX >/dev/null 2>&1; printf '%s' "$?") -eq 0 ]]; then
 		Mktemp_args="--tmpdir" # new syntax
 	else
 		Mktemp_args="-t" # obsolete syntax
@@ -262,7 +262,7 @@ test_separator() {
 #-------------------------------------------------------------------------------
 #
 test_h1() {
-	if [[ "$DEBUG" -gt 0 ]]; then
+	if [[ $DEBUG -gt 0 ]]; then
 		printf '\n\n[Testing %s]\n' "$@"
 	fi
 }
@@ -271,7 +271,7 @@ test_h1() {
 #-------------------------------------------------------------------------------
 #
 test_h2() {
-	if [[ "$DEBUG" -gt 0 ]]; then
+	if [[ $DEBUG -gt 0 ]]; then
 		printf '\n  + %s:' "$@"
 	fi
 }
@@ -280,7 +280,7 @@ test_h2() {
 #-------------------------------------------------------------------------------
 #
 test_h3() {
-	if [[ "$DEBUG" -gt 0 ]]; then
+	if [[ $DEBUG -gt 0 ]]; then
 		printf '\n    - %s:' "$@"
 	fi
 }
@@ -293,7 +293,7 @@ test_h3() {
 #
 test_setup() {
 
-	if [[ -d "$WEBERA_DIR_WORKDIR" ]]; then
+	if [[ -d $WEBERA_DIR_WORKDIR ]]; then
 		pushd "$WEBERA_DIR_WORKDIR" >/dev/null 2>&1
 	else
 		printf 'Warning: %s %s.' \
@@ -320,11 +320,11 @@ test_setup() {
 #
 test_teardown() {
 
-	if [[ "$(pwd)" == "$WEBERA_DIR_WORKDIR" ]]; then
+	if [[ $(pwd) == "$WEBERA_DIR_WORKDIR" ]]; then
 		popd >/dev/null 2>&1
 	fi
 
-	if [[ -d "$WEBERA_DIR_WORKDIR" ]]; then
+	if [[ -d $WEBERA_DIR_WORKDIR ]]; then
 		test_clean
 		rmdir -- "$WEBERA_DIR_WORKDIR"
 	fi
@@ -339,7 +339,7 @@ test_teardown() {
 #
 test_clean() {
 
-	if [[ -d "$WEBERA_DIR_WORKDIR" ]]; then
+	if [[ -d $WEBERA_DIR_WORKDIR ]]; then
 		pushd "$WEBERA_DIR_WORKDIR" >/dev/null 2>&1
 		rm -rf -- .[^.] .??* ./*
 		popd >/dev/null 2>&1
@@ -382,7 +382,7 @@ test_summary() {
 	printf '\n  %s' "$(test_separator)"
 
 	# No tests failed
-	if [[ "$(printf '%s' "$test_report" | cut -d' ' -f1)" == "all" ]]; then
+	if [[ $(printf '%s' "$test_report" | cut -d' ' -f1) == all ]]; then
 		printf '\n  %s\n' "$test_report"
 
 		# get the number of passed tests
@@ -400,7 +400,7 @@ test_summary() {
 		printf '  %s\n' "$error_report"
 
 		# Update the number of failed tests
-		if [[ -f "$WEBERA_TEST_TOTAL_ERROR_NUM" ]]; then
+		if [[ -f $WEBERA_TEST_TOTAL_ERROR_NUM ]]; then
 			test_err_num="$(printf '%s' "$error_report" | cut -d' ' -f1 )"
 			prev_total_err_num="$(cat -- "$WEBERA_TEST_TOTAL_ERROR_NUM")"
 			new_total_err_num="$($__AWK \
@@ -415,7 +415,7 @@ test_summary() {
 	fi
 
 	# Update the number of passed tests
-	if [[ -f "$WEBERA_TEST_TOTAL_NUM" ]]; then
+	if [[ -f $WEBERA_TEST_TOTAL_NUM ]]; then
 		prev_total_num="$(cat -- "$WEBERA_TEST_TOTAL_NUM")"
 		new_total_num="$($__AWK \
 			"BEGIN {print $test_num+$prev_total_num; exit}")"
@@ -424,7 +424,7 @@ test_summary() {
 	fi
 
 	# Total time spent
-	if [[ -z "$INVARIANT"  && -f "$WEBERA_TEST_TOTAL_TIME" ]]; then
+	if [[ -z $INVARIANT  && -f $WEBERA_TEST_TOTAL_TIME ]]; then
 		test_time="$(printf '%s' "$test_report" | \
 			$__GREP -o '[0-9]\+.[0-9]\+s.' | cut -d's' -f1 )"
 		prev_total_time="$(cat -- "$WEBERA_TEST_TOTAL_TIME")"
@@ -432,7 +432,7 @@ test_summary() {
 		printf '%s' "$new_total_time" > "$WEBERA_TEST_TOTAL_TIME"
 	fi
 
-	[[ "$TESTS_FAILED" -eq 0 ]]
+	[[ $TESTS_FAILED -eq 0 ]]
 
 } # test_summary
 
@@ -457,7 +457,7 @@ test_final_summary() {
 	printf '%s %16u\n' "Tests pass:" "$testPassed"
 	printf '%s %16u\n' "Tests fail:" "$testFailed"
 
-	if [[ -z "$INVARIANT" ]]; then
+	if [[ -z $INVARIANT ]]; then
 		LC_NUMERIC=C LC_COLLATE=C
 		printf '%s %16.2fs\n' "Time spent:" "$(cat -- "$WEBERA_TEST_TOTAL_TIME")"
 	fi
@@ -471,10 +471,10 @@ test_final_summary() {
 
 test_final_cleanup() {
 
-	[[ -f "$WEBERA_TEST_TOTAL_NUM" ]] && rm -f -- "$WEBERA_TEST_TOTAL_NUM"
-	[[ -f "$WEBERA_TEST_TOTAL_TIME" ]] && rm -f -- "$TOTAL_TEST_TIME"
+	[[ -f $WEBERA_TEST_TOTAL_NUM ]] && rm -f -- "$WEBERA_TEST_TOTAL_NUM"
+	[[ -f $WEBERA_TEST_TOTAL_TIME ]] && rm -f -- "$WEBERA_TEST_TOTAL_TIME"
 
-	if [[ -f "$WEBERA_TEST_TOTAL_ERROR_NUM" ]]; then
+	if [[ -f $WEBERA_TEST_TOTAL_ERROR_NUM ]]; then
 		TESTS_FAILED="$(cat -- "$WEBERA_TEST_TOTAL_ERROR_NUM")"
 		rm -f -- "$WEBERA_TEST_TOTAL_ERROR_NUM"
 	fi

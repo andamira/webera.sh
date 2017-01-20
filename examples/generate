@@ -88,7 +88,7 @@ generate::generate-all() {
 
 	cd "$Dir" || exit
 
-	[[ "$Opt_log_clear" == true ]] && rm -- "$Log_file" 2>/dev/null
+	[[ $Opt_log_clear == true ]] && rm -- "$Log_file" 2>/dev/null
 
 	local examples_list
 	examples_list=$(find . -maxdepth 1 -name "[0-9a-zA-Z]*" -type d \
@@ -110,4 +110,4 @@ generate::generate-all() {
 } # ::generate-all
 
 
-[[ "$0" == "${BASH_SOURCE[0]}" ]] && generate::main "$@"
+[[ $0 == "${BASH_SOURCE[0]}" ]] && generate::main "$@"

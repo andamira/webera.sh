@@ -6,7 +6,7 @@
 #    repository : https://github.com/andamira/webera
 #        author : José Luis Cruz © 2016-2017
 #       license : MIT
-__WEBERA_VERSION=0.1.70
+__WEBERA_VERSION=0.1.71
 
 
 #-------------------------------------------------------------------------------
@@ -1027,7 +1027,7 @@ webera::parse-template-includes() {
 
 	if [[ $Nesting_level -gt $Opt_nesting_max ]]; then
 		webera::log error "${__In}ERROR: max nesting level ($Opt_nesting_max)" \
-			"reached for template $template_file"
+			" reached for template '$template_file'"
 		exit 3
 	fi
 

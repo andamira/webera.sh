@@ -15,66 +15,158 @@ test::suite() {
 	test_h1 "Templates"
 	# ========================
 
-
-	test_h2 "webera::render-template"
+	test_h2 "::render-template"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	# T: simple HTML5
-	test::render-template "00-simple-html5.html"
+	test_h3 "HTML"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	# T: comments
-	# Directive <!-- // -->
-	test::render-template "01-comments.html"
+	# T: simple HTML5 string
+	test::render-template-string '<p></p>' '<p></p>'
+	# T: simple HTML5 file
+	test::render-template-file "00-simple-html5.html"
 
-	# T: basic nesting
+
+	test_h3 "// comments one-line"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+	# T: with whitespace
+	test::render-template-string '<!-- // something -->'
+	# T: without whitespace
+	test::render-template-string '<!--//something-->'
+	# T: without content
+	test::render-template-string '<!--//-->'
+
+
+	test_h3 "// comments multi-line"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+	# T: multiline with whitespace
+	test::render-template-string '<!-- // 1line\n2line\n3line -->'
+	# T: no whitespace
+	test::render-template-string '<!--//1line\n2line\n3line-->'
+	# T: multiline
+	test::render-template-string '<!--// 1 line
+		2 line -->'
+
+	# T: file version of next example
+	# test::render-template-file "_test-newline.html"
+	# T:
+	test::render-template-string "<!--// multiline
+-->"
+	# T: NOTE: this fails (because of the space
+# 	test::render-template-string "<!-- // multiline
+# -->"
+
+	# T: here document of before example CHECK
+	# heredoc="$(cat <<-'EOF'
+	# <!-- // 1 line
+	# 	2 line -->
+	# EOF
+	# )"
+	# test::render-template-string "$heredoc"
+
+
+	test_h3 "// comments surroundings"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+	# T: preserve context
+	test::render-template-string '<p><!-- // foo --></p>' '<p></p>'
+	# T: preserve final newline
+	test::render-template-string '<!-- // foo -->\n' '\n'
+
+
+	test_h3 "// comments special chars"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+	# T: works with sed special characters
+	test::render-template-string '<p><!--//$.*[\]^--></p>' '<p></p>'
+
+	# T: works with special characters (unicode)
+	test::render-template-string '<p><!-- // ←↑↓→¥ŦŁÆ§ø⅜⅛º°©µ --></p>' '<p></p>'
+
+
+	test_h3 "%include (nesting)"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 	# Directive <!-- %include -->
-	test::render-template "02-include-basic.html"
 
-	# TODO T: nesting limits
-	# Directive <!-- %include -->
-	# ...
+	test_clean
 
-	# TODO T: set variables
+	# T: basic nesting: 1 level
+	printf '<p><!-- %%include: ./1.html --></p>' > 'include-00-tem.html'
+	printf 'one' > '1.html'
+	printf '<p>one</p>' > 'include-00-mod.html'
+	test::render-template-file "./include-00-tem.html" "./include-00-mod.html"
+
+	# T: basic nesting: 2 levels
+	printf '<p><!-- %%include: ./1.html --></p>' > 'include-01-tem.html'
+	printf 'one,<!-- %%include: ./2.html -->' > '1.html'
+	printf 'two' > '2.html'
+	printf '<p>one,two</p>' > 'include-01-mod.html'
+	test::render-template-file "./include-01-tem.html" "./include-01-mod.html"
+
+	# T: basic nesting: 3 levels
+	printf 'two,<!-- %%include: ./3.html -->' > '2.html'
+	printf 'three' > '3.html'
+	printf '<p>one,two,three</p>' > 'include-01-mod.html'
+	test::render-template-file "./include-01-tem.html" "./include-01-mod.html"
+
+	# T: max nesting levels overflow
+	assert_failure "Opt_nesting_max=2 test::render-template-file \
+		'./include-01-tem.html' './include-01-mod.html'"
+
+	test_clean
+
+
+
+	test_h3 "%set"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 	# Directives: <!-- %set --> <!-- @var -->
-	# ...
 
-	# TODO T: command
+
+
+	test_h3 "%cmd"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 	# Directive <!-- %cmd -->
-	# ...
 
-	# TODO T: set command
+
+
+	test_h3 "%setcmd"
+	# ~~~~~~~~~~~~~~~~~~~~~~~~
 	# Directives: <!-- %setcmd --> <!-- @var -->
-	# ...
 
 
 
 	test_h2 "Routing"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	# # T: Just the index and some other
-	# mkdir -p -- "$dir_tem"
-	# printf 'index\n' > "$dir_tem/index.html"
-	# printf 'other\n' > "$dir_tem/other.html"
-	# webera -tC \
-	# 	"template : route : index.html : /
-	#      template : route : other.html : /some-other-url/"
-	# assert "[[ -f $dir_out/index.html ]]"
-    #
-	# # T: check the contents are there
-	# assert "$(<"$dir_out/index.html")"
+	test_clean
+
+	# T: Create a route to just the index and some other file
+
+	mkdir -p -- "$dir_wtem"
+	printf 'index' > "$dir_wtem/index.html"
+	printf 'other' > "$dir_wtem/other.html"
+	webera -tC \
+		"template : route : index.html : /
+	     template : route : other.html : /some-other-url/"
+	assert "[[ -f $dir_wout/index.html ]]"
+
+	# T: check the contents are there
+	assert "$(<"$dir_wout/index.html")"
 
 
 	test_clean
 
 
 	# T: Route to a file, and another
-	# mkdir -p -- "$dir_tem"
-	# cp -- "$dir_tem/XXX" "$dir_tem/mytemplate.html"
+	# mkdir -p -- "$dir_wtem"
+	# cp -- "$dir_wtem/XXX" "$dir_wtem/mytemplate.html"
 	# webera -tC \
 	# 	"template : route : mytemplate.html : my-file-url.html"
-	# assert "[[ -f $dir_out/my-file-url.html]]"
-	# ls -l $dir_out/my-file-url.html
-	# assert "$(cat -- $dir_out/my-file-url.html)" "$templ_simpl"
+	# assert "[[ -f $dir_wout/my-file-url.html]]"
+	# ls -l $dir_wout/my-file-url.html
+	# assert "$(cat -- $dir_wout/my-file-url.html)" "$templ_simpl"
 
 	test_clean
 
@@ -104,11 +196,13 @@ test::init() {
 
 	## Config
 
-	local dir_tem_in="$WEBERA_DIR_TESTS/files/tem-in"   # input templates for render
-	local dir_tem_out="$WEBERA_DIR_TESTS/files/tem-out" # render output control models
+	# input templates for render
+	local dir_templates="$WEBERA_DIR_TESTS/files/tem-in"
+	# render output control models
+	local dir_models="$WEBERA_DIR_TESTS/files/tem-out"
 
 	# directory names for running webera during the tests
-	#local dir_tem='tem' dir_out='out' #dir_build='build'
+	local dir_wtem='tem' dir_wout='out' #dir_build='build'
 
 	# Run tests
 	test_setup
@@ -123,70 +217,191 @@ test::init() {
 } # ::init()
 
 
-# ::render-template
+# ::render-template-string
 #
-#   A wrapper for testing webera::render-template.
+#   A wrapper for testing webera::render-template with the provided string.
 #
-# > $1 : the template file to render
+# > $1 : the directive to render
 # > $2 : (optional) the template model
-# x  1 : couldn't change directory
+#
+# TODO: merge with ::render-template-file?
+#
+# shellcheck disable=SC2181
+test::render-template-string() {
+	local template_string="$1"  # The filename for the template to render
+	local model_string="$2"     # The optional filename of the model to compare
+
+	local template_file       # $template_string saved into a file
+	local template_rendered   # The rendering of $template_file
+
+	# variables needed for webera::render-template
+	local __Ws="[[:space:]]"
+	local Opt_nesting_max="${Opt_nesting_max:-8}"
+
+	# render the template
+	template_file=$(mktemp)
+	printf '%s' "$template_string" > "$template_file"
+	template_rendered="$(webera::render-template "$template_file")"
+	rm -- "$template_file"
+
+	assert_str_equals "$template_rendered" "$model_string"
+
+	# Show a diff in case they are not equal
+	if [[ $? -ne 0 ]]; then
+		printf '%q' "$template_rendered"
+
+		test::show-diff "$template_rendered" "$model_string"
+	fi
+}
+
+
+# ::render-template-file
+#
+#   A wrapper for testing webera::render-template with the provided file.
+#   If no model is specified, a model with the same filename will be used.
+#   And if that can't be found, the same template will be used as the model.
+#
+#   Paths can be relative to the working directory (starts with ./ or ../),
+#   absolute (starts with /) or relative to "$dir_[templates|models]".
+#
+# > $1 : the path to th template file to render
+# > $2 : (optional) the model file, to compare
+# x  1 : couldn't find the model file
 #
 # shellcheck disable=SC2034
 # shellcheck disable=SC2181
-test::render-template() {
+test::render-template-file() {
 
-	local template_file="$1"  # The filename for the template to render
-	local model_file="$2"     # The optional filename of the model to compare
+	local template_file="$1"  # The file path for the template to render
+	local model_file="$2"     # The optional file path of the model, to compare
 
 	local model_content       # The content of $model_file
 	local template_rendered   # The rendering of $template_file
 
-	local __Ws="[[:space:]]"
-	local Opt_nesting_max=8
-	local Opt_dir_templates=""
-	#local Opt_dir_templates="$dir_tem_in"
+	# a copy of the original paths
+	local template_file_orig="$template_file"
+	local model_file_orig="$model_file"
 
-	template_rendered="$(webera::render-template "$dir_tem_in/$template_file")"
+	# variables needed for webera::render-template
+	local __Ws="[[:space:]]"
+	local Opt_nesting_max="${Opt_nesting_max:-8}"
+	#local Opt_dir_templates=""
+
+
+	## template file
+
+	# the template path can be relative to the current workdir:
+	if [[ $template_file == ./* || $template_file == ../* ]]; then
+		template_file="$WEBERA_DIR_WORKDIR/$template_file"
+
+	# or relative to the templates directory:
+	else template_file="$dir_templates/$template_file"; fi
+
+	template_rendered="$(webera::render-template "$template_file")"
+
+
+	## model file
 
 	# if a template model file is not provided
 	if [[ -z $model_file ]]; then
+
 		# try with the same file name as the template to render
-		if [[ -f $dir_tem_out/$template_file ]]; then
-			model_content="$(cat -- "$dir_tem_out/$template_file")"
+		if [[ -f $dir_models/$template_file_orig ]]; then
+			model_content="$(cat -- "$dir_models/$template_file_orig")"
+
+			# NOTE: it's possible to try more posibilities, with
+			#       the basename of $template_file_orig path.
 		else
-			printf "\nERROR: no template model file could be found.\n"
-			exit 1
+			# last fallback: use the same template as a model
+			model_content="$(cat -- "$dir_templates/$template_file_orig")"
+
+			# DEBUG_TEMP
+			# printf "\nERROR: no template model file could be found.\n"
+			# assert_failure true; return
 		fi
+
+	# if a template file is provided
 	else
-		# if it is provided, check that the file actually exists
-		if [[ -f "$dir_tem_out/$model_file" ]]; then
-			model_content="$(cat -- "$dir_tem_out/$model_file")"
+
+		# the model path can be relative to the workdir:
+		if [[ $model_file == ./* || $model_file == ../* ]]; then
+			model_file="$WEBERA_DIR_WORKDIR/$model_file"
+
+		# ...or absolute (in which case it doesn't need to be modified)
+		# ...or relative to the models directory:
+		elif [[ $model_file != /* ]]; then
+			model_file="$dir_models/$model_file"
+		fi
+
+		# Check that the file actually exists
+		if [[ -f "$model_file" ]]; then
+			model_content="$(cat -- "$model_file")"
 		else
 			printf "\nERROR: requested template model file not found (%s).\n" \
-				"$dir_tem_out/$template_file"
-			exit 1
+				"$template_file"
+			assert_failure true; return
 		fi
 	fi
+
 	assert_str_equals "$template_rendered" "$model_content"
 
 	# Show a diff in case they are not equal
 	if [[ $? -ne 0 ]]; then
-		local str_diff delim=$'\001'
-		str_diff+="\n\n-------------------------------------------------------\n"
-		str_diff+="template='tem-in/$template_file'\n"
-		str_diff+="   model='tem-out/$model_file'\n"
-		str_diff+="-------------------------------------------------------\n"
-		str_diff+="$(
-			diff --unified --text --suppress-common-lines \
-				<(echo -e "$template_rendered") <(echo -e "$model_content")
-		)\n"
-		str_diff+="-------------------------------------------------------\n"
-
-		# shellcheck disable=SC2059
-		printf "$str_diff" | sed "s$delim^$delim    $delim"
+		test::show-diff "$template_rendered" "$model_content" \
+			"$template_file_orig" "$model_file_orig"
+		return 1
 	fi
 
-} # ::render-template()
+} # ::render-template-file()
 
+
+#-------------------------------------------------------------------------------
+# ::show-diff
+#
+#   Shows a diff between the template and its model.
+#
+# > $1 : the rendered template
+# > $2 : the content of the model
+# > $3 : the template file path
+# > $4 : the model file path
+# ^ ::render-template-file
+#
+test::show-diff() {
+
+	local template_rendered="$1"
+	local model_content="$2"
+	local template_file="$3"
+	local model_file="$4"
+
+	local str_diff
+	local dashed_line='---------------------------------------------------'
+
+	str_diff+="\n#-----$dashed_line\n"
+	str_diff+="# Showing the differences between:\n"
+	if [[ -n $template_file && -n $model_file ]]; then
+		str_diff+="# '$template_file'\n"
+		str_diff+="# '$model_file'\n"
+	else
+		str_diff+="# 1: '$(printf '%s' "$template_rendered" \
+			| tr '\n' ' ' | head -c74)'\n"
+		str_diff+="# 2: '$(printf '%s' "$model_content" \
+			| tr '\n' ' ' | head -c74)'\n"
+	fi
+	str_diff+="#-----$dashed_line\n"
+	str_diff+="$(
+		diff --unified --text --suppress-common-lines \
+			<(printf '%s\n' "$template_rendered") \
+			<(printf '%s\n' "$model_content")
+	)\n"
+	str_diff+="#-----$dashed_line\n"
+
+	# escape the percent symbol
+	str_diff=$(printf '%s' "$str_diff" | sed s/%/%%/g)
+	#
+	# Print with a small indent
+	# shellcheck disable=SC2059
+	printf "$str_diff" | sed 's/^/  /'
+
+} # ::show-diff
 
 [[ "$0" == "${BASH_SOURCE[0]}" ]] && test::init "$@"
