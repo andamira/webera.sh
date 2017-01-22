@@ -6,7 +6,7 @@
 #    repository : https://github.com/andamira/webera
 #        author : José Luis Cruz © 2016-2017
 #       license : MIT
-__WEBERA_VERSION=0.1.71
+__WEBERA_VERSION=0.1.72
 
 
 #-------------------------------------------------------------------------------
@@ -1047,7 +1047,8 @@ webera::parse-template-includes() {
 	fi
 
 	if [[ -f $template_file ]]; then
-		template_content="$(<"$template_file")"
+		# Read the template while translating newlines to form feed chars
+		template_content="$(tr '\n' '\f' <"$template_file")"
 	else
 		webera::log error "${__In}ERROR: No template found '$template_file'"
 		return 7
@@ -1122,7 +1123,7 @@ webera::render-template() {
 	#
 	# NOTE: Doesn't remove any empty newline it leaves
 	template_text=$(printf '%s' "$template_text" \
-		| $__SED -e :a -re "s/<!--$__Ws*\/\/.*?-->//g;/<!--\/\//N;//ba")
+		| $__SED -re "s/<!--$__Ws*\/\/.*?-->\x0c?//g")
 
 	local __ifs="$IFS"; IFS=$'\n'
 
@@ -1138,15 +1139,16 @@ webera::render-template() {
 		set_var_val=$(webera::get-directive-content "$directive" '%set')
 		set_var="${set_var_val%%=*}"
 		set_value="${set_var_val#*=}"
+
 		webera::log 3 "${__In3}set: $set_var = $set_value"
 
-		# Cross-platform syntax to replace including newlines
-		# http://stackoverflow.com/a/1252191
+		# remove the %set directive
 		template_text=$(printf '%s' "$template_text" \
-			| $__SED -e ":a" -e "N" -e "\$!ba" -e "s/$directive\n\?//g")
+			| $__SED -e "s/$directive\x0c\?//g")
+
+		# replace the @variable directive with the value
 		template_text=$(printf '%s' "$template_text" \
-			| $__SED -e ":a" -e "N" -e "\$!ba" \
-			-e "s/<!--$__Ws*@$set_var$__Ws*-->\n\?/$set_value/g")
+			| $__SED -e "s/<!--$__Ws*@$set_var$__Ws*-->\x0c\?/$set_value/g")
 	done
 
 	# execute commands, render output
@@ -1195,28 +1197,30 @@ webera::render-template() {
 		set_cmd=$(webera::get-directive-content "$directive" '%setcmd')
 		set_cmd_var="${set_cmd%%=*}"
 		set_cmd_value="${set_cmd#*=}"
-		set_cmd_output=$(eval "$set_cmd_value")
+		# get the command output, escaping the sed special characters
+		set_cmd_output=$(eval "$set_cmd_value" | $__SED -e 's/[\/&]/\\&/g' )
+
 		webera::log 3 "${__In2}setcmd: $set_cmd_var = $set_cmd_value"
 
 		# Delete the directive from the template
-		template_text=$($__AWK -v 'FNR==NR {
+		template_text=$($__AWK 'FNR==NR {
 				a = a $0; next
 			}
 			n = index($0, a) {
 				$0 = substr($0, 1, n-1) substr($0, n+length(a))
-			} 1' <(printf '%s\n' "$directive") <(printf '%s' "$template_text")
+			} 1' <(printf '%s' "$directive") <(printf '%s' "$template_text")
 		)
-		# Replace all the set variables with the command output
+
 		template_text=$(printf '%s' "$template_text" \
-			| $__SED -e ":a" -e "N" -e "\$!ba" \
-			-e "s/<!--$__Ws*@$set_cmd_var$__Ws*-->\n\?/$set_cmd_output/g")
+			| $__SED -e "s/<!--$__Ws*@$set_cmd_var$__Ws*-->\x0c\?/$set_cmd_output/g")
 	done
 
 	IFS="$__ifs"
 
 	webera::log 3 ""
 
-	printf "%s" "$template_text"
+	# Print the template, translating back all form-feeds to newlines
+	printf "%s" "$template_text" | tr '\f' '\n'
 
 } # ::render-template
 

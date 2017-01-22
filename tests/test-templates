@@ -1,30 +1,28 @@
 #!/usr/bin/env bash
-#
-# TODO:
-# - fix removing comment
-# - be able to pass here doc(s) easily to render-template
 
 
 # ::suite
 #
 #   Test the templates system.
 #
+# shellcheck disable=SC2016
 test::suite() {
 
+	local heredoc str_template str_model
 
 	test_h1 "Templates"
 	# ========================
 
-	test_h2 "::render-template"
+	test_h2 "::render-template()"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
 	test_h3 "HTML"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-	# T: simple HTML5 string
+	# T: simple HTML5 string, shouldn't be modified
 	test::render-template-string '<p></p>' '<p></p>'
-	# T: simple HTML5 file
-	test::render-template-file "00-simple-html5.html"
+	# T: simple HTML5 file, should not be modified
+	test::render-template-file "00-simple-html5.html" file
 
 
 	test_h3 "// comments one-line"
@@ -43,28 +41,19 @@ test::suite() {
 
 	# T: multiline with whitespace
 	test::render-template-string '<!-- // 1line\n2line\n3line -->'
-	# T: no whitespace
+	# T: multiline without whitespace
 	test::render-template-string '<!--//1line\n2line\n3line-->'
-	# T: multiline
-	test::render-template-string '<!--// 1 line
-		2 line -->'
 
-	# T: file version of next example
-	# test::render-template-file "_test-newline.html"
-	# T:
-	test::render-template-string "<!--// multiline
--->"
-	# T: NOTE: this fails (because of the space
-# 	test::render-template-string "<!-- // multiline
-# -->"
-
-	# T: here document of before example CHECK
-	# heredoc="$(cat <<-'EOF'
-	# <!-- // 1 line
-	# 	2 line -->
-	# EOF
-	# )"
-	# test::render-template-string "$heredoc"
+	# T: a different way of inserting newlines
+	test::render-template-string '<!-- // 1 line
+2 line -->'
+	# T: using here document
+	heredoc="$(cat <<-'EOF'
+	<!-- // 1 line
+		2 line -->
+	EOF
+	)"
+	test::render-template-string "$heredoc"
 
 
 	test_h3 "// comments surroundings"
@@ -72,8 +61,10 @@ test::suite() {
 
 	# T: preserve context
 	test::render-template-string '<p><!-- // foo --></p>' '<p></p>'
-	# T: preserve final newline
-	test::render-template-string '<!-- // foo -->\n' '\n'
+	# T: support multi-line comments
+	test::render-template-string '<p><!-- // foo --></p>' '<p></p>'
+	# T: remove final newline
+	test::render-template-string '<!-- // foo -->\n' ''
 
 
 	test_h3 "// comments special chars"
@@ -96,45 +87,98 @@ test::suite() {
 	printf '<p><!-- %%include: ./1.html --></p>' > 'include-00-tem.html'
 	printf 'one' > '1.html'
 	printf '<p>one</p>' > 'include-00-mod.html'
-	test::render-template-file "./include-00-tem.html" "./include-00-mod.html"
+	test::render-template-file "./include-00-tem.html" file "./include-00-mod.html"
 
 	# T: basic nesting: 2 levels
 	printf '<p><!-- %%include: ./1.html --></p>' > 'include-01-tem.html'
 	printf 'one,<!-- %%include: ./2.html -->' > '1.html'
 	printf 'two' > '2.html'
 	printf '<p>one,two</p>' > 'include-01-mod.html'
-	test::render-template-file "./include-01-tem.html" "./include-01-mod.html"
+	test::render-template-file "./include-01-tem.html" file "./include-01-mod.html"
 
 	# T: basic nesting: 3 levels
 	printf 'two,<!-- %%include: ./3.html -->' > '2.html'
 	printf 'three' > '3.html'
 	printf '<p>one,two,three</p>' > 'include-01-mod.html'
-	test::render-template-file "./include-01-tem.html" "./include-01-mod.html"
+	test::render-template-file "./include-01-tem.html" file "./include-01-mod.html"
 
 	# T: max nesting levels overflow
 	assert_failure "Opt_nesting_max=2 test::render-template-file \
-		'./include-01-tem.html' './include-01-mod.html'"
+		'./include-01-tem.html' file './include-01-mod.html'"
 
 	test_clean
-
 
 
 	test_h3 "%set"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 	# Directives: <!-- %set --> <!-- @var -->
 
+	# T: without whitespace
+	str_template='<!--%set:var=value-->'
+	str_template+='<p><!--@var--></p>'
+	str_model='<p>value</p>'
+	test::render-template-string "$str_template" "$str_model"
+
+	# T: with whitespace
+	str_template='<!-- %set : var=value -->'
+	str_template+='<p><!-- @var --></p>'
+	str_model='<p>value</p>'
+	test::render-template-string "$str_template" "$str_model"
+
+	# T: remove the trailing newline from %set directive
+	str_template='<!-- %set : var=value -->\n'
+	str_template+='<p><!-- @var --></p>'
+	str_model='<p>value</p>'
+	test::render-template-string "$str_template" "$str_model"
 
 
 	test_h3 "%cmd"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 	# Directive <!-- %cmd -->
 
+	# T: without whitespace
+	str_template='<p><!--%cmd:echo "$HOME"--></p>'
+	str_model="<p>$HOME</p>"
+	test::render-template-string "$str_template" "$str_model"
+
+	# T: with whitespace
+	str_template='<p><!-- %cmd : echo "$HOME" --></p>'
+	str_model="<p>$HOME</p>"
+	test::render-template-string "$str_template" "$str_model"
+
+	# T: TODO: remove trailing newline from %cmd directive
+	# str_template='<!-- %setcmd : var=echo "$HOME" -->\n'
+	# str_template+='<p><!-- @var --></p>'
+	# str_model="<p>$HOME</p>"
 
 
 	test_h3 "%setcmd"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
 	# Directives: <!-- %setcmd --> <!-- @var -->
 
+	# T: without whitespace
+	str_template='<!--%setcmd:var=echo "$HOME"-->'
+	str_template+='<p><!--@var--></p>'
+	str_model="<p>$HOME</p>"
+	test::render-template-string "$str_template" "$str_model"
+
+	# T: with whitespace
+	str_template='<!-- %setcmd : var=echo "$HOME" -->'
+	str_template+='<p><!-- @var --></p>'
+	str_model="<p>$HOME</p>"
+	test::render-template-string "$str_template" "$str_model"
+
+	# T: TODO: remove trailing newline from %setcmd directive
+	# str_template='<!-- %setcmd : var=echo "$HOME" -->\n'
+	# str_template+='<p><!-- @var --></p>'
+	# str_model="<p>$HOME</p>"
+	# test::render-template-string "$str_template" "$str_model"
+
+	# T: remove trailing newline from @directive
+	str_template='<!-- %setcmd : var=echo "$HOME" -->'
+	str_template+='<p><!-- @var --></p>\n'
+	str_model="<p>$HOME</p>"
+	test::render-template-string "$str_template" "$str_model"
 
 
 	test_h2 "Routing"
@@ -142,7 +186,7 @@ test::suite() {
 
 	test_clean
 
-	# T: Create a route to just the index and some other file
+	# T: Create a route to the index and some other file
 
 	mkdir -p -- "$dir_wtem"
 	printf 'index' > "$dir_wtem/index.html"
@@ -217,6 +261,7 @@ test::init() {
 } # ::init()
 
 
+#-------------------------------------------------------------------------------
 # ::render-template-string
 #
 #   A wrapper for testing webera::render-template with the provided string.
@@ -238,9 +283,14 @@ test::render-template-string() {
 	local __Ws="[[:space:]]"
 	local Opt_nesting_max="${Opt_nesting_max:-8}"
 
-	# render the template
+	## render the template
+
 	template_file=$(mktemp)
-	printf '%s' "$template_string" > "$template_file"
+	template_string=$(printf '%s' "$template_string" | sed 's/%/%%/g')
+	# Interpret extended characters, like newlines
+	# shellcheck disable=SC2059
+	printf "$template_string" > "$template_file"
+
 	template_rendered="$(webera::render-template "$template_file")"
 	rm -- "$template_file"
 
@@ -248,13 +298,13 @@ test::render-template-string() {
 
 	# Show a diff in case they are not equal
 	if [[ $? -ne 0 ]]; then
-		printf '%q' "$template_rendered"
-
 		test::show-diff "$template_rendered" "$model_string"
+		return 1
 	fi
 }
 
 
+#-------------------------------------------------------------------------------
 # ::render-template-file
 #
 #   A wrapper for testing webera::render-template with the provided file.
@@ -264,19 +314,29 @@ test::render-template-string() {
 #   Paths can be relative to the working directory (starts with ./ or ../),
 #   absolute (starts with /) or relative to "$dir_[templates|models]".
 #
-# > $1 : the path to th template file to render
-# > $2 : (optional) the model file, to compare
+# > $1 : the path to the template file to render
+# > $2 : [file|string] indicates how the model is referenced
+# > $3 : (optional) the model file path, or the model string content
 # x  1 : couldn't find the model file
 #
 # shellcheck disable=SC2034
 # shellcheck disable=SC2181
 test::render-template-file() {
 
-	local template_file="$1"  # The file path for the template to render
-	local model_file="$2"     # The optional file path of the model, to compare
+	local template_file="$1"
+	local model_type="$2"
 
-	local model_content       # The content of $model_file
-	local template_rendered   # The rendering of $template_file
+	local model_file          # The file path to the model
+	local model_content       # The model content as a string
+	local template_rendered   # The result of rendering the template
+
+	if [[ $model_type == file ]]; then
+		model_file="$3"
+	elif [[ $model_type == string ]]; then
+		model_content="$3"
+	else
+		printf "ERROR: model type '%s' unknown." "$model_type"; exit 1
+	fi
 
 	# a copy of the original paths
 	local template_file_orig="$template_file"
@@ -297,49 +357,53 @@ test::render-template-file() {
 	# or relative to the templates directory:
 	else template_file="$dir_templates/$template_file"; fi
 
-	template_rendered="$(webera::render-template "$template_file")"
-
-
-	## model file
-
-	# if a template model file is not provided
-	if [[ -z $model_file ]]; then
-
-		# try with the same file name as the template to render
-		if [[ -f $dir_models/$template_file_orig ]]; then
-			model_content="$(cat -- "$dir_models/$template_file_orig")"
-
-			# NOTE: it's possible to try more posibilities, with
-			#       the basename of $template_file_orig path.
-		else
-			# last fallback: use the same template as a model
-			model_content="$(cat -- "$dir_templates/$template_file_orig")"
-
-			# DEBUG_TEMP
-			# printf "\nERROR: no template model file could be found.\n"
-			# assert_failure true; return
-		fi
-
-	# if a template file is provided
+	if [[ -f $template_file ]]; then
+		template_rendered="$(webera::render-template "$template_file")"
 	else
+		# TODO use assert-error when available
+		assert_failure "echo ERROR file not found: $template_file"; return
+	fi
 
-		# the model path can be relative to the workdir:
-		if [[ $model_file == ./* || $model_file == ../* ]]; then
-			model_file="$WEBERA_DIR_WORKDIR/$model_file"
 
-		# ...or absolute (in which case it doesn't need to be modified)
-		# ...or relative to the models directory:
-		elif [[ $model_file != /* ]]; then
-			model_file="$dir_models/$model_file"
-		fi
+	## model
 
-		# Check that the file actually exists
-		if [[ -f "$model_file" ]]; then
-			model_content="$(cat -- "$model_file")"
-		else
-			printf "\nERROR: requested template model file not found (%s).\n" \
-				"$template_file"
-			assert_failure true; return
+	# If a string for the model has been provided, use it
+	# and if not, use the provided file path for the model
+	if [[ $model_type == file ]]; then
+
+		if [[ -n $model_file ]]; then
+
+			# the model path can be relative to the workdir:
+			if [[ $model_file == ./* || $model_file == ../* ]]; then
+				model_file="$WEBERA_DIR_WORKDIR/$model_file"
+
+			# ...or absolute (in which case it doesn't need to be modified)
+			# ...or relative to the models directory:
+			elif [[ $model_file != /* ]]; then
+				model_file="$dir_models/$model_file"
+			fi
+
+			# Check that the file actually exists
+			if [[ -f "$model_file" ]]; then
+				model_content="$(cat -- "$model_file")"
+			else
+				printf "\nERROR: requested template model file not found (%s).\n" \
+					"$template_file"
+				assert_failure true; return
+			fi
+
+		else # and if a template file was not provided
+
+			# try with the same file name as the template to render
+			if [[ -f $dir_models/$template_file_orig ]]; then
+				model_content="$(cat -- "$dir_models/$template_file_orig")"
+
+				# NOTE: it's possible to try more posibilities, with
+				#       the basename of $template_file_orig path.
+
+			else # or use exactly the same template file as the model
+				model_content="$(cat -- "$template_file")"
+			fi
 		fi
 	fi
 
