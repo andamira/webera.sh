@@ -14,7 +14,7 @@ helper::main() {
 	helper::init-common
 
 	# Parse the arguments if the script has not been sourced
-	[[ $0 == "${BASH_SOURCE[0]}" ]] && helper::parse-arguments "$@"
+	if [[ $0 == "${BASH_SOURCE[0]}" ]]; then helper::parse-arguments "$@"; fi
 
 } # ::main
 

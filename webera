@@ -6,7 +6,7 @@
 #    repository : https://github.com/andamira/webera
 #        author : José Luis Cruz © 2016-2017
 #       license : MIT
-__WEBERA_VERSION=0.1.72
+__WEBERA_VERSION=0.1.73
 
 
 #-------------------------------------------------------------------------------
@@ -15,7 +15,6 @@ __WEBERA_VERSION=0.1.72
 # > $@ : all the arguments passed to the script
 #
 webera::main() {
-
 
 	## PRE-SETUP
 
@@ -33,13 +32,13 @@ webera::main() {
 
 	## CONFIGURABLE GLOBAL OPTIONS
 
-	# 1. Variables prefixed with `Opt_` are the configurable options.
-	# 2. Options starting with underscore can't be configured from
-	#    a config file|string, only using script flag arguments.
-	# 3. Variables that don't have an argument associated can
-	#    only be modified through a config file|string.
-	# 4. Options can be referenced from the config file by removing
-	#    the `Opt_` prefix, and case sensitivity is not enforced.
+	# 1. Variables prefixed with `Opt_` are user configurable options.
+	# 2. Options starting with an underscore can't be configured from
+	#    the config file or string; only using script flag arguments.
+	# 3. Options without an aassociated argument can only be modified
+	#    by the user from the configuration.
+	# 4. Options have to be referenced from the configuration removing
+	#    the `Opt_` prefix. Note that case sensitivity is not enforced.
 
 	# statuses
 	local    _Opt_operational=false              # -trawn
@@ -163,6 +162,7 @@ webera::main() {
 #
 # > $1 [usage|version]
 # ^ ::parse-arguments ::parse-config-options
+# < human readable usage info or version info
 #
 webera::display-info() {
 
@@ -473,19 +473,20 @@ webera::setup-log() {
 #
 #   Prints a message to the log file. Errors and warnings also to STDERR.
 #
-# > $1  : (optional) log_level_needed
+# > $1  : (optional) the minimum level
 # > $2  : (optional) log_type [warn|error]
 # > $3+ : log message
-# ^ (almost all functions)
+# ^ {many functions}
 #
 # shellcheck disable=SC2059
 webera::log() {
 
 	local log_level_needed="$1" # First (optional) parameter
-	local -ir log_level_min=1 log_level_max=3
+
+	local -ir log_level_min=1 log_level_max=3 # log level boundaries
 	local -i log_level
 
-	# must be an integer number
+	# check it is an integer number
 	if [[ $log_level_needed =~ ^[0-9]+$ ]]; then
 		if [[ $log_level_needed -lt $log_level_min ]]; then
 			log_level="$log_level_min"
@@ -496,13 +497,13 @@ webera::log() {
 		fi
 		shift # prepare next positional parameter
 
-	else # if not a number, use defaults
+	else # if it's not a number, use the default value
 		log_level="$log_level_min"
 	fi
 
 	local log_type="$1" # Second (optional) parameter
 
-	# must be the type
+	# check if it is the log type
 	case "$log_type" in
 		error|warn)
 			shift # prepare next positional parameter
@@ -511,7 +512,7 @@ webera::log() {
 	esac
 
 	local __ifs="$IFS"; IFS=$''
-	local log_msg="$*" # All that rewebera::mains is the log message
+	local log_msg="$*" # All that remains is the log message
 	IFS="$__ifs"
 
 	if [[ $Log_presaved == false ]]; then
@@ -546,12 +547,10 @@ webera::log() {
 #
 #   Prepares the server commands, for previewing in the browser.
 #
-# x 5 : Server type not recognized
+# x 1 : Server type not recognized
 # ^ ::main (when the script received the `-r` flag)
 #
 webera::preview-website() {
-
-	local cmd_browser
 
 	case "$Opt_server_type" in
 	python)
@@ -573,11 +572,13 @@ webera::preview-website() {
 	*)
 		webera::log 2 error "ERROR: Not recognized "
 			"Opt_server_type='$Opt_server_type'"
-		exit 5
+		exit 1
 		;;
 	esac
 
 	printf 'Loading website in "%s"...\n' "$Opt_web_browser"
+
+	local cmd_browser
 
 	if [[ $Opt_server_type == "none" ]]; then
 		cmd_browser="$Opt_web_browser file://$($__READLINK -f $Opt_dir_output) &"
@@ -626,7 +627,7 @@ webera::delete-directories() {
 # > $1 : [file|string] the origin of the configuration.
 # > $2 : $config_pointer is the file name when the origin is a file,
 #        or the variable name when the origin is a string.
-# x 10 : unknown config type
+# x  1 : unknown config type
 # ^ ::main
 #
 webera::read-config() {
@@ -653,7 +654,7 @@ webera::read-config() {
 			if [[ $_Opt_do_generate_config_file == true ]] ; then
 				webera::log 2 warn "Warning: automatic override of an existing " \
 					"config file ('$config_pointer') is not permitted."
-				return 0
+				return
 			fi
 
 			webera::log 3 "Reading settings from file '$config_pointer'"
@@ -669,7 +670,7 @@ webera::read-config() {
 			# it's the config file of the project
 			if [[ $config_pointer == "$_Opt_config_file" ]]; then
 				# stop if printing debug info
-				[[ $_Opt_do_print_vars == true ]] && return 0
+				[[ $_Opt_do_print_vars == true ]] && return
 
 				if [[ $_Opt_do_generate_config_file == true ]]; then
 					webera::generate-config-file
@@ -681,7 +682,7 @@ webera::read-config() {
 		fi
 	else
 		webera::log error "Error: unknown config type"
-		exit 10
+		exit 1
 	fi
 
 } # ::read-config
@@ -792,7 +793,7 @@ webera::read-config-commands() {
 		commands_num=$(printf '%s\n' "$commands_list" | wc -l )
 		webera::log "\nParsing commands...\n$__Hl"
 		webera::log "${__In}Found $commands_num defined command:"
-	else return 0; fi
+	else return; fi
 
 	local __ifs="$IFS"; IFS=$'\n'
 	for cmd in $commands_list; do # [OPTIMIZE]
@@ -817,7 +818,7 @@ webera::read-config-commands() {
 #
 #   Parses the configuration and executes the resource operations.
 #
-# < 8 : no resources directory found
+# r 1 : no resources directory found
 # ^ ::main (when the script received the `-r` flag)
 #
 webera::process-resources() {
@@ -834,7 +835,7 @@ webera::process-resources() {
 
 	if [[ ! -d $Opt_dir_resources ]]; then
 		webera::log error "No resources dir '$Opt_dir_resources' found."
-		return 8
+		return 1
 	fi
 
 	oper_list_res="$(printf '%s' "$Config_whole" \
@@ -906,7 +907,7 @@ webera::process-resources() {
 #
 #   Parses the configuration and executes the template operations.
 #
-# < 9 : no templates directory found
+# r 1 : no templates directory found
 # ^ ::main (when the script received the `-t` flag)
 #
 webera::process-templates() {
@@ -923,7 +924,7 @@ webera::process-templates() {
 
 	if [[ ! -d $Opt_dir_templates ]]; then
 		webera::log error "No templates dir '$Opt_dir_templates' found."
-		return 9
+		return 1
 	fi
 
 	oper_list_tem="$(printf '%s' "$Config_whole" \
@@ -1004,10 +1005,11 @@ webera::process-templates() {
 #   joining all the included parts together in a single template.
 #
 # > $1 : the path to the template file to process
-# <  7 : No template found
-# x  3 : Maximum nesting level overflow
+# r  1 : No template found
+# x  1 : Maximum nesting level overflow
+# <    : the template content
 # ^ ::render-template
-# g __GREP __Ws __In __In2 Opt_nesting_max Opt_dir_templates
+# ~ __GREP __Ws __In __In2 Opt_nesting_max Opt_dir_templates
 #
 webera::parse-template-includes() {
 
@@ -1028,7 +1030,7 @@ webera::parse-template-includes() {
 	if [[ $Nesting_level -gt $Opt_nesting_max ]]; then
 		webera::log error "${__In}ERROR: max nesting level ($Opt_nesting_max)" \
 			" reached for template '$template_file'"
-		exit 3
+		exit 1
 	fi
 
 	# is path relative to the parent's template?
@@ -1041,17 +1043,21 @@ webera::parse-template-includes() {
 		# If the template is found in the build directory it takes precedence
 		if [[ -f "$Opt_dir_build/$template_file" ]]; then
 			template_file="$Opt_dir_build/$template_file"
-		else
+		elif [[ -f "$Opt_dir_templates/$template_file" ]]; then
 			template_file="$Opt_dir_templates/$template_file"
+
+		else # at last, try relative to the parent again
+			template_file="$dir_parent/$template_file"
 		fi
 	fi
 
 	if [[ -f $template_file ]]; then
-		# Read the template while translating newlines to form feed chars
+		# Read the template content andtranslate newlines to form feeds
 		template_content="$(tr '\n' '\f' <"$template_file")"
+
 	else
 		webera::log error "${__In}ERROR: No template found '$template_file'"
-		return 7
+		return 1
 	fi
 
 	directives_include=$($__GREP -Po "<!--$__Ws*%include$__Ws*:.*?-->" \
@@ -1091,6 +1097,7 @@ webera::parse-template-includes() {
 #   Parses the template, processes the directives and renders the html file.
 #
 # > $1 : template_file_name
+# <    : the template content
 # ^ ::process-templates (when parsing the 'route' command)
 # g __AWK __GREP __SED __Ws __In2 __In3
 #
@@ -1219,7 +1226,7 @@ webera::render-template() {
 
 	webera::log 3 ""
 
-	# Print the template, translating back all form-feeds to newlines
+	# Print the template, restoring all form-feeds to newlines
 	printf "%s" "$template_text" | tr '\f' '\n'
 
 } # ::render-template
@@ -1248,7 +1255,8 @@ webera::get-directive-content() {
 #
 #   Checks for dependencies and displays pertinent information.
 #
-# x 6 : bash version too old
+# x 1 : bash version too old
+# <   : information for the user
 # ^ ::main
 #
 webera::check-compatibility() {
@@ -1261,7 +1269,7 @@ webera::check-compatibility() {
 			printf 'You can install it with Brew (http://brew.sh)\n like this:'
 			printf 'brew install bash\n'
 		fi
-		exit 6
+		exit 1
 	fi
 
 	# prefer the GNU version of the Unix commands (specially in Mac OS X)
@@ -1321,6 +1329,7 @@ webera::setup-debug() {
 #
 #   Prints all the webera configurable options.
 #
+# < : all webera options
 # ^ ::main
 #
 webera::print-options() { printf '%s\n' "$Options_webera"; }
@@ -1413,7 +1422,7 @@ webera::store-options-from-config() {
 #   Prints the spent time on the script, in milliseconds.
 #
 # > $1 : if true, prints the time beautified
-#
+# <    : time elapsed
 #
 webera::elapsed-time() {
 
@@ -1435,17 +1444,17 @@ webera::elapsed-time() {
 #   showing the days, hours, minutes and/or seconds contained in that time.
 #
 # > $1 : time in milliseconds
-# e    : time beautified
+# <    : time beautified
 #
 webera::beautify-time() {
 
-	local -ir ms="$1"
-	local -ir s="$((ms/1000%60))"
-	local -ir m="$((ms/60000%60))"
-	local -ir h="$((ms/3600000%24))"
-	local -ir d="$((ms/86400000))"
+	local -ir ms="$1"                # milliseconds
+	local -ir s="$((ms/1000%60))"    # seconds
+	local -ir m="$((ms/60000%60))"   # minutes
+	local -ir h="$((ms/3600000%24))" # hours
+	local -ir d="$((ms/86400000))"   # days
 
-	local time_str; [[ $d -gt 0 ]] && time_str+="${d}d"
+	local time_str; [[ $d -gt 0 ]] && time_str+="${d}d "
 	[[ $h -gt 0 || -n $time_str ]] && time_str+="${h}h "
 	[[ $m -gt 0 || -n $time_str ]] && time_str+="${m}m "
 	[[ -n $time_str ]] && time_str+="${s}s " # show seconds if time > 1m
@@ -1456,4 +1465,4 @@ webera::beautify-time() {
 } # ::beautify-time
 
 
-[[ $0 == "${BASH_SOURCE[0]}" ]] && webera::main "$@" # Run if not sourced
+if [[ $0 == "${BASH_SOURCE[0]}" ]]; then webera::main "$@"; fi # run if !sourced

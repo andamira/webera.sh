@@ -1,7 +1,6 @@
 # EXAMPLE 0 simple page
 #
 config:DIR_OUTPUT:../../docs/examples/0-simple-page
-config:LOG_FILE:../all-examples.log
 
 resource:copy:css:css
 resource:copy:img:img
