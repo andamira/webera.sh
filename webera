@@ -6,7 +6,7 @@
 #    repository : https://github.com/andamira/webera
 #        author : José Luis Cruz © 2016-2017
 #       license : MIT
-__WEBERA_VERSION=0.1.73
+__WEBERA_VERSION=0.1.74
 
 
 #-------------------------------------------------------------------------------
@@ -90,8 +90,8 @@ webera::main() {
 	## NON-CONFIGURABLE GLOBAL DATA
 
 	# arrays
-	local -A Options_args_array  # the options received as script arguments
-	local -A Defined_cmd_map     # the configured custom defined commands
+	local -A Options_args_     # the options received as script arguments
+	local -A Defined_commands_ # the custom commands defined in configuration
 
 	local -i Nesting_level=0  # current nesting level, when including files
 
@@ -428,7 +428,7 @@ webera::set-arg() {
 # > $2 value received
 # ^ ::set-arg
 #
-webera::push-arg() { Options_args_array[$1]="$2"; }
+webera::push-arg() { Options_args_[$1]="$2"; }
 
 
 #-------------------------------------------------------------------------------
@@ -737,11 +737,11 @@ webera::parse-config-options() {
 	fi
 
 	local opt_list # temporary storage for the argument options
-	local opt; for opt in "${!Options_args_array[@]}"; do
+	local opt; for opt in "${!Options_args_[@]}"; do
 		# Override the global option with the parsed argument
-		printf -v "$opt" '%s' "${Options_args_array[$opt]}"
+		printf -v "$opt" '%s' "${Options_args_[$opt]}"
 		# Format the line appropriately
-		opt_list+="$opt=${Options_args_array[$opt]}"$'\n'
+		opt_list+="$opt=${Options_args_[$opt]}"$'\n'
 	done
 	# Mass-sanitize and append the parsed arguments to the global options list
 	Options_webera+=$'\n'"$(webera::sanitize-options "$opt_list" args)"
@@ -758,12 +758,12 @@ webera::parse-config-options() {
 #
 webera::generate-config-file() {
 
-	local option; for option in "${!Options_args_array[@]}"; do
+	local option; for option in "${!Options_args_[@]}"; do
 		if [[ $option != _* ]]; then # Only write public options
 			local opt=${option#Opt_} # remove `Opt_` prefix
 			# Save current option to the new config file (UPPERCASE)
 			printf '%s\n' \
-				"config : ${opt^^} : ${Options_args_array[$option]}" \
+				"config : ${opt^^} : ${Options_args_[$option]}" \
 				>> "$_Opt_config_file"
 		fi
 	done
@@ -804,7 +804,7 @@ webera::read-config-commands() {
 			| cut -d':' -f3- \
 			| $__SED -e "$__Sed_trim_ws" )
 
-		Defined_cmd_map["$command_name"]="$command_action"
+		Defined_commands_["$command_name"]="$command_action"
 
 		webera::log 2 "${__In}$command_name='$command_action'"
 	done
@@ -872,18 +872,18 @@ webera::process-resources() {
 			;;
 		*)
 			# On custom cmds, {PATHS} tags are adapted for resources
-			if [[ -n ${Defined_cmd_map[$oper_type]} ]]; then
+			if [[ -n ${Defined_commands_[$oper_type]} ]]; then
 
-				oper_cmd=$(printf '%s' "${Defined_cmd_map[$oper_type]}" \
+				oper_cmd=$(printf '%s' "${Defined_commands_[$oper_type]}" \
 					| $__SED "s|{ORIGIN}|$Opt_dir_resources/$oper_orig|g" \
 					| $__SED "s|{BUILD}|$Opt_dir_build/$oper_orig|g" \
 					| $__SED "s|{TARGET}|$Opt_dir_output/$Opt_dir_resources/$oper_targ|g")
 
 				# Create target paths
-				if [[ ${Defined_cmd_map[$oper_type]} == *"{BUILD}"* ]]; then
+				if [[ ${Defined_commands_[$oper_type]} == *"{BUILD}"* ]]; then
 					mkdir -p -- "$(dirname "$Opt_dir_build/$oper_targ")"
 				fi
-				if [[ ${Defined_cmd_map[$oper_type]} == *"{TARGET}"* ]]; then
+				if [[ ${Defined_commands_[$oper_type]} == *"{TARGET}"* ]]; then
 					mkdir -p -- "$(dirname \
 						"$Opt_dir_output/$Opt_dir_resources/$oper_targ")"
 				fi
@@ -970,17 +970,17 @@ webera::process-templates() {
 
 		*)
 			# On custom cmds, the {PATHS} tags are adapted for templates
-			if [[ -n ${Defined_cmd_map[$oper_type]} ]]; then
+			if [[ -n ${Defined_commands_[$oper_type]} ]]; then
 
-				oper_cmd=$(printf '%s' "${Defined_cmd_map[$oper_type]}" \
+				oper_cmd=$(printf '%s' "${Defined_commands_[$oper_type]}" \
 					| $__SED "s|{ORIGIN}|$Opt_dir_templates/$oper_orig|g" \
 					| $__SED "s|{BUILD}|$Opt_dir_build/$oper_orig|g" \
 					| $__SED "s|{TARGET}|$Opt_dir_output/$oper_goal|g" )
 
 				# Create target paths
-				[[ ${Defined_cmd_map[$oper_type]} == *"{BUILD}"* ]] &&
+				[[ ${Defined_commands_[$oper_type]} == *"{BUILD}"* ]] &&
 					mkdir -p -- "$(dirname "$Opt_dir_build/$oper_goal")"
-				[[ ${Defined_cmd_map[$oper_type]} == *"{TARGET}"* ]] &&
+				[[ ${Defined_commands_[$oper_type]} == *"{TARGET}"* ]] &&
 					mkdir -p -- \
 						"$(dirname "$Opt_dir_output/$Opt_dir_resources/$oper_goal")"
 
