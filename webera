@@ -1465,4 +1465,4 @@ webera::beautify-time() {
 } # ::beautify-time
 
 
-if [[ $0 == "${BASH_SOURCE[0]}" ]]; then webera::main "$@"; fi # run if !sourced
+[[ $0 == "${BASH_SOURCE[0]}" ]] && webera::main "$@" || : # run if !sourced
