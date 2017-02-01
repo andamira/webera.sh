@@ -1470,4 +1470,4 @@ webera::beautify-time() {
 
 
 # shellcheck disable=SC2015
-[[ $0 == "${BASH_SOURCE[0]}" ]] && webera::main "$@" || : # run if !sourced
+if [[ $0 == "${BASH_SOURCE[0]}" ]]; then webera::main "$@"; fi # run if !sourced

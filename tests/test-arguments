@@ -42,9 +42,8 @@ test::suite() {
 	local -r defaults="$(webera -_)"
 
 	# T: Check expected format, and the minimum number of arguments
-	newval=$(echo "$defaults" | grep -c '^\[[a-z]\+\]:.\+=')
+	newval=$(printf '%s' "$defaults" | grep -c '^\[[a-z]\+\]:.\+=')
 	assert_success "[[ $newval -ge 25 ]]" # number of default vars
-
 
 
 	test_h2 "Operational Flags"
