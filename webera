@@ -6,7 +6,7 @@
 #    repository : https://github.com/andamira/webera
 #        author : José Luis Cruz © 2016-2017
 #       license : MIT
-__WEBERA_VERSION=0.1.74
+__WEBERA_VERSION=0.1.75
 
 
 #-------------------------------------------------------------------------------
@@ -111,9 +111,9 @@ webera::main() {
 	# reusable regexp patterns
 	local -r __Ws="[[:space:]]" # whitespace
 	local -r __Sed_trim_ws="s/^$__Ws*//;s/$__Ws*$//"
-	local -r __Sed_del_comments="/^$__Ws*#.*/d" # starting in #
+	local -r __Sed_del_comments="/^$__Ws*#.*/d" # starts with #
 	local -r __Sed_del_empty_lines="/^$__Ws*$/d"
-	local -r __Sed_join_split_lines=':x; /\\$/ {N; s/\\\n//; tx}' # ending in \
+	local -r __Sed_join_split_lines=':x; /\\$/ {N; s/\\\n//; tx}' # ends with \
 
 
 	## MAIN LOGIC
@@ -1017,7 +1017,7 @@ webera::parse-template-includes() {
 	                          # `./*` or an absolute path `/*` or relative
 	                          # to the templates (or build) directory.
 
-	local dir_parent=${dir_parent:-} # where the parent template is located
+	local dir_parent=${dir_parent:-.} # where the parent template is located
 
 	local template_content    # contents of $template_file
 	local directives_include  # the %include directives in $template_content
@@ -1052,7 +1052,7 @@ webera::parse-template-includes() {
 	fi
 
 	if [[ -f $template_file ]]; then
-		# Read the template content andtranslate newlines to form feeds
+		# Read the template content and translate newlines to form feeds
 		template_content="$(tr '\n' '\f' <"$template_file")"
 
 	else
@@ -1128,9 +1128,11 @@ webera::render-template() {
 	#
 	# <!-- // Comment -->
 	#
-	# NOTE: Doesn't remove any empty newline it leaves
-	template_text=$(printf '%s' "$template_text" \
-		| $__SED -re "s/<!--$__Ws*\/\/.*?-->\x0c?//g")
+	# non-greedy matching (can't include `-->` string)
+	template_text=$(printf '%s' "$template_text" | $__SED \
+		-e 's/-->/\x01/g' \
+		-re "s/<!--$__Ws*\/\/[^\x01]*\x01\x0c?//g" \
+		-e 's/\x01/-->/g')
 
 	local __ifs="$IFS"; IFS=$'\n'
 
@@ -1423,6 +1425,7 @@ webera::store-options-from-config() {
 #
 # > $1 : if true, prints the time beautified
 # <    : time elapsed
+# ^ ::main
 #
 webera::elapsed-time() {
 
@@ -1445,6 +1448,7 @@ webera::elapsed-time() {
 #
 # > $1 : time in milliseconds
 # <    : time beautified
+# ^ ::elapsed-time
 #
 webera::beautify-time() {
 
@@ -1465,4 +1469,5 @@ webera::beautify-time() {
 } # ::beautify-time
 
 
+# shellcheck disable=SC2015
 [[ $0 == "${BASH_SOURCE[0]}" ]] && webera::main "$@" || : # run if !sourced

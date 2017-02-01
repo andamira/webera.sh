@@ -66,6 +66,11 @@ test::suite() {
 	# T: remove final newline
 	test::render-template-string '<!-- // foo -->\n' ''
 
+	# T: non-greedy matching
+	test::render-template-string '<!-- // foo --><!-- @var -->' '<!-- @var -->'
+	# T: remove final newline with non-greedy matching
+	test::render-template-string '<!-- // foo -->\n<!--@var-->' '<!--@var-->'
+
 
 	test_h3 "// comments special chars"
 	# ~~~~~~~~~~~~~~~~~~~~~~~~
