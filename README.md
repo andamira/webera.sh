@@ -1,7 +1,5 @@
 # webera
 
-a handy shell script for the generation of static websites.
-
 [![version: 0.1.X](https://img.shields.io/badge/version-0.1.X-d8ad4c.svg?style=flat-square)](#status)
 [![language: bash](https://img.shields.io/badge/language-bash-447799.svg?style=flat-square)](https://github.com/andamira/webera/wiki/FAQ#why-bash-and-not-other_language--)
 [![Build Status](https://img.shields.io/travis/andamira/webera/master.svg)](https://travis-ci.org/andamira/webera)
@@ -9,21 +7,21 @@ a handy shell script for the generation of static websites.
 
 ---
 
-### Table of Contents
+## Table of Contents
 
-- [Features](#features-)
-- [Installation](#installation-)
+- [Introduction](#introduction-)
+- [Use Cases](#use-cases-)
 - [Quick Start](#quick-start-)
   - [Examples](#examples-)
 - [Documentation](#documentation-)
   - [Config](#config-)
   - [Running](#running-)
+- [Install](#install-)
 - [Status](#status-)
 
----
+## Introduction [↑](#table-of-contents "Back to TOC")
 
-
-## Features [↑](#table-of-contents "Back to TOC")
+webera is a shell script for the generation of static websites.
 
 - A configurable system for processing content templates and
   static resources, allowing custom commands and workflows.
@@ -33,54 +31,40 @@ a handy shell script for the generation of static websites.
 - Supports automatic preview.
 
 
-## Installation [↑](#table-of-contents "Back to TOC")
+## Use Cases [↑](#table-of-contents "Back to TOC")
 
-**Manually**
+If you want:
 
-Download the webera script and make it executable:
-
-```sh
-$ wget git.io/webera && chmod +x webera
-```
-
-To install it globally:
-
-```sh
-$ sudo sh -c "wget git.io/webera -O /usr/local/bin/webera && chmod +x /usr/local/bin/webera"
-```
-
-**Mac OS X**
-
-In Mac OS X you **need** to install a more recent version of Bash (>=4)
-than the one that comes by default. Also the GNU version of coreutils,
-sed, grep and awk. An easy way to install them is with [Brew](http://brew.sh/):
-
-```
-$ brew tap homebrew/dupes
-$ brew install bash coreutils gnu-sed grep gawk
-```
+* absolute control of the generated HTML.
+* to be able to run it anywhere there is Bash.
+* to use a very configurable CLI tool, with minimal footprint.
+* to have a very versatile tool in a single file that you can understand.
 
 
 ## Quick Start [↑](#table-of-contents "Back to TOC")
 
-Generate a new config file (`webera -n`) or download the
-[.weberarc](https://raw.githubusercontent.com/andamira/webera/master/.weberarc)
-file from this repository.
-
-Put your HTML templates in the `tem/` directory, and
-configure the corresponding routes in the config file:
+Download webera and make it executable: (see also [Install](#install-))
 
 ```
-# this will process the templates from `tem/*` to `out/*/index.html`:
+$ wget git.io/webera && chmod +x webera
+```
+
+Create a directory called `tem/` and put there your HTML templates,
+then configure the corresponding routes in the config file.
+
+> E.g. This will process the templates from `tem/*` to `out/*/index.html`:
+
+```
 template : route : my-index.html   : /
 template : route : other-page.html : /other-url/
 ```
 
-Put your style.css file under `res/css/` and configure how
-it will be processed (the simplest operation is to copy):
+Put your styles under `res/css/` and configure how
+it will be processed (the simplest operation is to copy them):
+
+> E.g. This will copy the directory `res/css/` to `out/css/`:
 
 ```
-# this will copy `res/css/` to `out/css/`:
 resource : copy : css/ : css/
 ```
 
@@ -104,9 +88,9 @@ $ find out/
 
 ### Examples [↑](#table-of-contents "Back to TOC")
 
-There are *(will be)* several examples you can take a look into:
+There are several examples:
 
-- Their source code is in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory of the repository.
+- The source code is in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory.
 - The generated output is in the [docs/examples](https://github.com/andamira/webera/tree/master/docs/examples) directory.
 - The result is rendered in [andamira.github.io/webera/examples](https://andamira.github.io/webera/examples/).
 
@@ -118,12 +102,9 @@ There are *(will be)* several examples you can take a look into:
 
 ### Config [↑](#table-of-contents "Back to TOC")
 
-The following configuration snippet shows how to:
+The following configuration snippet shows you how to set options, define custom
+commands, process the resources and the templates, and route them:
 
-- configure the options.
-- define commands for later use on the indicated resources (or templates).
-- process the resources using the previous custom command.
-- process the templates, defining the routes using both file and directory URL endpoints.
 
 ```sh
 # Customized Options
@@ -150,50 +131,47 @@ for more information about the configuration possibilities.
 
 ### Running [↑](#table-of-contents "Back to TOC")
 
-There are many flags to customize how the script should run,
-which you can combine with a more stable custom configuration.
+There are several flags that allows you to control the scripts behaviour in
+the moment, complementing a more stable configuration.
 See the wiki page for the
 [order of priority](https://github.com/andamira/webera/wiki/Configuration#order-of-priority-)
-between all the configuration sources.
+of all the configuration sources.
 
-The following examples demonstrate common usage situations, featuring both long and short flags.
-
-
-1. Process the templates, and write a level-2 logfile,
-   after clearing any previous log:
-
-  `webera --process-templates --clear-log --log-level=2`
-
-  `webera -t -cL2`
+You can run `./webera --help` to see the basic help on flags, see some
+[usage examples](https://github.com/andamira/webera/wiki/Script-Arguments#usage-examples-),
+or take a deeper look to the complete
+[list of flags](https://github.com/andamira/webera/wiki/Script-Arguments#list-of-flags-)
+in the wiki.
 
 
-2. Process both the templates and the resources,
-   and then preview using a custom browser:
+## Install [↑](#table-of-contents "Back to TOC")
 
-  `webera --process-all --preview --browser-bin=vivaldi`
+**Manually**
 
-  `webera -awW vivaldi`
+You can use either `wget` or `curl -LO` to download the script,
+and then make it executable:
 
+```sh
+$ wget git.io/webera && chmod +x webera
+```
 
-3. Process resources *from* a custom resources directory
-   *to* a custom output directory, with spaces in the path:
+To install it globally:
 
-  `webera --process-resources --dir-resources=resB/ --dir-output="out B"`
+```sh
+$ sudo sh -c "wget git.io/webera -O /usr/local/bin/webera && chmod +x /usr/local/bin/webera"
+```
 
-  `webera -rR resB/ -O "out B"`
+**In Mac OS X**
 
+In order to work well in Mac OS X you need a more recent version of Bash
+than the one that comes by default, and also the GNU version of coreutils,
+sed, grep and awk. An easy way to install them is using [Brew](http://brew.sh/):
 
-4. Generate a new config file using the provided name,
-   and write there the custom settings for the server and port.
-
-  `webera --new-config --file-config=conf/webera.conf --server-type=php --server-port=8080`
-
-  `webera -nF conf/webera.conf -S php -P 8080`
-
-
-Run `./webera --help` to see the basic help on flags, or take a deeper look to the complete [list of flags](https://github.com/andamira/webera/wiki/Script-Arguments#list-of-flags-) in the wiki.
-
+```
+$ brew tap homebrew/dupes
+$ brew install bash coreutils gnu-sed grep gawk
+```
 
 ## Status [↑](#table-of-contents "Back to TOC")
 
-This project is not stable yet. It is still undergoing many changes.
+This project is considered experimental, and it is not yet stable.
