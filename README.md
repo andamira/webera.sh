@@ -4,13 +4,15 @@
 [![language: bash](https://img.shields.io/badge/language-bash-447799.svg?style=flat-square)](https://github.com/andamira/webera/wiki/FAQ#why-bash-and-not-other_language--)
 [![Build Status](https://img.shields.io/travis/andamira/webera/master.svg)](https://travis-ci.org/andamira/webera)
 [![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg)](https://codeclimate.com/github/andamira/webera)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/%20%20%20%20629/badge)](https://bestpractices.coreinfrastructure.org/projects/629)
 
 ---
 
 ## Table of Contents
 
 - [Intro](#introduction-)
-- [Use Cases](#use-cases-)
+  - [Use Cases](#use-cases-)
+  - [Features](#features-)
 - [Quick Start](#quick-start-)
 - [Documentation](#documentation-)
   - [Config](#config-)
@@ -23,33 +25,34 @@
 
 ## Intro [↑](#table-of-contents "Back to TOC")
 
-webera is a shell script for the generation of static websites.
+webera is a shell script intended for the generation of static websites.
 
-It aims to be a lightweight tool that just works, with sensible defaults,
-and also very configurable supporting custom workflows.
-
-The [configuration system](#config-) allows to define and perform operations
-over static resources and templates, and to create routes for those templates.
-
-The templating system allows to nest templates, set variables
-and display the output of commands.
+It aims to be a lightweight tool that just works, very configurable,
+and with sensible defaults.
 
 
-
-## Use Cases [↑](#table-of-contents "Back to TOC")
+### Use Cases [↑](#table-of-contents "Back to TOC")
 
 If you want:
 
 * absolute control of the generated HTML.
 * to be able to run it anywhere there is Bash.
-* to use a very configurable CLI tool, with minimal footprint.
-* to have a very versatile tool in a single file that you can understand.
+* to usea very configurable CLI tool with a minimal footprint.
+* to have a very versatile tool in a single file that you can grok.
+
+
+### Features [↑](#table-of-contents "Back to TOC")
+
+- The [configuration system](#config-) allows to define and perform operations
+  over static resources and templates, and to create routes for those templates.
+- The templating system allows to nest templates, set variables
+  and display the output of custom commands.
 
 
 
 ## Quick Start [↑](#table-of-contents "Back to TOC")
 
-1. Download webera and make it executable: (see also [Install](#install-))
+1. Download webera and make it executable: (see [Install](#install-))
 
   ```
   $ wget git.io/webera && chmod +x webera
@@ -188,5 +191,4 @@ This project is not yet in a stable state.
 
 It also lacks important planned features like: template metadata, custom post
 types, blog support, plugin system, internationalization support,
-optional dynamic functionality with cgi scripts, starter templates&hellips;
-
+starter templates, dynamic functionality via cgi scripts&hellip;
