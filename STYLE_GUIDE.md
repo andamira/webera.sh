@@ -3,7 +3,7 @@
 
 ## Format and Indentation
 
- * Tabs for indendation, spaces for alignment. (See FAQ: why tabs?)
+ * Tabs for indendation, spaces for alignment.
  * A tab size of 4 characters.
  * Unix line endings.
 
@@ -57,7 +57,7 @@ NOTE: The only global variable is `__WEBERA_VERSION`.
 * Function are preferably named starting with the verb,
   then the object and the modifiers.
 
-* All code must be inside functions
+* All code must be inside functions.
 
 
 ## Comments
@@ -81,15 +81,15 @@ showing the short function name (without the namespace prefix):
 } # ::function-name
 ```
 
-All functions start with a doc string block formatted as described below.
+All functions start with a header comment block formatted as described below.
 
-- First line is a dashed line as long as the line length limit
-- Second line is the short name of the function (without the namespace prefix):
+- First line is a dashed line separator, as long as the line length limit.
+- Second line is the short name of the function (without the namespace prefix).
 - Then comes the function description, surrounded by empty comment lines,
-  and padded left with 2 spaces.
+  and left padded with 2 spaces.
 
 ```
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # ::function-name
 #
 #   The description of the function...
@@ -97,29 +97,31 @@ All functions start with a doc string block formatted as described below.
 #
 ```
 
-After that, a block that describes the arguments, the return and exit values,
-and the parents functions, if possible.
+After that, a block to describe the arguments, the return and exit values, the
+standard output, the return variables and the parents functions if possible.
 
 ```
->  $1 : first argument description
->  $2 : second argument description
-<  22 : return value description
-x 119 : exit value description
+>  $1 : first argument
+>  $2 : second argument
+r  22 : return value
+x 119 : exit value
+<     : standard output
+v     : return variable
 ^ ::parent-function ::other-parent-function
 ```
 
-At the beginning of the function code, the local declarations, described.
-Although descriptions can be
+At the beginning of the function code, are the local declarations, with comments
+describing their purpose. The descriptions can be ommited for the arguments
+already described in the header comment block.
 
 ```
-  local arg_one="$1" arg_two="$2" # no need to repeat the description
+local arg_one="$1" arg_two="$2" # no need to repeat the description
 
-  local    bar  # purpose of bar
-  local -i foo  # purpose of foo
+local    bar  # purpose of bar
+local -i foo  # purpose of foo
 ```
 
-
-Very short functions can also be written in one line:
+Very short functions can be written in one line, like this:
 
 ```
 webera::one-line-function() { echo "a-very-short-function"; }
@@ -131,4 +133,10 @@ webera::one-line-function() { echo "a-very-short-function"; }
 Each opening bracket goes in the same line as the statement, and
 ending braces lines up with the statement they belong to.
 [(1TBS)](https://en.wikipedia.org/wiki/Indent_style#Variant:_1TBS_.28OTBS.29)
+
+```
+webera::example-function {
+  :
+}
+```
 
