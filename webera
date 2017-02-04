@@ -90,8 +90,8 @@ webera::main() {
 	## NON-CONFIGURABLE GLOBAL DATA
 
 	# arrays
-	local -A Options_args_     # the options received as script arguments
-	local -A Defined_commands_ # the custom commands defined in configuration
+	local -A Options_args__     # the options received as script arguments
+	local -A Defined_commands__ # the custom commands defined in configuration
 
 	local -i Nesting_level=0  # current nesting level, when including files
 
@@ -428,7 +428,7 @@ webera::set-arg() {
 # > $2 value received
 # ^ ::set-arg
 #
-webera::push-arg() { Options_args_[$1]="$2"; }
+webera::push-arg() { Options_args__[$1]="$2"; }
 
 
 #-------------------------------------------------------------------------------
@@ -737,11 +737,11 @@ webera::parse-config-options() {
 	fi
 
 	local opt_list # temporary storage for the argument options
-	local opt; for opt in "${!Options_args_[@]}"; do
+	local opt; for opt in "${!Options_args__[@]}"; do
 		# Override the global option with the parsed argument
-		printf -v "$opt" '%s' "${Options_args_[$opt]}"
+		printf -v "$opt" '%s' "${Options_args__[$opt]}"
 		# Format the line appropriately
-		opt_list+="$opt=${Options_args_[$opt]}"$'\n'
+		opt_list+="$opt=${Options_args__[$opt]}"$'\n'
 	done
 	# Mass-sanitize and append the parsed arguments to the global options list
 	Options_webera+=$'\n'"$(webera::sanitize-options "$opt_list" args)"
@@ -758,12 +758,12 @@ webera::parse-config-options() {
 #
 webera::generate-config-file() {
 
-	local option; for option in "${!Options_args_[@]}"; do
+	local option; for option in "${!Options_args__[@]}"; do
 		if [[ $option != _* ]]; then # Only write public options
 			local opt=${option#Opt_} # remove `Opt_` prefix
 			# Save current option to the new config file (UPPERCASE)
 			printf '%s\n' \
-				"config : ${opt^^} : ${Options_args_[$option]}" \
+				"config : ${opt^^} : ${Options_args__[$option]}" \
 				>> "$_Opt_config_file"
 		fi
 	done
@@ -804,7 +804,7 @@ webera::read-config-commands() {
 			| cut -d':' -f3- \
 			| $__SED -e "$__Sed_trim_ws" )
 
-		Defined_commands_["$command_name"]="$command_action"
+		Defined_commands__["$command_name"]="$command_action"
 
 		webera::log 2 "${__In}$command_name='$command_action'"
 	done
@@ -872,18 +872,18 @@ webera::process-resources() {
 			;;
 		*)
 			# On custom cmds, {PATHS} tags are adapted for resources
-			if [[ -n ${Defined_commands_[$oper_type]} ]]; then
+			if [[ -n ${Defined_commands__[$oper_type]} ]]; then
 
-				oper_cmd=$(printf '%s' "${Defined_commands_[$oper_type]}" \
+				oper_cmd=$(printf '%s' "${Defined_commands__[$oper_type]}" \
 					| $__SED "s|{ORIGIN}|$Opt_dir_resources/$oper_orig|g" \
 					| $__SED "s|{BUILD}|$Opt_dir_build/$oper_orig|g" \
 					| $__SED "s|{TARGET}|$Opt_dir_output/$Opt_dir_resources/$oper_targ|g")
 
 				# Create target paths
-				if [[ ${Defined_commands_[$oper_type]} == *"{BUILD}"* ]]; then
+				if [[ ${Defined_commands__[$oper_type]} == *"{BUILD}"* ]]; then
 					mkdir -p -- "$(dirname "$Opt_dir_build/$oper_targ")"
 				fi
-				if [[ ${Defined_commands_[$oper_type]} == *"{TARGET}"* ]]; then
+				if [[ ${Defined_commands__[$oper_type]} == *"{TARGET}"* ]]; then
 					mkdir -p -- "$(dirname \
 						"$Opt_dir_output/$Opt_dir_resources/$oper_targ")"
 				fi
@@ -970,17 +970,17 @@ webera::process-templates() {
 
 		*)
 			# On custom cmds, the {PATHS} tags are adapted for templates
-			if [[ -n ${Defined_commands_[$oper_type]} ]]; then
+			if [[ -n ${Defined_commands__[$oper_type]} ]]; then
 
-				oper_cmd=$(printf '%s' "${Defined_commands_[$oper_type]}" \
+				oper_cmd=$(printf '%s' "${Defined_commands__[$oper_type]}" \
 					| $__SED "s|{ORIGIN}|$Opt_dir_templates/$oper_orig|g" \
 					| $__SED "s|{BUILD}|$Opt_dir_build/$oper_orig|g" \
 					| $__SED "s|{TARGET}|$Opt_dir_output/$oper_goal|g" )
 
 				# Create target paths
-				[[ ${Defined_commands_[$oper_type]} == *"{BUILD}"* ]] &&
+				[[ ${Defined_commands__[$oper_type]} == *"{BUILD}"* ]] &&
 					mkdir -p -- "$(dirname "$Opt_dir_build/$oper_goal")"
-				[[ ${Defined_commands_[$oper_type]} == *"{TARGET}"* ]] &&
+				[[ ${Defined_commands__[$oper_type]} == *"{TARGET}"* ]] &&
 					mkdir -p -- \
 						"$(dirname "$Opt_dir_output/$Opt_dir_resources/$oper_goal")"
 
@@ -1469,5 +1469,4 @@ webera::beautify-time() {
 } # ::beautify-time
 
 
-# shellcheck disable=SC2015
 if [[ $0 == "${BASH_SOURCE[0]}" ]]; then webera::main "$@"; fi # run if !sourced

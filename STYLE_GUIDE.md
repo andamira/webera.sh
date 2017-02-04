@@ -24,23 +24,27 @@ In lower case `lisp-case`: words separated with dashes.
 * Different casing is used to convey different meanings,
 as well as the number of prefixing underscores:
 
-* `snake_case`      : local variables
-* `_snake_case`     : parent's local variable, explicitly re-declared as such
-* `__snake_case`    : readonly local variables
+  * `snake_case`      : local variables
+  * `__snake_case`    : readonly local variables
 
-* `Cobra_case`      : pseudo-global variables (declared in ::main)
-* `__Cobra_case`    : readonly pseudo-global variables
+  * `Cobra_case`      : pseudo-global variables (declared in ::main)
+  * `__Cobra_case`    : readonly pseudo-global variables
 
-* `ANACONDA_CASE`   : environment variables
-* `__ANACONDA_CASE` : environment readonly variables
+  * `ANACONDA_CASE`   : environment variables
+  * `__ANACONDA_CASE` : environment readonly variables
 
-Special case with prefixes `Opt_` & `_Opt`:
+  Special cases: with prefixes `Opt_` & `_Opt`:
 
-* `Opt_cobra_case`  : a configuration option, modifiable from the config file,
-                      From which it can be referenced using insensitive
-                      SNAKE_CASE, and removing the `Opt_` prefix.
-* `_Opt_cobra_case` : a private configuration option, unmodifiable from the
-                      config file, but only using script arguments.
+  * `Opt_cobra_case`  : a configuration option, modifiable from the config file,
+                        From which it can be referenced using insensitive
+                        SNAKE_CASE, and removing the `Opt_` prefix.
+  * `_Opt_cobra_case` : a private configuration option, unmodifiable from the
+                        config file, but only using script arguments.
+
+  Suffixes:
+
+  * `snake_case_`     : array
+  * `snake_case__`    : associative array
 
 NOTE: The only global variable is `__WEBERA_VERSION`.
 
@@ -110,12 +114,12 @@ Although descriptions can be
 ```
   local arg_one="$1" arg_two="$2" # no need to repeat the description
 
-  local    bar  # the purpose of bar
-  local -i foo  # the purpose of foo
+  local    bar  # purpose of bar
+  local -i foo  # purpose of foo
 ```
 
 
-NOTE: Very short functions can also be written in one line:
+Very short functions can also be written in one line:
 
 ```
 webera::one-line-function() { echo "a-very-short-function"; }
@@ -126,7 +130,5 @@ webera::one-line-function() { echo "a-very-short-function"; }
 
 Each opening bracket goes in the same line as the statement, and
 ending braces lines up with the statement they belong to.
-
-This is called "the one true brace style"
 [(1TBS)](https://en.wikipedia.org/wiki/Indent_style#Variant:_1TBS_.28OTBS.29)
 
