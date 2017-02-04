@@ -1,6 +1,6 @@
 # webera
 
-[![version: 0.1.X](https://img.shields.io/badge/version-0.1.X-d8ad4c.svg?style=flat-square)](#status)
+[![version: 0.2.x](https://img.shields.io/badge/version-0.2.x-d8ad4c.svg?style=flat-square)](#status)
 [![language: bash](https://img.shields.io/badge/language-bash-447799.svg?style=flat-square)](https://github.com/andamira/webera/wiki/FAQ#why-bash-and-not-other_language--)
 [![Build Status](https://img.shields.io/travis/andamira/webera/master.svg)](https://travis-ci.org/andamira/webera)
 [![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg)](https://codeclimate.com/github/andamira/webera)

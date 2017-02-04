@@ -5,8 +5,9 @@
 #   description : a handy static website generator
 #    repository : https://github.com/andamira/webera
 #        author : José Luis Cruz © 2016-2017
+#       version : 0.2.0
 #       license : MIT
-__WEBERA_VERSION=0.1.75
+__WEBERA_VERSION=0.2.0
 
 
 #-------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ webera::main() {
 	# 1. Variables prefixed with `Opt_` are user configurable options.
 	# 2. Options starting with an underscore can't be configured from
 	#    the config file or string; only using script flag arguments.
-	# 3. Options without an aassociated argument can only be modified
+	# 3. Options without an associated argument can only be modified
 	#    by the user from the configuration.
 	# 4. Options have to be referenced from the configuration removing
 	#    the `Opt_` prefix. Note that case sensitivity is not enforced.
