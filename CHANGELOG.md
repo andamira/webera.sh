@@ -56,5 +56,5 @@ There are too many mixed and disordered changes between
 First commit.
 
 
-[0.2.0]: https://github.com/andamira/webera/compare/f5189ebb2be0fb5080126bad2dc5c5d0cf1877e4...v0.2.0
-[0.1.0]: https://github.com/andamira/webera/tree/f5189ebb2be0fb5080126bad2dc5c5d0cf1877e4
+[0.2.0]: https://github.com/andamira/webera.sh/compare/f5189ebb2be0fb5080126bad2dc5c5d0cf1877e4...v0.2.0
+[0.1.0]: https://github.com/andamira/webera.sh/tree/f5189ebb2be0fb5080126bad2dc5c5d0cf1877e4

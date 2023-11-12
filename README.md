@@ -1,9 +1,7 @@
 # webera
 
 [![version: 0.2.x](https://img.shields.io/badge/version-0.2.x-d8ad4c.svg?style=flat-square)](#status)
-[![language: bash](https://img.shields.io/badge/language-bash-447799.svg?style=flat-square)](https://github.com/andamira/webera/wiki/FAQ#why-bash-and-not-other_language--)
-[![Build Status](https://img.shields.io/travis/andamira/webera/master.svg)](https://travis-ci.org/andamira/webera)
-[![Code Climate](https://img.shields.io/codeclimate/github/andamira/webera.svg)](https://codeclimate.com/github/andamira/webera)
+[![language: bash](https://img.shields.io/badge/language-bash-447799.svg?style=flat-square)](https://github.com/andamira/webera.sh/wiki/FAQ#why-bash-and-not-other_language--)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/%20%20%20%20629/badge)](https://bestpractices.coreinfrastructure.org/projects/629)
 
 ---
@@ -99,7 +97,7 @@ to process all the configured templates and resources.
 
 ## Documentation [↑](#table-of-contents "Back to TOC")
 
-[The wiki](https://github.com/andamira/webera/wiki) is the documentation reference.
+[The wiki](https://github.com/andamira/webera.sh/wiki) is the documentation reference.
 
 
 ### Config [↑](#table-of-contents "Back to TOC")
@@ -126,8 +124,8 @@ template : route : about-me.html  : /about/me/
 template : route : about-you.html : /about/you.html
 ```
 
-See [`.weberarc`](https://github.com/andamira/webera/blob/master/.weberarc) and
-the [Configuration](https://github.com/andamira/webera/wiki/Configuration) wiki page,
+See [`.weberarc`](https://github.com/andamira/webera.sh/blob/master/.weberarc) and
+the [Configuration](https://github.com/andamira/webera.sh/wiki/Configuration) wiki page,
 for more information about the configuration possibilities.
 
 
@@ -136,13 +134,13 @@ for more information about the configuration possibilities.
 There are several flags that allows you to control the scripts behaviour in
 the moment, complementing a more stable configuration.
 See the wiki page for the
-[order of priority](https://github.com/andamira/webera/wiki/Configuration#order-of-priority-)
+[order of priority](https://github.com/andamira/webera.sh/wiki/Configuration#order-of-priority-)
 of all the configuration sources.
 
 You can run `./webera --help` to see the basic help on flags, see some
-[usage examples](https://github.com/andamira/webera/wiki/Script-Arguments#usage-examples-),
+[usage examples](https://github.com/andamira/webera.sh/wiki/Script-Arguments#usage-examples-),
 or take a deeper look to the complete
-[list of flags](https://github.com/andamira/webera/wiki/Script-Arguments#list-of-flags-)
+[list of flags](https://github.com/andamira/webera.sh/wiki/Script-Arguments#list-of-flags-)
 in the wiki.
 
 
@@ -150,9 +148,9 @@ in the wiki.
 
 There are several examples:
 
-- The source code is in the [examples/](https://github.com/andamira/webera/tree/master/examples) directory.
-- The generated output is in the [docs/examples](https://github.com/andamira/webera/tree/master/docs/examples) directory.
-- The result is rendered in [andamira.github.io/webera/examples](https://andamira.github.io/webera/examples/).
+- The source code is in the [examples/](https://github.com/andamira/webera.sh/tree/master/examples) directory.
+- The generated output is in the [docs/examples](https://github.com/andamira/webera.sh/tree/master/docs/examples) directory.
+- The result is rendered in [andamira.github.io/webera.sh/examples](https://andamira.github.io/webera.sh/examples/).
 
 
 

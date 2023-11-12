@@ -3,7 +3,7 @@
 #
 #          name : webera
 #   description : a handy static website generator
-#    repository : https://github.com/andamira/webera
+#    repository : https://github.com/andamira/webera.sh
 #        author : José Luis Cruz © 2016-2017
 #       version : 0.2.0
 #       license : MIT
@@ -217,7 +217,7 @@ OPTION FLAGS                 ... (default value)
 			cat -- <<-ENDVERSION
 				webera v$__WEBERA_VERSION
 
-				<https://github.com/andamira/webera>
+				<https://github.com/andamira/webera.sh>
 
 				Copyright (C) 2016-2017 José Luis Cruz
 				Released under the MIT license.

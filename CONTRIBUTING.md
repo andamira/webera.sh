@@ -12,6 +12,6 @@ If new functionality is added, or changed, tests should be created or updated.
 
 Thanks for helping out!
 
-[Style Guide]: https://github.com/andamira/webera/blob/master/STYLE_GUIDE.md
+[Style Guide]: https://github.com/andamira/webera.sh/blob/master/STYLE_GUIDE.md
 [ShellCheck]: http://www.shellcheck.net/
 [EditorConfig]: http://editorconfig.org/
